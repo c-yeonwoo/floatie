@@ -226,14 +226,20 @@ function MePage() {
         )}
       </section>
 
-      <section className="px-6 mt-10 mb-12 text-center">
+      <section className="px-6 mt-10 mb-12 text-center space-y-3">
         <Link
           to="/me/blocked"
-          className="text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
+          className="block text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
         >
           차단 목록 관리
         </Link>
+        <p className="text-[10px] text-muted-foreground">
+          <Link to="/terms" className="hover:text-foreground">이용약관</Link>
+          {" · "}
+          <Link to="/privacy" className="hover:text-foreground">개인정보 처리방침</Link>
+        </p>
       </section>
+
     </main>
   );
 }
