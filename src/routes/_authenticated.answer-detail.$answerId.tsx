@@ -32,7 +32,22 @@ function AnswerDetailPage() {
         .eq("answer_id", Number(answerId))
         .order("created_at", { ascending: true });
       const { data: userData } = await supabase.auth.getUser();
-      return { answer, comments: comments ?? [], me: userData.user?.id };
+      const me = userData.user?.id;
+      const { count: likeCount } = await supabase
+        .from("likes")
+        .select("*", { count: "exact", head: true })
+        .eq("answer_id", Number(answerId));
+      let liked = false;
+      if (me) {
+        const { data: myLike } = await supabase
+          .from("likes")
+          .select("user_id")
+          .eq("answer_id", Number(answerId))
+          .eq("user_id", me)
+          .maybeSingle();
+        liked = !!myLike;
+      }
+      return { answer, comments: comments ?? [], me, likeCount: likeCount ?? 0, liked };
     },
   });
 
