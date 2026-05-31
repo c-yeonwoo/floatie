@@ -142,8 +142,12 @@ function UserProfilePage() {
 
         <div className="flex items-center gap-8 mt-6">
           <StatBlock label="기록" value={data.answers.length} />
-          <StatBlock label="팔로워" value={data.counts.followers} />
-          <StatBlock label="팔로잉" value={data.counts.following} />
+          <Link to="/u/$handle/followers" params={{ handle: p.handle ?? "" }}>
+            <StatBlock label="팔로워" value={data.counts.followers} />
+          </Link>
+          <Link to="/u/$handle/following" params={{ handle: p.handle ?? "" }}>
+            <StatBlock label="팔로잉" value={data.counts.following} />
+          </Link>
         </div>
 
         {data.isMe ? (
