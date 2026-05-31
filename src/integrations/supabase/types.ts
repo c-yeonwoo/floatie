@@ -16,28 +16,25 @@ export type Database = {
     Tables: {
       answers: {
         Row: {
-          caption: string | null
           created_at: string | null
           id: number
-          photo_url: string
+          photos: string[]
           question_id: number
           user_id: string
           visibility: string
         }
         Insert: {
-          caption?: string | null
           created_at?: string | null
           id?: never
-          photo_url: string
+          photos?: string[]
           question_id: number
           user_id: string
           visibility?: string
         }
         Update: {
-          caption?: string | null
           created_at?: string | null
           id?: never
-          photo_url?: string
+          photos?: string[]
           question_id?: number
           user_id?: string
           visibility?: string
@@ -55,6 +52,38 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          answer_id: number
+          body: string
+          created_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          answer_id: number
+          body: string
+          created_at?: string
+          id?: number
+          user_id: string
+        }
+        Update: {
+          answer_id?: number
+          body?: string
+          created_at?: string
+          id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
             referencedColumns: ["id"]
           },
         ]
