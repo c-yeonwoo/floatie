@@ -152,6 +152,7 @@ export type Database = {
           bio: string | null
           created_at: string | null
           display_name: string | null
+          gender: string | null
           handle: string | null
           id: string
           onboarded: boolean | null
@@ -161,6 +162,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
+          gender?: string | null
           handle?: string | null
           id: string
           onboarded?: boolean | null
@@ -170,6 +172,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
+          gender?: string | null
           handle?: string | null
           id?: string
           onboarded?: boolean | null

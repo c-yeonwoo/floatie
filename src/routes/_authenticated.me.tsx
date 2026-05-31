@@ -69,13 +69,36 @@ function MePage() {
         </button>
       </header>
 
-      <section className="px-6 py-10 text-center">
+      <section className="px-6 py-10 text-center flex flex-col items-center">
+        {data?.profile?.avatar_url ? (
+          <img
+            src={data.profile.avatar_url}
+            alt=""
+            className="size-20 rounded-full object-cover border border-border mb-4"
+          />
+        ) : (
+          <div className="size-20 rounded-full bg-surface border border-border mb-4" />
+        )}
         <h2 className="font-serif text-2xl">
           {data?.profile?.display_name ?? "..."}의 결
         </h2>
-        <p className="text-[13px] text-muted-foreground mt-2">
+        {data?.profile?.handle && (
+          <p className="text-[12px] text-muted-foreground mt-1">@{data.profile.handle}</p>
+        )}
+        {data?.profile?.bio && (
+          <p className="text-[14px] text-foreground/80 mt-3 max-w-sm text-pretty">
+            {data.profile.bio}
+          </p>
+        )}
+        <p className="text-[13px] text-muted-foreground mt-3">
           {answerCount}개의 조각을 모으셨어요
         </p>
+        <Link
+          to="/me/edit"
+          className="mt-4 text-[11px] uppercase tracking-widest text-accent border border-accent/40 rounded-full px-4 py-1.5 hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          프로필 수정
+        </Link>
       </section>
 
       <section className="px-6 mb-10">
