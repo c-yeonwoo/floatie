@@ -84,11 +84,6 @@ const AuthenticatedAnswerDetailAnswerIdRoute =
     path: '/answer-detail/$answerId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedUHandleRoute = AuthenticatedUHandleRouteImport.update({
-  id: '/u/$handle',
-  path: '/u/$handle',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
