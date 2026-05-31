@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { stripExifAndCompress } from "@/lib/image-utils";
+
 
 export const Route = createFileRoute("/_authenticated/me/edit")({
   head: () => ({ meta: [{ title: "프로필 수정" }] }),
