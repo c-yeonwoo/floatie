@@ -162,6 +162,19 @@ function LoginPage() {
             />
           </div>
 
+          {mode === "signin" && (
+            <div className="text-right">
+              <Link
+                to="/forgot-password"
+                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4"
+              >
+                비밀번호를 잊으셨나요?
+              </Link>
+            </div>
+          )}
+
+
+
           {mode === "signup" && (
             <label className="flex items-start gap-2 pt-2 text-[12px] text-muted-foreground cursor-pointer">
               <input
