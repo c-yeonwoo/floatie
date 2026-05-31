@@ -7,34 +7,22 @@ export const Route = createFileRoute("/_authenticated/grid")({
   component: GridPage,
 });
 
+type FeedItem = {
+  id: number;
+  photos: string[];
+  question_id: number;
+  questions: { id: number; text: string } | null;
+  profiles: { handle: string | null; display_name: string | null } | null;
+  similar: boolean;
+};
+
 function GridPage() {
-  const today = new Date().toISOString().slice(0, 10);
-
-  const { data: todayData, isLoading } = useQuery({
-    queryKey: ["today-grid", today],
-    queryFn: async () => {
-      const { data: dq } = await supabase
-        .from("daily_questions")
-        .select("question_id, questions(id, text)")
-        .eq("date", today)
-        .maybeSingle();
-      if (!dq) return null;
-      const { data: answers } = await supabase
-        .from("answers")
-        .select("id, photos, profiles(handle, display_name)")
-        .eq("question_id", dq.question_id)
-        .eq("visibility", "public")
-        .order("created_at", { ascending: false })
-        .limit(60);
-      return { question: dq.questions as any, answers: answers ?? [] };
-    },
-  });
-
-  const { data: similar } = useQuery({
-    queryKey: ["similar-feed"],
-    queryFn: async () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ["explore-feed"],
+    queryFn: async (): Promise<{ hasPersona: boolean; items: FeedItem[] }> => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
+
       const { data: mine } = await supabase
         .from("persona_reads")
         .select("keywords")
@@ -54,24 +42,46 @@ function GridPage() {
         similarUserIds = (others ?? [])
           .map((p: any) => ({
             uid: p.user_id,
-            overlap: (p.keywords ?? []).filter((k: string) => myKw.includes(k)).length,
+            overlap: (p.keywords ?? []).filter((k: string) => myKw.includes(k))
+              .length,
           }))
           .filter((p) => p.overlap > 0)
           .sort((a, b) => b.overlap - a.overlap)
-          .slice(0, 20)
+          .slice(0, 30)
           .map((p) => p.uid);
       }
 
-      let query = supabase
+      const { data: recent } = await supabase
         .from("answers")
-        .select("id, photos, profiles(handle), questions(text)")
+        .select(
+          "id, photos, question_id, questions(id, text), profiles(handle, display_name), user_id",
+        )
         .eq("visibility", "public")
         .neq("user_id", uid)
         .order("created_at", { ascending: false })
-        .limit(24);
-      if (similarUserIds.length > 0) query = query.in("user_id", similarUserIds);
-      const { data: feed } = await query;
-      return { hasPersona: !!mine, items: feed ?? [] };
+        .limit(40);
+
+      const all = (recent ?? []) as any[];
+      const similarSet = new Set(similarUserIds);
+      const similarItems: FeedItem[] = [];
+      const otherItems: FeedItem[] = [];
+      for (const a of all) {
+        const item: FeedItem = {
+          id: a.id,
+          photos: a.photos ?? [],
+          question_id: a.question_id,
+          questions: a.questions,
+          profiles: a.profiles,
+          similar: similarSet.has(a.user_id),
+        };
+        if (item.similar) similarItems.push(item);
+        else otherItems.push(item);
+      }
+
+      return {
+        hasPersona: !!mine,
+        items: [...similarItems, ...otherItems],
+      };
     },
   });
 
@@ -79,87 +89,82 @@ function GridPage() {
     <main>
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          오늘의 그리드
+          탐색
         </span>
         <h2 className="font-serif text-xl mt-1 leading-snug">
-          {todayData?.question?.text ?? "..."}
+          {data?.hasPersona
+            ? "결이 닿는 기록들"
+            : "다른 분들의 결을 만나보세요"}
         </h2>
       </header>
 
-      <section className="px-6 py-6">
+      <section className="px-4 py-6 space-y-10">
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="aspect-square bg-muted rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : !todayData || todayData.answers.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">
-            아직 아무도 답하지 않았어요. 첫 결을 남겨보세요.
+          Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="space-y-3">
+              <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+              <div className="aspect-square bg-muted rounded-2xl animate-pulse" />
+            </div>
+          ))
+        ) : !data || data.items.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-16">
+            아직 보여드릴 기록이 없어요.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {todayData.answers.map((a: any) => (
-              <Link
-                key={a.id}
-                to="/answer-detail/$answerId"
-                params={{ answerId: String(a.id) }}
-                className="flex flex-col gap-2"
-              >
-                <div className="relative">
-                  <img
-                    src={a.photos?.[0]}
-                    alt=""
-                    className="w-full aspect-square object-cover rounded-xl border border-border"
-                    loading="lazy"
-                  />
-                  {a.photos?.length > 1 && (
-                    <span className="absolute top-2 right-2 text-[10px] bg-background/80 backdrop-blur rounded-full px-2 py-0.5">
-                      +{a.photos.length - 1}
+          data.items.map((a) => (
+            <article key={a.id} className="space-y-3">
+              {a.questions && (
+                <Link
+                  to="/question/$questionId"
+                  params={{ questionId: String(a.questions.id) }}
+                  className="block px-2"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-[10px] uppercase tracking-widest text-accent">
+                      질문
                     </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground px-1">
-                  @{a.profiles?.handle ?? "anon"}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="px-6 pb-10">
-        <div className="border-t border-border pt-8 mb-5">
-          <span className="text-[11px] uppercase tracking-widest text-accent">
-            결이 비슷한 사람들
-          </span>
-          <p className="text-[13px] text-muted-foreground mt-1">
-            {similar?.hasPersona
-              ? "당신과 결이 통할 것 같은 기록들이에요."
-              : "더 많이 기록하실수록 결이 통하는 분들이 모일 거예요."}
-          </p>
-        </div>
-        {!similar || similar.items.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-6">
-            아직 추천할 기록이 없어요.
-          </p>
-        ) : (
-          <div className="grid grid-cols-3 gap-1.5">
-            {similar.items.map((a: any) => (
+                    {a.similar && (
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        · 결이 닿아요
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-serif text-lg leading-snug mt-1 hover:underline underline-offset-4">
+                    {a.questions.text}
+                  </p>
+                </Link>
+              )}
               <Link
-                key={a.id}
                 to="/answer-detail/$answerId"
                 params={{ answerId: String(a.id) }}
+                className="block relative"
               >
                 <img
-                  src={a.photos?.[0]}
+                  src={a.photos[0]}
                   alt=""
-                  className="w-full aspect-square object-cover rounded-sm border border-border"
+                  className="w-full aspect-square object-cover rounded-2xl border border-border"
                   loading="lazy"
                 />
+                {a.photos.length > 1 && (
+                  <span className="absolute top-3 right-3 text-[10px] bg-background/80 backdrop-blur rounded-full px-2.5 py-0.5">
+                    +{a.photos.length - 1}
+                  </span>
+                )}
               </Link>
-            ))}
-          </div>
+              <div className="flex items-center justify-between px-2">
+                <p className="text-[11px] text-muted-foreground">
+                  @{a.profiles?.handle ?? "anon"}
+                </p>
+                <Link
+                  to="/answer-detail/$answerId"
+                  params={{ answerId: String(a.id) }}
+                  className="text-[11px] text-muted-foreground underline underline-offset-4"
+                >
+                  댓글 남기기
+                </Link>
+              </div>
+            </article>
+          ))
         )}
       </section>
     </main>

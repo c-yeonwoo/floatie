@@ -16,6 +16,7 @@ import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated.me'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated.home'
 import { Route as AuthenticatedGridRouteImport } from './routes/_authenticated.grid'
 import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated.backlog'
+import { Route as AuthenticatedQuestionQuestionIdRouteImport } from './routes/_authenticated.question.$questionId'
 import { Route as AuthenticatedAnswerQuestionIdRouteImport } from './routes/_authenticated.answer.$questionId'
 import { Route as AuthenticatedAnswerDetailAnswerIdRouteImport } from './routes/_authenticated.answer-detail.$answerId'
 
@@ -53,6 +54,12 @@ const AuthenticatedBacklogRoute = AuthenticatedBacklogRouteImport.update({
   path: '/backlog',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedQuestionQuestionIdRoute =
+  AuthenticatedQuestionQuestionIdRouteImport.update({
+    id: '/question/$questionId',
+    path: '/question/$questionId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAnswerQuestionIdRoute =
   AuthenticatedAnswerQuestionIdRouteImport.update({
     id: '/answer/$questionId',
@@ -75,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/me': typeof AuthenticatedMeRoute
   '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesByTo {
   '/me': typeof AuthenticatedMeRoute
   '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,6 +106,7 @@ export interface FileRoutesById {
   '/_authenticated/me': typeof AuthenticatedMeRoute
   '/_authenticated/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/_authenticated/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/_authenticated/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/answer-detail/$answerId'
     | '/answer/$questionId'
+    | '/question/$questionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/answer-detail/$answerId'
     | '/answer/$questionId'
+    | '/question/$questionId'
   id:
     | '__root__'
     | '/'
@@ -130,6 +142,7 @@ export interface FileRouteTypes {
     | '/_authenticated/me'
     | '/_authenticated/answer-detail/$answerId'
     | '/_authenticated/answer/$questionId'
+    | '/_authenticated/question/$questionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -189,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBacklogRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/question/$questionId': {
+      id: '/_authenticated/question/$questionId'
+      path: '/question/$questionId'
+      fullPath: '/question/$questionId'
+      preLoaderRoute: typeof AuthenticatedQuestionQuestionIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/answer/$questionId': {
       id: '/_authenticated/answer/$questionId'
       path: '/answer/$questionId'
@@ -213,6 +233,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMeRoute: typeof AuthenticatedMeRoute
   AuthenticatedAnswerDetailAnswerIdRoute: typeof AuthenticatedAnswerDetailAnswerIdRoute
   AuthenticatedAnswerQuestionIdRoute: typeof AuthenticatedAnswerQuestionIdRoute
+  AuthenticatedQuestionQuestionIdRoute: typeof AuthenticatedQuestionQuestionIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -223,6 +244,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnswerDetailAnswerIdRoute:
     AuthenticatedAnswerDetailAnswerIdRoute,
   AuthenticatedAnswerQuestionIdRoute: AuthenticatedAnswerQuestionIdRoute,
+  AuthenticatedQuestionQuestionIdRoute: AuthenticatedQuestionQuestionIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
