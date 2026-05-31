@@ -150,7 +150,7 @@ function FeedPage() {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex items-end justify-between gap-3">
         <div>
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-            홈
+            피드
           </span>
           <h2 className="font-serif text-xl mt-1 leading-snug">오늘의 결</h2>
         </div>
@@ -172,9 +172,20 @@ function FeedPage() {
             </div>
           ))
         ) : items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-16">
-            아직 보여드릴 결이 없어요.
-          </p>
+          <div className="border border-dashed border-border rounded-2xl p-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              아직 보여드릴 결이 없어요.
+            </p>
+            <p className="text-[12px] text-muted-foreground mt-2">
+              오늘의 질문에 먼저 답하면, 비슷한 결의 사람들이 모입니다.
+            </p>
+            <Link
+              to="/home"
+              className="inline-block mt-5 text-[11px] uppercase tracking-widest bg-foreground text-background rounded-full px-4 py-2"
+            >
+              오늘의 질문으로 →
+            </Link>
+          </div>
         ) : (
           items.map((it, idx) =>
             it.kind === "prompt" ? (
