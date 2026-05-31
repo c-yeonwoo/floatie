@@ -269,11 +269,13 @@ function AnswerDetailPage() {
         <div className="flex gap-2 items-end border-t border-border pt-4">
           <textarea
             value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, 300))}
+            onChange={(e) => setBody(e.target.value.slice(0, 500))}
             rows={2}
+            maxLength={500}
             placeholder="마음을 한 줄로 남겨주세요"
             className="flex-1 bg-transparent outline-none resize-none text-[14px] placeholder:text-muted-foreground"
           />
+
           <button
             onClick={() => body.trim() && addComment.mutate(body.trim())}
             disabled={!body.trim() || addComment.isPending}
