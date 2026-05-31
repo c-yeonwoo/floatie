@@ -3,6 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { stripExifMany } from "@/lib/image-utils";
+
+
 
 const MAX_PHOTOS = 6;
 
@@ -64,11 +67,11 @@ function AnswerPage() {
     try {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
+      const cleaned = await stripExifMany(files);
       const urls: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const f = files[i];
-        const ext = f.name.split(".").pop()?.toLowerCase() ?? "jpg";
-        const path = `${uid}/${questionId}-${Date.now()}-${i}.${ext}`;
+      for (let i = 0; i < cleaned.length; i++) {
+        const f = cleaned[i];
+        const path = `${uid}/${questionId}-${Date.now()}-${i}.jpg`;
         const { error: upErr } = await supabase.storage
           .from("answers")
           .upload(path, f, { upsert: true, contentType: f.type });
@@ -87,6 +90,7 @@ function AnswerPage() {
         { onConflict: "user_id,question_id" }
       );
       if (insErr) throw insErr;
+
 
       toast.success("결이 남았어요.");
       navigate({ to: "/me" });

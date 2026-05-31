@@ -2,10 +2,20 @@ import { createFileRoute, Outlet, redirect, Link, useLocation } from "@tanstack/
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/login" });
+
+    // Onboarding gate: force profile setup before letting users into the app
+    if (location.pathname !== "/onboarding") {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("onboarded")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (!prof?.onboarded) throw redirect({ to: "/onboarding" });
+    }
   },
   component: AuthenticatedLayout,
 });
@@ -14,7 +24,9 @@ function AuthenticatedLayout() {
   const location = useLocation();
   const hideTabs =
     location.pathname.startsWith("/answer/") ||
-    location.pathname.startsWith("/answer-detail/");
+    location.pathname.startsWith("/answer-detail/") ||
+    location.pathname.startsWith("/answer-edit/") ||
+    location.pathname === "/onboarding";
 
   return (
     <div className="min-h-screen bg-background text-foreground">

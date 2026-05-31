@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { stripExifAndCompress } from "@/lib/image-utils";
+
 
 export const Route = createFileRoute("/_authenticated/me/edit")({
   head: () => ({ meta: [{ title: "프로필 수정" }] }),
@@ -78,15 +80,16 @@ function EditProfilePage() {
     try {
       let nextAvatarUrl = profile.profile?.avatar_url ?? null;
       if (avatarFile) {
-        const ext = avatarFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
-        const path = `${profile.uid}/avatar-${Date.now()}.${ext}`;
+        const cleaned = await stripExifAndCompress(avatarFile);
+        const path = `${profile.uid}/avatar-${Date.now()}.jpg`;
         const { error: upErr } = await supabase.storage
           .from("answers")
-          .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
+          .upload(path, cleaned, { upsert: true, contentType: cleaned.type });
         if (upErr) throw upErr;
         const { data: pub } = supabase.storage.from("answers").getPublicUrl(path);
         nextAvatarUrl = pub.publicUrl;
       }
+
 
       const { error } = await supabase
         .from("profiles")

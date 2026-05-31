@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Heart, Flag } from "lucide-react";
+import { Heart, Flag, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ReportDialog } from "@/components/report-dialog";
 import { useBlockedIds } from "@/lib/blocks";
+
 
 export const Route = createFileRoute("/_authenticated/answer-detail/$answerId")({
   head: () => ({ meta: [{ title: "결 — 결" }] }),
@@ -78,7 +79,9 @@ function AnswerDetailPage() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["answer-detail", answerId] }),
+    onError: (e: any) => toast.error(e?.message ?? "삭제하지 못했어요."),
   });
+
 
   const toggleLike = useMutation({
     mutationFn: async () => {
@@ -144,7 +147,14 @@ function AnswerDetailPage() {
         </button>
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">결</span>
         {data.me === a.user_id ? (
-          <span className="w-10" />
+          <Link
+            to="/answer-edit/$answerId"
+            params={{ answerId }}
+            aria-label="수정하기"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="size-4" strokeWidth={1.5} />
+          </Link>
         ) : (
           <button
             onClick={() => setReportOpen(true)}
@@ -154,6 +164,7 @@ function AnswerDetailPage() {
             <Flag className="size-4" strokeWidth={1.5} />
           </button>
         )}
+
       </header>
 
       <section className="px-6 py-6">
@@ -242,14 +253,15 @@ function AnswerDetailPage() {
                   {c.body}
                 </p>
               </div>
-              {data.me === c.user_id && (
+              {(data.me === c.user_id || data.me === a.user_id) && (
                 <button
                   onClick={() => delComment.mutate(c.id)}
-                  className="text-[11px] text-muted-foreground self-start"
+                  className="text-[11px] text-muted-foreground self-start hover:text-foreground"
                 >
                   삭제
                 </button>
               )}
+
             </li>
           ))}
         </ul>
@@ -257,11 +269,13 @@ function AnswerDetailPage() {
         <div className="flex gap-2 items-end border-t border-border pt-4">
           <textarea
             value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, 300))}
+            onChange={(e) => setBody(e.target.value.slice(0, 500))}
             rows={2}
+            maxLength={500}
             placeholder="마음을 한 줄로 남겨주세요"
             className="flex-1 bg-transparent outline-none resize-none text-[14px] placeholder:text-muted-foreground"
           />
+
           <button
             onClick={() => body.trim() && addComment.mutate(body.trim())}
             disabled={!body.trim() || addComment.isPending}
