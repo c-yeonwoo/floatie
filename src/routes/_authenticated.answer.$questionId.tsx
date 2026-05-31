@@ -4,6 +4,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const MAX_PHOTOS = 6;
+
 export const Route = createFileRoute("/_authenticated/answer/$questionId")({
   head: () => ({ meta: [{ title: "답변 — 결" }] }),
   component: AnswerPage,
@@ -12,9 +14,8 @@ export const Route = createFileRoute("/_authenticated/answer/$questionId")({
 function AnswerPage() {
   const { questionId } = Route.useParams();
   const navigate = useNavigate();
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [caption, setCaption] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,53 +31,62 @@ function AnswerPage() {
     },
   });
 
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > 5 * 1024 * 1024) {
-      toast.error("5MB 이하 사진으로 골라줘.");
-      return;
+  const onFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(e.target.files ?? []);
+    if (incoming.length === 0) return;
+    const valid: File[] = [];
+    for (const f of incoming) {
+      if (f.size > 5 * 1024 * 1024) {
+        toast.error(`${f.name}: 5MB 이하만 가능해`);
+        continue;
+      }
+      if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
+        toast.error(`${f.name}: jpg, png, webp만 가능해`);
+        continue;
+      }
+      valid.push(f);
     }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
-      toast.error("jpg, png, webp만 가능해.");
-      return;
-    }
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    const next = [...files, ...valid].slice(0, MAX_PHOTOS);
+    setFiles(next);
+    setPreviews(next.map((f) => URL.createObjectURL(f)));
+    e.target.value = "";
+  };
+
+  const removeAt = (idx: number) => {
+    const next = files.filter((_, i) => i !== idx);
+    setFiles(next);
+    setPreviews(next.map((f) => URL.createObjectURL(f)));
   };
 
   const onSubmit = async () => {
-    if (!file) return toast.error("사진을 골라줘.");
-    if (caption.length > 60) return toast.error("캡션은 60자 이하야.");
+    if (files.length === 0) return toast.error("사진을 골라줘.");
     setSubmitting(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      const path = `${uid}/${questionId}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("answers")
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("answers").getPublicUrl(path);
+      const urls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        const ext = f.name.split(".").pop()?.toLowerCase() ?? "jpg";
+        const path = `${uid}/${questionId}-${Date.now()}-${i}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("answers")
+          .upload(path, f, { upsert: true, contentType: f.type });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("answers").getPublicUrl(path);
+        urls.push(pub.publicUrl);
+      }
+
       const { error: insErr } = await supabase.from("answers").upsert(
         {
           user_id: uid,
           question_id: Number(questionId),
-          photo_url: pub.publicUrl,
-          caption: caption.trim() || null,
+          photos: urls,
           visibility,
         },
         { onConflict: "user_id,question_id" }
       );
       if (insErr) throw insErr;
-
-      // mark onboarded after first answer if not yet
-      await supabase
-        .from("profiles")
-        .update({ onboarded: true })
-        .eq("id", uid)
-        .eq("onboarded", false);
 
       toast.success("너의 결이 남았어.");
       navigate({ to: "/me" });
@@ -105,41 +115,62 @@ function AnswerPage() {
           </div>
         )}
 
-        <label className="block cursor-pointer">
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={onFile}
-            className="hidden"
-          />
-          {preview ? (
-            <img
-              src={preview}
-              alt=""
-              className="w-full aspect-square object-cover rounded-2xl border border-border"
+        {previews.length === 0 ? (
+          <label className="block cursor-pointer">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={onFiles}
+              className="hidden"
             />
-          ) : (
             <div className="w-full aspect-square bg-surface border border-border rounded-2xl grid place-items-center">
               <div className="text-center">
                 <div className="text-2xl mb-2">＋</div>
                 <span className="text-xs uppercase tracking-widest text-muted-foreground">
                   사진 고르기
                 </span>
+                <p className="text-[11px] text-muted-foreground mt-2">최대 {MAX_PHOTOS}장</p>
               </div>
             </div>
-          )}
-        </label>
-
-        <div className="border-b border-border pb-2 mt-6">
-          <input
-            type="text"
-            placeholder="한 줄로 기록하기 (반말, 60자)"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value.slice(0, 60))}
-            className="w-full bg-transparent outline-none py-2 text-lg italic placeholder:text-muted-foreground"
-          />
-          <span className="text-[10px] text-muted-foreground">{caption.length}/60</span>
-        </div>
+          </label>
+        ) : (
+          <div>
+            <div className="grid grid-cols-3 gap-2">
+              {previews.map((src, i) => (
+                <div key={i} className="relative aspect-square">
+                  <img
+                    src={src}
+                    alt=""
+                    className="w-full h-full object-cover rounded-lg border border-border"
+                  />
+                  <button
+                    onClick={() => removeAt(i)}
+                    className="absolute top-1 right-1 size-6 rounded-full bg-background/85 text-foreground text-xs grid place-items-center border border-border"
+                    aria-label="삭제"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {previews.length < MAX_PHOTOS && (
+                <label className="aspect-square bg-surface border border-dashed border-border rounded-lg grid place-items-center cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={onFiles}
+                    className="hidden"
+                  />
+                  <span className="text-2xl text-muted-foreground">＋</span>
+                </label>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2 text-right">
+              {previews.length} / {MAX_PHOTOS}
+            </p>
+          </div>
+        )}
 
         <div className="flex gap-2 mt-6">
           <button
@@ -168,7 +199,7 @@ function AnswerPage() {
 
         <button
           onClick={onSubmit}
-          disabled={submitting || !file}
+          disabled={submitting || files.length === 0}
           className="w-full bg-foreground text-background py-4 rounded-xl text-sm font-medium mt-8 disabled:opacity-40"
         >
           {submitting ? "남기는 중..." : "결 남기기"}

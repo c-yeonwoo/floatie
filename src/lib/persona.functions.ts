@@ -14,21 +14,25 @@ export const generatePersonaRead = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: answers, error } = await supabase
       .from("answers")
-      .select("caption, questions(text)")
+      .select("photos, questions(text, category)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(40);
 
     if (error) throw new Error(error.message);
     if (!answers || answers.length < 3) {
-      throw new Error("답변이 3개 이상 모이면 너의 결을 읽어줄 수 있어.");
+      throw new Error("기록이 3개 이상 모이면 너의 결을 읽어줄 수 있어.");
     }
 
     const corpus = answers
-      .map((a: any) => `Q: ${a.questions?.text ?? ""}\nA: ${a.caption ?? "(사진만 답함)"}`)
-      .join("\n\n");
+      .map((a: any, i: number) => {
+        const q = a.questions;
+        const photoCount = (a.photos ?? []).length;
+        return `${i + 1}. [${q?.category ?? ""}] ${q?.text ?? ""} → 사진 ${photoCount}장으로 답함`;
+      })
+      .join("\n");
 
-    const systemPrompt = `너는 사진 답변형 SNS '결'의 따뜻한 큐레이터야. 사용자의 질문-답변 기록을 보고 그 사람의 결을 부드럽게 해석해줘.
+    const systemPrompt = `너는 사진 답변형 SNS '결'의 따뜻한 큐레이터야. 사용자가 어떤 질문에 사진으로 답했는지를 보고, 그 사람이 어디에 시선이 머무는지 그 결을 부드럽게 해석해줘.
 
 규칙:
 - 반드시 한국어 반말로.
@@ -42,13 +46,16 @@ export const generatePersonaRead = createServerFn({ method: "POST" })
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": apiKey,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `다음은 한 사용자의 결 기록이야:\n\n${corpus}` },
+          {
+            role: "user",
+            content: `다음은 한 사용자가 사진으로 답한 질문들이야. 어떤 질문에 시선이 머물렀는지 보고 그 사람의 결을 읽어줘:\n\n${corpus}`,
+          },
         ],
         response_format: { type: "json_object" },
       }),

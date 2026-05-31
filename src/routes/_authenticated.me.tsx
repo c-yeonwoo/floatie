@@ -21,7 +21,7 @@ function MePage() {
         supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
         supabase
           .from("answers")
-          .select("id, photo_url, caption, created_at, questions(text)")
+          .select("id, photos, created_at, questions(text)")
           .eq("user_id", uid)
           .order("created_at", { ascending: false }),
         supabase
@@ -53,8 +53,7 @@ function MePage() {
   const answerCount = data?.answers.length ?? 0;
   const canGenerate = answerCount >= 3;
   const persona = data?.persona;
-  const showRegenerate =
-    persona && answerCount - persona.based_on_count >= 3;
+  const showRegenerate = persona && answerCount - persona.based_on_count >= 3;
 
   const onLogout = async () => {
     await supabase.auth.signOut();
@@ -79,7 +78,6 @@ function MePage() {
         </p>
       </section>
 
-      {/* AI Persona Card */}
       <section className="px-6 mb-10">
         <div className="bg-surface border border-border rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-3">
@@ -104,7 +102,7 @@ function MePage() {
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground mt-4">
-                {persona.based_on_count}개 답변 기준
+                {persona.based_on_count}개 기록 기준
               </p>
               {showRegenerate && (
                 <button
@@ -126,7 +124,7 @@ function MePage() {
                 disabled={generate.isPending}
                 className="w-full bg-foreground text-background py-3 rounded-lg text-sm font-medium disabled:opacity-50"
               >
-                {generate.isPending ? "읽는 중..." : "성향 리드백 받기"}
+                {generate.isPending ? "읽는 중..." : "내 결 읽어보기"}
               </button>
             </div>
           ) : (
@@ -137,7 +135,6 @@ function MePage() {
         </div>
       </section>
 
-      {/* Archive grid */}
       <section className="px-6">
         {isLoading ? (
           <div className="grid grid-cols-3 gap-1.5">
@@ -155,13 +152,18 @@ function MePage() {
         ) : (
           <div className="grid grid-cols-3 gap-1.5">
             {data!.answers.map((a: any) => (
-              <img
+              <Link
                 key={a.id}
-                src={a.photo_url}
-                alt={a.caption ?? ""}
-                className="w-full aspect-square object-cover rounded-sm border border-border"
-                loading="lazy"
-              />
+                to="/answer-detail/$answerId"
+                params={{ answerId: String(a.id) }}
+              >
+                <img
+                  src={a.photos?.[0]}
+                  alt=""
+                  className="w-full aspect-square object-cover rounded-sm border border-border"
+                  loading="lazy"
+                />
+              </Link>
             ))}
           </div>
         )}

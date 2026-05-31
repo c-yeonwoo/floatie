@@ -21,7 +21,7 @@ function HomePage() {
       const { data: userData } = await supabase.auth.getUser();
       const { data: myAnswer } = await supabase
         .from("answers")
-        .select("id, photo_url, caption")
+        .select("id, photos")
         .eq("user_id", userData.user!.id)
         .eq("question_id", dq.question_id)
         .maybeSingle();
@@ -55,16 +55,16 @@ function HomePage() {
                 {data.question.text}
               </h2>
             </div>
-            {data.myAnswer ? (
+            {data.myAnswer && data.myAnswer.photos?.[0] ? (
               <div>
                 <img
-                  src={data.myAnswer.photo_url}
+                  src={data.myAnswer.photos[0]}
                   alt=""
                   className="w-full aspect-square object-cover rounded-2xl"
                 />
-                {data.myAnswer.caption && (
-                  <p className="mt-3 text-base italic text-foreground">
-                    {data.myAnswer.caption}
+                {data.myAnswer.photos.length > 1 && (
+                  <p className="mt-2 text-[11px] text-muted-foreground text-right">
+                    +{data.myAnswer.photos.length - 1}장
                   </p>
                 )}
                 <p className="mt-6 text-xs text-muted-foreground text-center">

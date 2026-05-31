@@ -12,12 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated.me'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated.home'
 import { Route as AuthenticatedGridRouteImport } from './routes/_authenticated.grid'
 import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated.backlog'
 import { Route as AuthenticatedAnswerQuestionIdRouteImport } from './routes/_authenticated.answer.$questionId'
+import { Route as AuthenticatedAnswerDetailAnswerIdRouteImport } from './routes/_authenticated.answer-detail.$answerId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -32,11 +32,6 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedMeRoute = AuthenticatedMeRouteImport.update({
   id: '/me',
@@ -64,6 +59,12 @@ const AuthenticatedAnswerQuestionIdRoute =
     path: '/answer/$questionId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAnswerDetailAnswerIdRoute =
+  AuthenticatedAnswerDetailAnswerIdRouteImport.update({
+    id: '/answer-detail/$answerId',
+    path: '/answer-detail/$answerId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,7 +73,7 @@ export interface FileRoutesByFullPath {
   '/grid': typeof AuthenticatedGridRoute
   '/home': typeof AuthenticatedHomeRoute
   '/me': typeof AuthenticatedMeRoute
-  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
 }
 export interface FileRoutesByTo {
@@ -82,7 +83,7 @@ export interface FileRoutesByTo {
   '/grid': typeof AuthenticatedGridRoute
   '/home': typeof AuthenticatedHomeRoute
   '/me': typeof AuthenticatedMeRoute
-  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
 }
 export interface FileRoutesById {
@@ -94,7 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/grid': typeof AuthenticatedGridRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
-  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/_authenticated/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
 }
 export interface FileRouteTypes {
@@ -106,7 +107,7 @@ export interface FileRouteTypes {
     | '/grid'
     | '/home'
     | '/me'
-    | '/onboarding'
+    | '/answer-detail/$answerId'
     | '/answer/$questionId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,7 +117,7 @@ export interface FileRouteTypes {
     | '/grid'
     | '/home'
     | '/me'
-    | '/onboarding'
+    | '/answer-detail/$answerId'
     | '/answer/$questionId'
   id:
     | '__root__'
@@ -127,7 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/grid'
     | '/_authenticated/home'
     | '/_authenticated/me'
-    | '/_authenticated/onboarding'
+    | '/_authenticated/answer-detail/$answerId'
     | '/_authenticated/answer/$questionId'
   fileRoutesById: FileRoutesById
 }
@@ -159,13 +160,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/onboarding': {
-      id: '/_authenticated/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
-      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/me': {
       id: '/_authenticated/me'
@@ -202,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnswerQuestionIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/answer-detail/$answerId': {
+      id: '/_authenticated/answer-detail/$answerId'
+      path: '/answer-detail/$answerId'
+      fullPath: '/answer-detail/$answerId'
+      preLoaderRoute: typeof AuthenticatedAnswerDetailAnswerIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -210,7 +211,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedGridRoute: typeof AuthenticatedGridRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedMeRoute: typeof AuthenticatedMeRoute
-  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedAnswerDetailAnswerIdRoute: typeof AuthenticatedAnswerDetailAnswerIdRoute
   AuthenticatedAnswerQuestionIdRoute: typeof AuthenticatedAnswerQuestionIdRoute
 }
 
@@ -219,7 +220,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedGridRoute: AuthenticatedGridRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedMeRoute: AuthenticatedMeRoute,
-  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedAnswerDetailAnswerIdRoute:
+    AuthenticatedAnswerDetailAnswerIdRoute,
   AuthenticatedAnswerQuestionIdRoute: AuthenticatedAnswerQuestionIdRoute,
 }
 
@@ -235,3 +237,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

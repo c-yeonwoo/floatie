@@ -1,0 +1,188 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/_authenticated/answer-detail/$answerId")({
+  head: () => ({ meta: [{ title: "결 — 결" }] }),
+  component: AnswerDetailPage,
+});
+
+function AnswerDetailPage() {
+  const { answerId } = Route.useParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [body, setBody] = useState("");
+  const [idx, setIdx] = useState(0);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["answer-detail", answerId],
+    queryFn: async () => {
+      const { data: answer } = await supabase
+        .from("answers")
+        .select("id, photos, user_id, created_at, questions(text, category), profiles(handle, display_name)")
+        .eq("id", Number(answerId))
+        .maybeSingle();
+      if (!answer) return null;
+      const { data: comments } = await supabase
+        .from("comments")
+        .select("id, body, created_at, user_id, profiles(handle, display_name)")
+        .eq("answer_id", Number(answerId))
+        .order("created_at", { ascending: true });
+      const { data: userData } = await supabase.auth.getUser();
+      return { answer, comments: comments ?? [], me: userData.user?.id };
+    },
+  });
+
+  const addComment = useMutation({
+    mutationFn: async (text: string) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase.from("comments").insert({
+        answer_id: Number(answerId),
+        user_id: userData.user!.id,
+        body: text,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setBody("");
+      qc.invalidateQueries({ queryKey: ["answer-detail", answerId] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "댓글을 남기지 못했어."),
+  });
+
+  const delComment = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.from("comments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["answer-detail", answerId] }),
+  });
+
+  if (isLoading) {
+    return <div className="p-10 text-center text-sm text-muted-foreground">불러오는 중...</div>;
+  }
+  if (!data?.answer) {
+    return (
+      <div className="p-10 text-center text-sm text-muted-foreground">
+        없는 결이야.
+      </div>
+    );
+  }
+
+  const a = data.answer as any;
+  const photos: string[] = a.photos ?? [];
+
+  return (
+    <main className="min-h-screen">
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex items-center justify-between">
+        <button onClick={() => navigate({ to: "/grid" })} className="text-sm text-muted-foreground">
+          ← 뒤로
+        </button>
+        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">결</span>
+        <span className="w-10" />
+      </header>
+
+      <section className="px-6 py-6">
+        <div className="mb-5">
+          <span className="text-[11px] uppercase tracking-widest text-accent">
+            {a.questions?.category}
+          </span>
+          <h2 className="font-serif text-2xl mt-1 leading-snug text-balance">
+            {a.questions?.text}
+          </h2>
+          <p className="text-[12px] text-muted-foreground mt-2">
+            @{a.profiles?.handle ?? "anon"}
+          </p>
+        </div>
+
+        <div className="relative">
+          <img
+            src={photos[idx]}
+            alt=""
+            className="w-full aspect-square object-cover rounded-2xl border border-border"
+          />
+          {photos.length > 1 && (
+            <>
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2">
+                <button
+                  onClick={() => setIdx((i) => (i - 1 + photos.length) % photos.length)}
+                  className="size-9 rounded-full bg-background/80 backdrop-blur grid place-items-center"
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={() => setIdx((i) => (i + 1) % photos.length)}
+                  className="size-9 rounded-full bg-background/80 backdrop-blur grid place-items-center"
+                >
+                  ›
+                </button>
+              </div>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {photos.map((_, i) => (
+                  <span
+                    key={i}
+                    className={
+                      "size-1.5 rounded-full transition-colors " +
+                      (i === idx ? "bg-foreground" : "bg-foreground/30")
+                    }
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      <section className="px-6 pb-10">
+        <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
+          댓글 {data.comments.length}
+        </h3>
+
+        <ul className="space-y-3 mb-5">
+          {data.comments.length === 0 && (
+            <p className="text-sm text-muted-foreground">아직 댓글이 없어. 첫 마음을 남겨봐.</p>
+          )}
+          {data.comments.map((c: any) => (
+            <li key={c.id} className="flex gap-3">
+              <div className="flex-1">
+                <p className="text-[12px] text-muted-foreground">
+                  @{c.profiles?.handle ?? "anon"}
+                </p>
+                <p className="text-[14px] text-foreground mt-0.5 whitespace-pre-wrap break-words">
+                  {c.body}
+                </p>
+              </div>
+              {data.me === c.user_id && (
+                <button
+                  onClick={() => delComment.mutate(c.id)}
+                  className="text-[11px] text-muted-foreground self-start"
+                >
+                  삭제
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex gap-2 items-end border-t border-border pt-4">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value.slice(0, 300))}
+            rows={2}
+            placeholder="너의 마음을 한 줄로"
+            className="flex-1 bg-transparent outline-none resize-none text-[14px] placeholder:text-muted-foreground"
+          />
+          <button
+            onClick={() => body.trim() && addComment.mutate(body.trim())}
+            disabled={!body.trim() || addComment.isPending}
+            className="text-xs bg-foreground text-background px-4 py-2 rounded-md disabled:opacity-40"
+          >
+            남기기
+          </button>
+        </div>
+      </section>
+    </main>
+  );
+}
