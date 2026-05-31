@@ -98,13 +98,7 @@ function AnswerPage() {
         )}
 
         {!preview ? (
-          <label className="block cursor-pointer">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={onFile}
-              className="hidden"
-            />
+          <button type="button" onClick={choosePhoto} className="block w-full text-left">
             <div className="w-full aspect-square bg-surface border border-border rounded-2xl grid place-items-center">
               <div className="text-center">
                 <div className="text-2xl mb-2">＋</div>
@@ -116,7 +110,7 @@ function AnswerPage() {
                 </p>
               </div>
             </div>
-          </label>
+          </button>
         ) : (
           <div className="relative">
             <img
@@ -124,15 +118,13 @@ function AnswerPage() {
               alt=""
               className="w-full aspect-square object-cover rounded-2xl border border-border"
             />
-            <label className="absolute bottom-3 right-3 cursor-pointer bg-background/85 backdrop-blur text-[11px] uppercase tracking-widest border border-border rounded-full px-3 py-1.5">
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={onFile}
-                className="hidden"
-              />
+            <button
+              type="button"
+              onClick={choosePhoto}
+              className="absolute bottom-3 right-3 bg-background/85 backdrop-blur text-[11px] uppercase tracking-widest border border-border rounded-full px-3 py-1.5"
+            >
               다시 고르기
-            </label>
+            </button>
           </div>
         )}
 
