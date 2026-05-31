@@ -145,7 +145,14 @@ function AnswerDetailPage() {
         </button>
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">결</span>
         {data.me === a.user_id ? (
-          <span className="w-10" />
+          <Link
+            to="/answer-edit/$answerId"
+            params={{ answerId }}
+            aria-label="수정하기"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="size-4" strokeWidth={1.5} />
+          </Link>
         ) : (
           <button
             onClick={() => setReportOpen(true)}
@@ -155,6 +162,7 @@ function AnswerDetailPage() {
             <Flag className="size-4" strokeWidth={1.5} />
           </button>
         )}
+
       </header>
 
       <section className="px-6 py-6">
