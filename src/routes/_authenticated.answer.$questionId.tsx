@@ -67,11 +67,11 @@ function AnswerPage() {
     try {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
+      const cleaned = await stripExifMany(files);
       const urls: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const f = files[i];
-        const ext = f.name.split(".").pop()?.toLowerCase() ?? "jpg";
-        const path = `${uid}/${questionId}-${Date.now()}-${i}.${ext}`;
+      for (let i = 0; i < cleaned.length; i++) {
+        const f = cleaned[i];
+        const path = `${uid}/${questionId}-${Date.now()}-${i}.jpg`;
         const { error: upErr } = await supabase.storage
           .from("answers")
           .upload(path, f, { upsert: true, contentType: f.type });
@@ -90,6 +90,7 @@ function AnswerPage() {
         { onConflict: "user_id,question_id" }
       );
       if (insErr) throw insErr;
+
 
       toast.success("결이 남았어요.");
       navigate({ to: "/me" });
