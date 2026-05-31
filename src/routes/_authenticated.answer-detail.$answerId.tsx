@@ -115,6 +115,26 @@ function AnswerDetailPage() {
 
   const a = data.answer as any;
   const photos: string[] = a.photos ?? [];
+  const isBlockedAuthor = !!blockedIds?.has(a.user_id);
+  const visibleComments = (data.comments as any[]).filter(
+    (c) => !blockedIds?.has(c.user_id),
+  );
+
+  if (isBlockedAuthor) {
+    return (
+      <main className="p-10 text-center text-sm text-muted-foreground">
+        차단한 사용자의 결이에요.
+        <div>
+          <button
+            onClick={() => navigate({ to: "/feed" })}
+            className="mt-4 text-xs text-accent underline underline-offset-4"
+          >
+            홈으로 돌아가기
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen">
@@ -123,7 +143,17 @@ function AnswerDetailPage() {
           ← 뒤로
         </button>
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">결</span>
-        <span className="w-10" />
+        {data.me === a.user_id ? (
+          <span className="w-10" />
+        ) : (
+          <button
+            onClick={() => setReportOpen(true)}
+            aria-label="신고하기"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Flag className="size-4" strokeWidth={1.5} />
+          </button>
+        )}
       </header>
 
       <section className="px-6 py-6">
