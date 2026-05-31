@@ -21,6 +21,7 @@ import { Route as AuthenticatedQuestionQuestionIdRouteImport } from './routes/_a
 import { Route as AuthenticatedMeEditRouteImport } from './routes/_authenticated.me.edit'
 import { Route as AuthenticatedAnswerQuestionIdRouteImport } from './routes/_authenticated.answer.$questionId'
 import { Route as AuthenticatedAnswerDetailAnswerIdRouteImport } from './routes/_authenticated.answer-detail.$answerId'
+import { Route as AuthenticatedUHandleRouteImport } from './routes/_authenticated.u.$handle'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -311,13 +312,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
