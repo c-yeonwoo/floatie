@@ -3,23 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { stripExifMany } from "@/lib/image-utils";
-
-const MAX_PHOTOS = 6;
+import { stripExifAndCompress } from "@/lib/image-utils";
 
 export const Route = createFileRoute("/_authenticated/answer-edit/$answerId")({
   head: () => ({ meta: [{ title: "결 수정 — 결" }] }),
   component: AnswerEditPage,
 });
 
-type Slot =
-  | { kind: "existing"; url: string }
-  | { kind: "new"; file: File; preview: string };
-
 function AnswerEditPage() {
   const { answerId } = Route.useParams();
   const navigate = useNavigate();
-  const [slots, setSlots] = useState<Slot[]>([]);
+  const [existingUrl, setExistingUrl] = useState<string | null>(null);
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [newPreview, setNewPreview] = useState<string | null>(null);
+  const [originalUrls, setOriginalUrls] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -43,93 +40,60 @@ function AnswerEditPage() {
 
   useEffect(() => {
     if (!a) return;
-    setSlots((a.photos as string[]).map((url) => ({ kind: "existing", url })));
+    const photos: string[] = a.photos ?? [];
+    setOriginalUrls(photos);
+    setExistingUrl(photos[0] ?? null);
     setVisibility(a.visibility === "private" ? "private" : "public");
   }, [a]);
 
-  const addFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const incoming = Array.from(e.target.files ?? []);
-    if (incoming.length === 0) return;
-    const valid: File[] = [];
-    for (const f of incoming) {
-      if (f.size > 10 * 1024 * 1024) {
-        toast.error(`${f.name}: 10MB 이하만 가능해요`);
-        continue;
-      }
-      if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
-        toast.error(`${f.name}: jpg, png, webp만 가능해요`);
-        continue;
-      }
-      valid.push(f);
-    }
-    const remaining = MAX_PHOTOS - slots.length;
-    const next: Slot[] = valid.slice(0, remaining).map((f) => ({
-      kind: "new",
-      file: f,
-      preview: URL.createObjectURL(f),
-    }));
-    setSlots([...slots, ...next]);
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
     e.target.value = "";
-  };
-
-  const removeAt = (i: number) => {
-    setSlots(slots.filter((_, idx) => idx !== i));
-  };
-
-  const move = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
-    if (j < 0 || j >= slots.length) return;
-    const copy = [...slots];
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-    setSlots(copy);
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) {
+      toast.error("10MB 이하만 가능해요");
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
+      toast.error("jpg, png, webp만 가능해요");
+      return;
+    }
+    if (newPreview) URL.revokeObjectURL(newPreview);
+    setNewFile(f);
+    setNewPreview(URL.createObjectURL(f));
   };
 
   const onSave = async () => {
     if (!a || !isOwner) return;
-    if (slots.length === 0) return toast.error("사진을 최소 한 장은 남겨주세요.");
+    if (!existingUrl && !newFile) return toast.error("사진을 선택해 주세요.");
     setSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
 
-      // Upload new files first
-      const newFiles = slots
-        .filter((s): s is Extract<Slot, { kind: "new" }> => s.kind === "new")
-        .map((s) => s.file);
-      const cleaned = await stripExifMany(newFiles);
-      const newUrls: string[] = [];
-      for (let i = 0; i < cleaned.length; i++) {
-        const f = cleaned[i];
-        const path = `${uid}/${a.id}-edit-${Date.now()}-${i}.jpg`;
+      let finalUrl = existingUrl as string;
+      if (newFile) {
+        const cleaned = await stripExifAndCompress(newFile);
+        const path = `${uid}/${a.id}-edit-${Date.now()}.jpg`;
         const { error: upErr } = await supabase.storage
           .from("answers")
-          .upload(path, f, { upsert: true, contentType: f.type });
+          .upload(path, cleaned, { upsert: true, contentType: cleaned.type });
         if (upErr) throw upErr;
         const { data: pub } = supabase.storage.from("answers").getPublicUrl(path);
-        newUrls.push(pub.publicUrl);
+        finalUrl = pub.publicUrl;
       }
-
-      // Build final ordered URL list, then delete removed-existing files
-      let newUrlIdx = 0;
-      const finalUrls = slots.map((s) =>
-        s.kind === "existing" ? s.url : newUrls[newUrlIdx++],
-      );
-
-      const originalUrls: string[] = a.photos ?? [];
-      const keptSet = new Set(
-        slots.filter((s) => s.kind === "existing").map((s) => (s as any).url),
-      );
-      const removedPaths = originalUrls
-        .filter((u) => !keptSet.has(u))
-        .map((u) => u.replace(/^.*\/storage\/v1\/object\/public\/answers\//, ""))
-        .filter((p) => p.length > 0 && !p.startsWith("http"));
 
       const { error: updErr } = await supabase
         .from("answers")
-        .update({ photos: finalUrls, visibility })
+        .update({ photos: [finalUrl], visibility })
         .eq("id", a.id);
       if (updErr) throw updErr;
 
+      // Remove old files that are no longer used
+      const removedPaths = originalUrls
+        .filter((u) => u !== finalUrl)
+        .map((u) => u.replace(/^.*\/storage\/v1\/object\/public\/answers\//, ""))
+        .filter((p) => p.length > 0 && !p.startsWith("http"));
       if (removedPaths.length > 0) {
         await supabase.storage.from("answers").remove(removedPaths);
       }
@@ -172,6 +136,8 @@ function AnswerEditPage() {
     );
   }
 
+  const displayUrl = newPreview ?? existingUrl;
+
   return (
     <main className="min-h-screen">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex items-center justify-between">
@@ -185,7 +151,7 @@ function AnswerEditPage() {
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">결 수정</span>
         <button
           onClick={onSave}
-          disabled={saving || slots.length === 0}
+          disabled={saving || (!existingUrl && !newFile)}
           className="text-sm font-medium text-accent disabled:opacity-40"
         >
           {saving ? "저장 중..." : "저장"}
@@ -202,73 +168,44 @@ function AnswerEditPage() {
           </h2>
         </div>
 
-        <p className="text-[11px] text-muted-foreground mb-3">
-          첫 번째 사진이 대표 이미지로 보여요. 화살표로 순서를 바꿀 수 있어요.
-        </p>
+        {originalUrls.length > 1 && (
+          <p className="text-[11px] text-muted-foreground mb-3">
+            이 결은 여러 장이었어요. 저장하면 한 장으로 정리됩니다.
+          </p>
+        )}
 
-        <div className="grid grid-cols-2 gap-3">
-          {slots.map((s, i) => (
-            <div key={i} className="relative aspect-square">
-              <img
-                src={s.kind === "existing" ? s.url : s.preview}
-                alt=""
-                className="w-full h-full object-cover rounded-xl border border-border"
-              />
-              {i === 0 && (
-                <span className="absolute top-2 left-2 text-[10px] bg-foreground text-background px-2 py-0.5 rounded-full">
-                  대표
-                </span>
-              )}
-              <button
-                onClick={() => removeAt(i)}
-                aria-label="제거"
-                className="absolute top-2 right-2 size-7 rounded-full bg-background/85 text-foreground text-sm grid place-items-center border border-border"
-              >
-                ×
-              </button>
-              <div className="absolute bottom-2 left-2 right-2 flex justify-between">
-                <button
-                  onClick={() => move(i, -1)}
-                  disabled={i === 0}
-                  className="size-7 rounded-full bg-background/85 border border-border text-sm disabled:opacity-30"
-                  aria-label="앞으로"
-                >
-                  ‹
-                </button>
-                <button
-                  onClick={() => move(i, 1)}
-                  disabled={i === slots.length - 1}
-                  className="size-7 rounded-full bg-background/85 border border-border text-sm disabled:opacity-30"
-                  aria-label="뒤로"
-                >
-                  ›
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {slots.length < MAX_PHOTOS && (
-            <label className="aspect-square bg-surface border border-dashed border-border rounded-xl grid place-items-center cursor-pointer">
+        {displayUrl ? (
+          <div className="relative">
+            <img
+              src={displayUrl}
+              alt=""
+              className="w-full aspect-square object-cover rounded-2xl border border-border"
+            />
+            <label className="absolute bottom-3 right-3 cursor-pointer bg-background/85 backdrop-blur text-[11px] uppercase tracking-widest border border-border rounded-full px-3 py-1.5">
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                multiple
-                onChange={addFiles}
+                onChange={onPick}
                 className="hidden"
               />
-              <div className="text-center">
-                <div className="text-2xl text-muted-foreground">＋</div>
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  사진 추가
-                </span>
-              </div>
+              다시 고르기
             </label>
-          )}
-        </div>
-
-        <p className="text-[11px] text-muted-foreground mt-2 text-right">
-          {slots.length} / {MAX_PHOTOS}
-        </p>
+          </div>
+        ) : (
+          <label className="block cursor-pointer">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={onPick}
+              className="hidden"
+            />
+            <div className="w-full aspect-square bg-surface border border-dashed border-border rounded-2xl grid place-items-center">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                사진 고르기
+              </span>
+            </div>
+          </label>
+        )}
 
         <div className="flex gap-2 mt-8">
           <button
