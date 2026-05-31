@@ -88,15 +88,24 @@ function GridPage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          탐색
-        </span>
-        <h2 className="font-serif text-xl mt-1 leading-snug">
-          {data?.hasPersona
-            ? "결이 닿는 기록들"
-            : "다른 분들의 결을 만나보세요"}
-        </h2>
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex items-end justify-between gap-3">
+        <div>
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            탐색
+          </span>
+          <h2 className="font-serif text-xl mt-1 leading-snug">
+            {data?.hasPersona
+              ? "결이 닿는 기록들"
+              : "다른 분들의 결을 만나보세요"}
+          </h2>
+        </div>
+        <Link
+          to="/notifications"
+          aria-label="알림"
+          className="p-2 -m-2 text-muted-foreground hover:text-foreground"
+        >
+          <Bell className="size-5" strokeWidth={1.5} />
+        </Link>
       </header>
 
       <section className="px-4 py-6 space-y-10">
