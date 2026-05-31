@@ -18,6 +18,8 @@ function AnswerDetailPage() {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
   const [idx, setIdx] = useState(0);
+  const [reportOpen, setReportOpen] = useState(false);
+  const { data: blockedIds } = useBlockedIds();
 
   const { data, isLoading } = useQuery({
     queryKey: ["answer-detail", answerId],
