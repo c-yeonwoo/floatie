@@ -74,8 +74,11 @@ function FeedPage() {
         .order("created_at", { ascending: false })
         .limit(200);
 
+      const blocked = blockedIds ?? new Set<string>();
       const now = Date.now();
-      const scored = (answers ?? []).map((a: any) => {
+      const scored = (answers ?? [])
+        .filter((a: any) => !blocked.has(a.user_id))
+        .map((a: any) => {
         const isFollow = followedSet.has(a.user_id);
         const isPeer = peerSet.has(a.user_id);
         const ageHours = (now - new Date(a.created_at).getTime()) / 36e5;
