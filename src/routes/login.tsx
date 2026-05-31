@@ -21,25 +21,36 @@ function LoginPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [confirmSent, setConfirmSent] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (mode === "signup" && !agreed) {
+      toast.error("이용약관과 개인정보 처리방침에 동의해 주세요.");
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: window.location.origin + "/home" },
         });
         if (error) throw error;
+        if (!data.session) {
+          setConfirmSent(true);
+          return;
+        }
         toast.success("가입이 완료되었어요. 결을 만들러 가볼까요?");
+        navigate({ to: "/home" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        navigate({ to: "/home" });
       }
-      navigate({ to: "/home" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "다시 시도해 주세요.");
     } finally {
@@ -48,6 +59,10 @@ function LoginPage() {
   };
 
   const onGoogle = async () => {
+    if (mode === "signup" && !agreed) {
+      toast.error("이용약관과 개인정보 처리방침에 동의해 주세요.");
+      return;
+    }
     setLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
@@ -59,6 +74,32 @@ function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (confirmSent) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="w-full max-w-sm text-center">
+          <h1 className="font-serif text-3xl mb-4">메일을 보냈어요</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            <span className="text-foreground">{email}</span> 으로 인증 메일을
+            보냈어요. 메일에 있는 링크를 눌러 가입을 마무리해 주세요.
+          </p>
+          <p className="text-[12px] text-muted-foreground mt-6">
+            메일이 안 보이면 스팸함을 확인해 주세요.
+          </p>
+          <button
+            onClick={() => {
+              setConfirmSent(false);
+              setMode("signin");
+            }}
+            className="mt-8 text-[11px] uppercase tracking-widest text-accent underline underline-offset-4"
+          >
+            로그인 화면으로
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center px-6">
@@ -90,6 +131,28 @@ function LoginPage() {
               className="mt-1 w-full bg-transparent border-b border-border py-2 outline-none focus:border-foreground transition-colors"
             />
           </div>
+
+          {mode === "signup" && (
+            <label className="flex items-start gap-2 pt-2 text-[12px] text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 accent-foreground"
+              />
+              <span>
+                <Link to="/terms" className="text-foreground underline underline-offset-4">
+                  이용약관
+                </Link>
+                {" 및 "}
+                <Link to="/privacy" className="text-foreground underline underline-offset-4">
+                  개인정보 처리방침
+                </Link>
+                에 동의합니다.
+              </span>
+            </label>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -123,6 +186,12 @@ function LoginPage() {
           >
             {mode === "signin" ? "가입하기" : "로그인하기"}
           </button>
+        </p>
+
+        <p className="mt-6 text-center text-[10px] text-muted-foreground">
+          <Link to="/terms" className="hover:text-foreground">이용약관</Link>
+          {" · "}
+          <Link to="/privacy" className="hover:text-foreground">개인정보 처리방침</Link>
         </p>
       </div>
     </main>
