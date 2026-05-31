@@ -225,6 +225,15 @@ function MePage() {
           </div>
         )}
       </section>
+
+      <section className="px-6 mt-10 mb-12 text-center">
+        <Link
+          to="/me/blocked"
+          className="text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
+        >
+          차단 목록 관리
+        </Link>
+      </section>
     </main>
   );
 }

@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Flag, Ban } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ReportDialog } from "@/components/report-dialog";
 
 export const Route = createFileRoute("/_authenticated/u/$handle")({
   head: ({ params }) => ({ meta: [{ title: `@${params.handle} — 결` }] }),
@@ -12,6 +15,8 @@ function UserProfilePage() {
   const { handle } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-profile", handle],
@@ -26,7 +31,7 @@ function UserProfilePage() {
         .maybeSingle();
       if (!profile) return { me, profile: null, answers: [], counts: { followers: 0, following: 0 }, isFollowing: false, isMe: false };
 
-      const [{ data: answers }, { count: followers }, { count: following }, { data: myFollow }] =
+      const [{ data: answers }, { count: followers }, { count: following }, { data: myFollow }, { data: myBlock }] =
         await Promise.all([
           supabase
             .from("answers")
@@ -50,6 +55,14 @@ function UserProfilePage() {
                 .eq("following_id", profile.id)
                 .maybeSingle()
             : Promise.resolve({ data: null } as any),
+          me
+            ? supabase
+                .from("blocks")
+                .select("blocked_id")
+                .eq("blocker_id", me)
+                .eq("blocked_id", profile.id)
+                .maybeSingle()
+            : Promise.resolve({ data: null } as any),
         ]);
 
       return {
@@ -58,6 +71,7 @@ function UserProfilePage() {
         answers: answers ?? [],
         counts: { followers: followers ?? 0, following: following ?? 0 },
         isFollowing: !!myFollow,
+        isBlocked: !!myBlock,
         isMe: me === profile.id,
       };
     },
@@ -83,6 +97,40 @@ function UserProfilePage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["user-profile", handle] });
       qc.invalidateQueries({ queryKey: ["my-gyeol"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "다시 시도해 주세요."),
+  });
+
+  const toggleBlock = useMutation({
+    mutationFn: async () => {
+      if (!data?.me || !data.profile) throw new Error("로그인이 필요해요.");
+      if (data.isBlocked) {
+        const { error } = await supabase
+          .from("blocks")
+          .delete()
+          .eq("blocker_id", data.me)
+          .eq("blocked_id", data.profile.id);
+        if (error) throw error;
+      } else {
+        // Unfollow both directions on block
+        await supabase
+          .from("follows")
+          .delete()
+          .or(
+            `and(follower_id.eq.${data.me},following_id.eq.${data.profile.id}),and(follower_id.eq.${data.profile.id},following_id.eq.${data.me})`,
+          );
+        const { error } = await supabase
+          .from("blocks")
+          .insert({ blocker_id: data.me, blocked_id: data.profile.id });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(data?.isBlocked ? "차단을 해제했어요." : "차단했어요.");
+      qc.invalidateQueries({ queryKey: ["user-profile", handle] });
+      qc.invalidateQueries({ queryKey: ["blocked-ids"] });
+      qc.invalidateQueries({ queryKey: ["home-feed"] });
+      qc.invalidateQueries({ queryKey: ["explore-questions"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "다시 시도해 주세요."),
   });
@@ -120,7 +168,30 @@ function UserProfilePage() {
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
           @{p.handle}
         </span>
-        <span className="w-6" />
+        {data.isMe ? (
+          <span className="w-6" />
+        ) : (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setReportOpen(true)}
+              aria-label="신고하기"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Flag className="size-4" strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={() => toggleBlock.mutate()}
+              disabled={toggleBlock.isPending}
+              aria-label={data.isBlocked ? "차단 해제" : "차단"}
+              className={
+                "hover:text-foreground " +
+                (data.isBlocked ? "text-destructive" : "text-muted-foreground")
+              }
+            >
+              <Ban className="size-4" strokeWidth={1.5} />
+            </button>
+          </div>
+        )}
       </header>
 
       <section className="px-6 py-10 flex flex-col items-center text-center">
@@ -178,7 +249,19 @@ function UserProfilePage() {
       </section>
 
       <section className="px-6">
-        {data.answers.length === 0 ? (
+        {data.isBlocked ? (
+          <div className="text-center py-10">
+            <p className="text-sm text-muted-foreground">
+              차단한 사용자예요. 결을 보지 않으려면 차단을 유지하세요.
+            </p>
+            <button
+              onClick={() => toggleBlock.mutate()}
+              className="mt-3 text-xs text-accent underline underline-offset-4"
+            >
+              차단 해제
+            </button>
+          </div>
+        ) : data.answers.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">
             아직 공개된 기록이 없어요.
           </p>
@@ -201,6 +284,12 @@ function UserProfilePage() {
           </div>
         )}
       </section>
+
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        target={{ type: "user", userId: p.id }}
+      />
     </main>
   );
 }

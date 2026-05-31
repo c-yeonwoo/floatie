@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Heart } from "lucide-react";
+import { Heart, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ReportDialog } from "@/components/report-dialog";
+import { useBlockedIds } from "@/lib/blocks";
 
 export const Route = createFileRoute("/_authenticated/answer-detail/$answerId")({
   head: () => ({ meta: [{ title: "결 — 결" }] }),
@@ -16,6 +18,8 @@ function AnswerDetailPage() {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
   const [idx, setIdx] = useState(0);
+  const [reportOpen, setReportOpen] = useState(false);
+  const { data: blockedIds } = useBlockedIds();
 
   const { data, isLoading } = useQuery({
     queryKey: ["answer-detail", answerId],
@@ -111,6 +115,26 @@ function AnswerDetailPage() {
 
   const a = data.answer as any;
   const photos: string[] = a.photos ?? [];
+  const isBlockedAuthor = !!blockedIds?.has(a.user_id);
+  const visibleComments = (data.comments as any[]).filter(
+    (c) => !blockedIds?.has(c.user_id),
+  );
+
+  if (isBlockedAuthor) {
+    return (
+      <main className="p-10 text-center text-sm text-muted-foreground">
+        차단한 사용자의 결이에요.
+        <div>
+          <button
+            onClick={() => navigate({ to: "/feed" })}
+            className="mt-4 text-xs text-accent underline underline-offset-4"
+          >
+            홈으로 돌아가기
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen">
@@ -119,7 +143,17 @@ function AnswerDetailPage() {
           ← 뒤로
         </button>
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">결</span>
-        <span className="w-10" />
+        {data.me === a.user_id ? (
+          <span className="w-10" />
+        ) : (
+          <button
+            onClick={() => setReportOpen(true)}
+            aria-label="신고하기"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Flag className="size-4" strokeWidth={1.5} />
+          </button>
+        )}
       </header>
 
       <section className="px-6 py-6">
@@ -190,15 +224,15 @@ function AnswerDetailPage() {
 
       <section className="px-6 pb-10">
         <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
-          댓글 {data.comments.length}
+          댓글 {visibleComments.length}
         </h3>
 
 
         <ul className="space-y-3 mb-5">
-          {data.comments.length === 0 && (
+          {visibleComments.length === 0 && (
             <p className="text-sm text-muted-foreground">아직 댓글이 없어요. 첫 마음을 남겨보세요.</p>
           )}
-          {data.comments.map((c: any) => (
+          {visibleComments.map((c: any) => (
             <li key={c.id} className="flex gap-3">
               <div className="flex-1">
                 <p className="text-[12px] text-muted-foreground">
@@ -237,6 +271,12 @@ function AnswerDetailPage() {
           </button>
         </div>
       </section>
+
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        target={{ type: "answer", answerId: Number(answerId) }}
+      />
     </main>
   );
 }

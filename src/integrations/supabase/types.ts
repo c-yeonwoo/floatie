@@ -56,6 +56,24 @@ export type Database = {
           },
         ]
       }
+      blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           answer_id: number
@@ -274,6 +292,42 @@ export type Database = {
           source?: string | null
           text?: string
           tone?: string | null
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: number
+          reason: string
+          reporter_id: string
+          target_answer_id: number | null
+          target_comment_id: number | null
+          target_type: string
+          target_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: number
+          reason: string
+          reporter_id: string
+          target_answer_id?: number | null
+          target_comment_id?: number | null
+          target_type: string
+          target_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: number
+          reason?: string
+          reporter_id?: string
+          target_answer_id?: number | null
+          target_comment_id?: number | null
+          target_type?: string
+          target_user_id?: string | null
         }
         Relationships: []
       }

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBlockedIds } from "@/lib/blocks";
 
 export const Route = createFileRoute("/_authenticated/grid")({
   head: () => ({ meta: [{ title: "탐색 — 결" }] }),
@@ -17,19 +18,22 @@ type QCard = {
 };
 
 function GridPage() {
+  const { data: blockedIds } = useBlockedIds();
   const { data, isLoading } = useQuery({
-    queryKey: ["explore-questions"],
+    queryKey: ["explore-questions", Array.from(blockedIds ?? []).sort().join(",")],
     queryFn: async (): Promise<QCard[]> => {
       const { data: answers } = await supabase
         .from("answers")
-        .select("question_id, photos, created_at, questions(id, text, category)")
+        .select("question_id, user_id, photos, created_at, questions(id, text, category)")
         .eq("visibility", "public")
         .order("created_at", { ascending: false })
         .limit(500);
 
+      const blocked = blockedIds ?? new Set<string>();
       const map = new Map<number, QCard>();
       for (const a of (answers ?? []) as any[]) {
         if (!a.questions) continue;
+        if (blocked.has(a.user_id)) continue;
         const qid = a.questions.id as number;
         const existing = map.get(qid);
         const cover: string | undefined = a.photos?.[0];

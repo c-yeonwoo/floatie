@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBlockedIds } from "@/lib/blocks";
 
 export const Route = createFileRoute("/_authenticated/feed")({
   head: () => ({ meta: [{ title: "홈 — 결" }] }),
@@ -32,8 +33,9 @@ type PromptItem = {
 type FeedItem = AnswerItem | PromptItem;
 
 function FeedPage() {
+  const { data: blockedIds } = useBlockedIds();
   const { data, isLoading } = useQuery({
-    queryKey: ["home-feed"],
+    queryKey: ["home-feed", Array.from(blockedIds ?? []).sort().join(",")],
     queryFn: async (): Promise<FeedItem[]> => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
@@ -72,8 +74,11 @@ function FeedPage() {
         .order("created_at", { ascending: false })
         .limit(200);
 
+      const blocked = blockedIds ?? new Set<string>();
       const now = Date.now();
-      const scored = (answers ?? []).map((a: any) => {
+      const scored = (answers ?? [])
+        .filter((a: any) => !blocked.has(a.user_id))
+        .map((a: any) => {
         const isFollow = followedSet.has(a.user_id);
         const isPeer = peerSet.has(a.user_id);
         const ageHours = (now - new Date(a.created_at).getTime()) / 36e5;

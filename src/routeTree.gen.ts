@@ -21,6 +21,7 @@ import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedUHandleRouteImport } from './routes/_authenticated.u.$handle'
 import { Route as AuthenticatedQuestionQuestionIdRouteImport } from './routes/_authenticated.question.$questionId'
 import { Route as AuthenticatedMeEditRouteImport } from './routes/_authenticated.me.edit'
+import { Route as AuthenticatedMeBlockedRouteImport } from './routes/_authenticated.me.blocked'
 import { Route as AuthenticatedAnswerQuestionIdRouteImport } from './routes/_authenticated.answer.$questionId'
 import { Route as AuthenticatedAnswerDetailAnswerIdRouteImport } from './routes/_authenticated.answer-detail.$answerId'
 import { Route as AuthenticatedUHandleFollowingRouteImport } from './routes/_authenticated.u.$handle.following'
@@ -87,6 +88,11 @@ const AuthenticatedMeEditRoute = AuthenticatedMeEditRouteImport.update({
   path: '/edit',
   getParentRoute: () => AuthenticatedMeRoute,
 } as any)
+const AuthenticatedMeBlockedRoute = AuthenticatedMeBlockedRouteImport.update({
+  id: '/blocked',
+  path: '/blocked',
+  getParentRoute: () => AuthenticatedMeRoute,
+} as any)
 const AuthenticatedAnswerQuestionIdRoute =
   AuthenticatedAnswerQuestionIdRouteImport.update({
     id: '/answer/$questionId',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
   '/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
   '/u/$handle': typeof AuthenticatedUHandleRouteWithChildren
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
   '/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
   '/u/$handle': typeof AuthenticatedUHandleRouteWithChildren
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/_authenticated/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/_authenticated/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/_authenticated/me/edit': typeof AuthenticatedMeEditRoute
   '/_authenticated/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
   '/_authenticated/u/$handle': typeof AuthenticatedUHandleRouteWithChildren
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/answer-detail/$answerId'
     | '/answer/$questionId'
+    | '/me/blocked'
     | '/me/edit'
     | '/question/$questionId'
     | '/u/$handle'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/answer-detail/$answerId'
     | '/answer/$questionId'
+    | '/me/blocked'
     | '/me/edit'
     | '/question/$questionId'
     | '/u/$handle'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notifications'
     | '/_authenticated/answer-detail/$answerId'
     | '/_authenticated/answer/$questionId'
+    | '/_authenticated/me/blocked'
     | '/_authenticated/me/edit'
     | '/_authenticated/question/$questionId'
     | '/_authenticated/u/$handle'
@@ -312,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeEditRouteImport
       parentRoute: typeof AuthenticatedMeRoute
     }
+    '/_authenticated/me/blocked': {
+      id: '/_authenticated/me/blocked'
+      path: '/blocked'
+      fullPath: '/me/blocked'
+      preLoaderRoute: typeof AuthenticatedMeBlockedRouteImport
+      parentRoute: typeof AuthenticatedMeRoute
+    }
     '/_authenticated/answer/$questionId': {
       id: '/_authenticated/answer/$questionId'
       path: '/answer/$questionId'
@@ -344,10 +363,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedMeRouteChildren {
+  AuthenticatedMeBlockedRoute: typeof AuthenticatedMeBlockedRoute
   AuthenticatedMeEditRoute: typeof AuthenticatedMeEditRoute
 }
 
 const AuthenticatedMeRouteChildren: AuthenticatedMeRouteChildren = {
+  AuthenticatedMeBlockedRoute: AuthenticatedMeBlockedRoute,
   AuthenticatedMeEditRoute: AuthenticatedMeEditRoute,
 }
 
