@@ -31,7 +31,7 @@ function UserProfilePage() {
         .maybeSingle();
       if (!profile) return { me, profile: null, answers: [], counts: { followers: 0, following: 0 }, isFollowing: false, isMe: false };
 
-      const [{ data: answers }, { count: followers }, { count: following }, { data: myFollow }] =
+      const [{ data: answers }, { count: followers }, { count: following }, { data: myFollow }, { data: myBlock }] =
         await Promise.all([
           supabase
             .from("answers")
@@ -55,6 +55,14 @@ function UserProfilePage() {
                 .eq("following_id", profile.id)
                 .maybeSingle()
             : Promise.resolve({ data: null } as any),
+          me
+            ? supabase
+                .from("blocks")
+                .select("blocked_id")
+                .eq("blocker_id", me)
+                .eq("blocked_id", profile.id)
+                .maybeSingle()
+            : Promise.resolve({ data: null } as any),
         ]);
 
       return {
@@ -63,6 +71,7 @@ function UserProfilePage() {
         answers: answers ?? [],
         counts: { followers: followers ?? 0, following: following ?? 0 },
         isFollowing: !!myFollow,
+        isBlocked: !!myBlock,
         isMe: me === profile.id,
       };
     },
