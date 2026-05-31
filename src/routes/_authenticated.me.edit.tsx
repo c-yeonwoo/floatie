@@ -76,8 +76,29 @@ function EditProfilePage() {
     if (bio.length > 160) return toast.error("한줄소개는 160자 이하로 입력해 주세요.");
     if (!profile?.uid) return;
 
+    const h = handle.trim().toLowerCase();
+    if (h) {
+      if (h.length < 3 || h.length > 20) return toast.error("핸들은 3~20자예요.");
+      if (!/^[a-z0-9_]+$/.test(h))
+        return toast.error("핸들은 영문 소문자/숫자/_만 가능해요.");
+    }
+
     setSaving(true);
     try {
+      if (h && h !== (profile.profile?.handle ?? "")) {
+        const { data: dup } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("handle", h)
+          .neq("id", profile.uid)
+          .maybeSingle();
+        if (dup) {
+          toast.error("이미 사용 중인 핸들이에요.");
+          setSaving(false);
+          return;
+        }
+      }
+
       let nextAvatarUrl = profile.profile?.avatar_url ?? null;
       if (avatarFile) {
         const cleaned = await stripExifAndCompress(avatarFile);
@@ -95,7 +116,8 @@ function EditProfilePage() {
         .from("profiles")
         .update({
           display_name: displayName.trim(),
-          handle: handle.trim() || null,
+          // Keep existing handle if user left it blank (preserves /u/handle URL)
+          ...(h ? { handle: h } : {}),
           bio: bio.trim() || null,
           gender: gender || null,
           avatar_url: nextAvatarUrl,

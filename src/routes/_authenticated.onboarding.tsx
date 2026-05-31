@@ -11,7 +11,6 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 function OnboardingPage() {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
-  const [handle, setHandle] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -21,7 +20,7 @@ function OnboardingPage() {
       if (!uid) return;
       const { data: prof } = await supabase
         .from("profiles")
-        .select("display_name, handle, onboarded")
+        .select("display_name, onboarded")
         .eq("id", uid)
         .maybeSingle();
       if (prof?.onboarded) {
@@ -31,43 +30,23 @@ function OnboardingPage() {
       if (prof?.display_name && !prof.display_name.startsWith("user_")) {
         setDisplayName(prof.display_name);
       }
-      if (prof?.handle && !prof.handle.startsWith("user_")) {
-        setHandle(prof.handle);
-      }
     })();
   }, [navigate]);
 
   const onSubmit = async () => {
     const name = displayName.trim();
-    const h = handle.trim().toLowerCase();
     if (!name) return toast.error("닉네임을 입력해 주세요.");
     if (name.length > 40) return toast.error("닉네임은 40자 이하예요.");
-    if (h.length < 3 || h.length > 20) return toast.error("핸들은 3~20자예요.");
-    if (!/^[a-z0-9_]+$/.test(h)) return toast.error("핸들은 영문 소문자/숫자/_만 가능해요.");
 
     setSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
 
-      // Check handle uniqueness
-      const { data: dup } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("handle", h)
-        .neq("id", uid)
-        .maybeSingle();
-      if (dup) {
-        toast.error("이미 사용 중인 핸들이에요.");
-        setSaving(false);
-        return;
-      }
-
       const { error } = await supabase
         .from("profiles")
         .update({
           display_name: name,
-          handle: h,
           onboarded: true,
         })
         .eq("id", uid);
@@ -104,24 +83,9 @@ function OnboardingPage() {
               placeholder="당신의 이름"
               className="mt-1 w-full bg-transparent border-b border-border py-2 outline-none focus:border-foreground"
             />
-          </div>
-
-          <div>
-            <label className="text-[11px] uppercase tracking-widest text-muted-foreground">
-              핸들 <span className="text-muted-foreground/60">(영문/숫자/_, 3~20자)</span>
-            </label>
-            <div className="flex items-baseline mt-1 border-b border-border focus-within:border-foreground">
-              <span className="text-muted-foreground">@</span>
-              <input
-                value={handle}
-                onChange={(e) =>
-                  setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
-                }
-                maxLength={20}
-                placeholder="your_handle"
-                className="flex-1 bg-transparent py-2 outline-none"
-              />
-            </div>
+            <p className="text-[11px] text-muted-foreground/70 mt-2">
+              언제든지 프로필에서 바꿀 수 있어요.
+            </p>
           </div>
 
           <button
