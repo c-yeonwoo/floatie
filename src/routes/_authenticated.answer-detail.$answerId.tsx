@@ -224,15 +224,15 @@ function AnswerDetailPage() {
 
       <section className="px-6 pb-10">
         <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
-          댓글 {data.comments.length}
+          댓글 {visibleComments.length}
         </h3>
 
 
         <ul className="space-y-3 mb-5">
-          {data.comments.length === 0 && (
+          {visibleComments.length === 0 && (
             <p className="text-sm text-muted-foreground">아직 댓글이 없어요. 첫 마음을 남겨보세요.</p>
           )}
-          {data.comments.map((c: any) => (
+          {visibleComments.map((c: any) => (
             <li key={c.id} className="flex gap-3">
               <div className="flex-1">
                 <p className="text-[12px] text-muted-foreground">
@@ -271,6 +271,12 @@ function AnswerDetailPage() {
           </button>
         </div>
       </section>
+
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        target={{ type: "answer", answerId: Number(answerId) }}
+      />
     </main>
   );
 }
