@@ -30,7 +30,7 @@ function TabBar({ pathname }: { pathname: string }) {
   const items: Array<{ to: "/feed" | "/grid" | "/home" | "/me"; label: string }> = [
     { to: "/feed", label: "홈" },
     { to: "/grid", label: "탐색" },
-    { to: "/home", label: "오늘" },
+    { to: "/home", label: "답하기" },
     { to: "/me", label: "나" },
   ];
   return (

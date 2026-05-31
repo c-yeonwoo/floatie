@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated.notifications'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated.me'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated.home'
 import { Route as AuthenticatedGridRouteImport } from './routes/_authenticated.grid'
@@ -39,6 +40,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedMeRoute = AuthenticatedMeRouteImport.update({
   id: '/me',
   path: '/me',
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/grid': typeof AuthenticatedGridRoute
   '/home': typeof AuthenticatedHomeRoute
   '/me': typeof AuthenticatedMeRouteWithChildren
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
@@ -129,6 +137,7 @@ export interface FileRoutesByTo {
   '/grid': typeof AuthenticatedGridRoute
   '/home': typeof AuthenticatedHomeRoute
   '/me': typeof AuthenticatedMeRouteWithChildren
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
@@ -147,6 +156,7 @@ export interface FileRoutesById {
   '/_authenticated/grid': typeof AuthenticatedGridRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/me': typeof AuthenticatedMeRouteWithChildren
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/_authenticated/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
   '/_authenticated/me/edit': typeof AuthenticatedMeEditRoute
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/grid'
     | '/home'
     | '/me'
+    | '/notifications'
     | '/answer-detail/$answerId'
     | '/answer/$questionId'
     | '/me/edit'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/grid'
     | '/home'
     | '/me'
+    | '/notifications'
     | '/answer-detail/$answerId'
     | '/answer/$questionId'
     | '/me/edit'
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
     | '/_authenticated/grid'
     | '/_authenticated/home'
     | '/_authenticated/me'
+    | '/_authenticated/notifications'
     | '/_authenticated/answer-detail/$answerId'
     | '/_authenticated/answer/$questionId'
     | '/_authenticated/me/edit'
@@ -235,6 +248,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/me': {
       id: '/_authenticated/me'
@@ -354,6 +374,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedGridRoute: typeof AuthenticatedGridRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedMeRoute: typeof AuthenticatedMeRouteWithChildren
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedAnswerDetailAnswerIdRoute: typeof AuthenticatedAnswerDetailAnswerIdRoute
   AuthenticatedAnswerQuestionIdRoute: typeof AuthenticatedAnswerQuestionIdRoute
   AuthenticatedQuestionQuestionIdRoute: typeof AuthenticatedQuestionQuestionIdRoute
@@ -366,6 +387,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedGridRoute: AuthenticatedGridRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedMeRoute: AuthenticatedMeRouteWithChildren,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedAnswerDetailAnswerIdRoute:
     AuthenticatedAnswerDetailAnswerIdRoute,
   AuthenticatedAnswerQuestionIdRoute: AuthenticatedAnswerQuestionIdRoute,

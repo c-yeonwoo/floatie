@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/feed")({
@@ -38,13 +39,22 @@ function FeedPage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          홈
-        </span>
-        <h2 className="font-serif text-xl mt-1 leading-snug">
-          팔로우하는 분들의 결
-        </h2>
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex items-end justify-between gap-3">
+        <div>
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            홈
+          </span>
+          <h2 className="font-serif text-xl mt-1 leading-snug">
+            팔로우하는 분들의 결
+          </h2>
+        </div>
+        <Link
+          to="/notifications"
+          aria-label="알림"
+          className="p-2 -m-2 text-muted-foreground hover:text-foreground"
+        >
+          <Bell className="size-5" strokeWidth={1.5} />
+        </Link>
       </header>
 
       <section className="px-4 py-6 space-y-10">

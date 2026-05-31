@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { generatePersonaRead } from "@/lib/persona.functions";
@@ -74,9 +75,18 @@ function MePage() {
     <main>
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex justify-between items-center">
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">내 결</span>
-        <button onClick={onLogout} className="text-[11px] text-muted-foreground hover:text-foreground">
-          로그아웃
-        </button>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/notifications"
+            aria-label="알림"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Bell className="size-5" strokeWidth={1.5} />
+          </Link>
+          <button onClick={onLogout} className="text-[11px] text-muted-foreground hover:text-foreground">
+            로그아웃
+          </button>
+        </div>
       </header>
 
       <section className="px-6 py-10 text-center flex flex-col items-center">
