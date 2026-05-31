@@ -48,7 +48,13 @@ function LoginPage() {
         navigate({ to: "/home" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          if (/confirm/i.test(error.message) || /not confirmed/i.test(error.message)) {
+            setConfirmSent(true);
+            return;
+          }
+          throw error;
+        }
         navigate({ to: "/home" });
       }
     } catch (err) {
