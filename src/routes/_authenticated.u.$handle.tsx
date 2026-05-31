@@ -16,6 +16,8 @@ function UserProfilePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  const [reportOpen, setReportOpen] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ["user-profile", handle],
     queryFn: async () => {
