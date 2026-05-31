@@ -101,6 +101,40 @@ function UserProfilePage() {
     onError: (e: any) => toast.error(e?.message ?? "다시 시도해 주세요."),
   });
 
+  const toggleBlock = useMutation({
+    mutationFn: async () => {
+      if (!data?.me || !data.profile) throw new Error("로그인이 필요해요.");
+      if (data.isBlocked) {
+        const { error } = await supabase
+          .from("blocks")
+          .delete()
+          .eq("blocker_id", data.me)
+          .eq("blocked_id", data.profile.id);
+        if (error) throw error;
+      } else {
+        // Unfollow both directions on block
+        await supabase
+          .from("follows")
+          .delete()
+          .or(
+            `and(follower_id.eq.${data.me},following_id.eq.${data.profile.id}),and(follower_id.eq.${data.profile.id},following_id.eq.${data.me})`,
+          );
+        const { error } = await supabase
+          .from("blocks")
+          .insert({ blocker_id: data.me, blocked_id: data.profile.id });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(data?.isBlocked ? "차단을 해제했어요." : "차단했어요.");
+      qc.invalidateQueries({ queryKey: ["user-profile", handle] });
+      qc.invalidateQueries({ queryKey: ["blocked-ids"] });
+      qc.invalidateQueries({ queryKey: ["home-feed"] });
+      qc.invalidateQueries({ queryKey: ["explore-questions"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "다시 시도해 주세요."),
+  });
+
   if (isLoading) {
     return (
       <main className="px-6 py-12">
