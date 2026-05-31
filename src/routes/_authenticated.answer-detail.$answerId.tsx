@@ -269,12 +269,18 @@ function AnswerDetailPage() {
         <div className="flex gap-2 items-end border-t border-border pt-4">
           <textarea
             value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, 500))}
-            rows={2}
+            onChange={(e) => {
+              setBody(e.target.value.slice(0, 500));
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = Math.min(el.scrollHeight, 200) + "px";
+            }}
+            rows={1}
             maxLength={500}
             placeholder="마음을 한 줄로 남겨주세요"
-            className="flex-1 bg-transparent outline-none resize-none text-[14px] placeholder:text-muted-foreground"
+            className="flex-1 bg-transparent outline-none resize-none text-[14px] placeholder:text-muted-foreground leading-snug max-h-[200px] overflow-y-auto"
           />
+
 
           <button
             onClick={() => body.trim() && addComment.mutate(body.trim())}
