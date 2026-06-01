@@ -197,7 +197,7 @@ function UserProfilePage() {
 
       <section className="px-6 py-10 flex flex-col items-center text-center">
         {p.avatar_url ? (
-          <img
+          <StorageImg
             src={p.avatar_url}
             alt=""
             className="size-20 rounded-full object-cover border border-border mb-4"
