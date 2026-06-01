@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { StorageImg } from "@/components/storage-img";
 
 export const Route = createFileRoute("/_authenticated/u/$handle/followers")({
   head: ({ params }) => ({ meta: [{ title: `@${params.handle}의 팔로워` }] }),
