@@ -5,6 +5,7 @@ import { Flag, Ban } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ReportDialog } from "@/components/report-dialog";
+import { StorageImg } from "@/components/storage-img";
 
 export const Route = createFileRoute("/_authenticated/u/$handle")({
   head: ({ params }) => ({ meta: [{ title: `@${params.handle} — 결` }] }),
