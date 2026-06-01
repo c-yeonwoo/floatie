@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/home")({
-  head: () => ({ meta: [{ title: "기록 — 숨결" }] }),
+  head: () => ({ meta: [{ title: "오늘의 숨 — 숨결" }] }),
   component: HomePage,
 });
 
