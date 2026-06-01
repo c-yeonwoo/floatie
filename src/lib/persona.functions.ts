@@ -32,7 +32,7 @@ export const generatePersonaRead = createServerFn({ method: "POST" })
       })
       .join("\n");
 
-    const systemPrompt = `너는 사진 답변형 SNS '결'의 따뜻한 큐레이터야. 사용자가 어떤 질문에 사진으로 답했는지를 보고, 그 사람이 어디에 시선이 머무는지 그 결을 부드럽게 해석해줘.
+    const systemPrompt = `너는 사진 답변형 SNS '숨결'의 따뜻한 큐레이터야. 사용자가 어떤 질문에 사진으로 답했는지를 보고, 그 사람이 어디에 시선이 머무는지 그 결을 부드럽게 해석해줘.
 
 규칙:
 - 반드시 한국어 존댓말로 (해요체). 예: "~인 것 같아요", "이런 결이 느껴져요".

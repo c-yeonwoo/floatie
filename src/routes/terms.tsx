@@ -4,7 +4,7 @@ export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
       { title: "이용약관 — 숨결" },
-      { name: "description", content: "결 서비스 이용약관." },
+      { name: "description", content: "숨결 서비스 이용약관." },
     ],
   }),
   component: TermsPage,
@@ -22,7 +22,7 @@ function TermsPage() {
           <p className="text-muted-foreground">시행일: 2026년 5월 31일</p>
 
           <Section title="1. 목적">
-            본 약관은 결(이하 “서비스”)이 제공하는 사진 기반 성향 공유 서비스의
+            본 약관은 숨결(이하 “서비스”)이 제공하는 사진 기반 성향 공유 서비스의
             이용 조건과 절차, 회원과 회사의 권리·의무를 정함을 목적으로 합니다.
           </Section>
 

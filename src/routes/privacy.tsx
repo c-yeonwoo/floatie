@@ -4,7 +4,7 @@ export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
       { title: "개인정보 처리방침 — 숨결" },
-      { name: "description", content: "결 서비스 개인정보 처리방침." },
+      { name: "description", content: "숨결 서비스 개인정보 처리방침." },
     ],
   }),
   component: PrivacyPage,
