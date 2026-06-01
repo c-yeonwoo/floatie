@@ -202,7 +202,7 @@ function MePage() {
         ) : answerCount === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">
             <Link to="/home" className="underline underline-offset-4">
-              오늘의 질문
+              새 질문
             </Link>
             에 첫 결을 남겨보세요.
           </p>
