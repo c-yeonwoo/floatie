@@ -175,7 +175,7 @@ function AnswerEditPage() {
 
         {displayUrl ? (
           <div className="relative">
-            <img
+            <StorageImg
               src={displayUrl}
               alt=""
               className="w-full aspect-square object-cover rounded-2xl border border-border"
