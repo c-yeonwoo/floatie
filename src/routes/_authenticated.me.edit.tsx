@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { stripExifAndCompress } from "@/lib/image-utils";
+import { StorageImg } from "@/components/storage-img";
+
 
 
 export const Route = createFileRoute("/_authenticated/me/edit")({
