@@ -57,13 +57,11 @@ function AnswerPage() {
         .from("answers")
         .upload(path, cleaned, { upsert: true, contentType: cleaned.type });
       if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("answers").getPublicUrl(path);
-
       const { error: insErr } = await supabase.from("answers").upsert(
         {
           user_id: uid,
           question_id: Number(questionId),
-          photos: [pub.publicUrl],
+          photos: [path],
           visibility,
         },
         { onConflict: "user_id,question_id" }
