@@ -245,7 +245,7 @@ function FeedPage() {
                     params={{ answerId: String(it.id) }}
                     className="block relative"
                   >
-                    <img
+                    <StorageImg
                       src={it.photos[0]}
                       alt=""
                       className="w-full aspect-square object-cover rounded-2xl border border-border"
