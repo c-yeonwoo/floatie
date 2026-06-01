@@ -21,7 +21,7 @@ type AnswerItem = {
     display_name: string | null;
     avatar_url: string | null;
   } | null;
-  reason: "follow" | "peer" | "recent";
+  reason: "follow" | "recent";
 };
 
 type PromptItem = {
