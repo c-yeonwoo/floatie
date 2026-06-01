@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { generatePersonaRead } from "@/lib/persona.functions";
 import { toast } from "sonner";
+import { StorageImg } from "@/components/storage-img";
 
 export const Route = createFileRoute("/_authenticated/me/")({
   head: () => ({ meta: [{ title: "내 결 — 결" }] }),
