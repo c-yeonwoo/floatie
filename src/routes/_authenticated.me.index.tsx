@@ -92,7 +92,7 @@ function MePage() {
 
       <section className="px-6 py-10 text-center flex flex-col items-center">
         {data?.profile?.avatar_url ? (
-          <img
+          <StorageImg
             src={data.profile.avatar_url}
             alt=""
             className="size-20 rounded-full object-cover border border-border mb-4"
