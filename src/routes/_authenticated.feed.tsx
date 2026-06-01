@@ -21,7 +21,7 @@ type AnswerItem = {
     display_name: string | null;
     avatar_url: string | null;
   } | null;
-  reason: "follow" | "peer" | "recent";
+  reason: "follow" | "recent";
 };
 
 type PromptItem = {
@@ -53,17 +53,6 @@ function FeedPage() {
         (mineRes.data ?? []).map((a: any) => a.question_id as number),
       );
 
-      let peerSet = new Set<string>();
-      if (answeredQs.size > 0) {
-        const { data: peers } = await supabase
-          .from("answers")
-          .select("user_id")
-          .in("question_id", Array.from(answeredQs))
-          .neq("user_id", uid)
-          .limit(500);
-        peerSet = new Set((peers ?? []).map((p: any) => p.user_id as string));
-      }
-
       const { data: answers } = await supabase
         .from("answers")
         .select(
@@ -80,11 +69,9 @@ function FeedPage() {
         .filter((a: any) => !blocked.has(a.user_id))
         .map((a: any) => {
         const isFollow = followedSet.has(a.user_id);
-        const isPeer = peerSet.has(a.user_id);
         const ageHours = (now - new Date(a.created_at).getTime()) / 36e5;
         const recency = Math.max(0, 120 - ageHours);
-        const score =
-          (isFollow ? 1000 : 0) + (isPeer ? 200 : 0) + recency;
+        const score = (isFollow ? 1000 : 0) + recency;
         const item: AnswerItem = {
           kind: "answer",
           id: a.id,
@@ -92,7 +79,7 @@ function FeedPage() {
           created_at: a.created_at,
           questions: a.questions,
           profiles: a.profiles,
-          reason: isFollow ? "follow" : isPeer ? "peer" : "recent",
+          reason: isFollow ? "follow" : "recent",
         };
         return { item, score };
       });
@@ -232,9 +219,9 @@ function FeedPage() {
                       </span>
                     )}
                   </div>
-                  {it.reason !== "recent" && (
+                  {it.reason === "follow" && (
                     <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {it.reason === "follow" ? "팔로잉" : "결이 닿아요"}
+                      팔로잉
                     </span>
                   )}
                 </div>
