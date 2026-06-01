@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/home")({
-  head: () => ({ meta: [{ title: "기록 — 숨결" }] }),
+  head: () => ({ meta: [{ title: "오늘의 숨 — 숨결" }] }),
   component: HomePage,
 });
 
@@ -57,7 +57,8 @@ function HomePage() {
   return (
     <main>
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
-        <h1 className="font-serif text-2xl tracking-tight">기록</h1>
+        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">오늘</span>
+        <h1 className="font-serif text-2xl tracking-tight mt-1">오늘의 숨</h1>
       </header>
 
       <section className="px-6 py-10">
