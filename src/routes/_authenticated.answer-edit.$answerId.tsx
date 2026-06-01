@@ -71,7 +71,7 @@ function AnswerEditPage() {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
 
-      let finalUrl = existingUrl as string;
+      let finalValue = existingUrl as string;
       if (newFile) {
         const cleaned = await stripExifAndCompress(newFile);
         const path = `${uid}/${a.id}-edit-${Date.now()}.jpg`;
@@ -79,21 +79,20 @@ function AnswerEditPage() {
           .from("answers")
           .upload(path, cleaned, { upsert: true, contentType: cleaned.type });
         if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("answers").getPublicUrl(path);
-        finalUrl = pub.publicUrl;
+        finalValue = path;
       }
 
       const { error: updErr } = await supabase
         .from("answers")
-        .update({ photos: [finalUrl], visibility })
+        .update({ photos: [finalValue], visibility })
         .eq("id", a.id);
       if (updErr) throw updErr;
 
       // Remove old files that are no longer used
       const removedPaths = originalUrls
-        .filter((u) => u !== finalUrl)
-        .map((u) => u.replace(/^.*\/storage\/v1\/object\/public\/answers\//, ""))
-        .filter((p) => p.length > 0 && !p.startsWith("http"));
+        .filter((u) => u !== finalValue)
+        .map((u) => extractAnswersPath(u))
+        .filter((p): p is string => !!p);
       if (removedPaths.length > 0) {
         await supabase.storage.from("answers").remove(removedPaths);
       }
