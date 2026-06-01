@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
-  head: () => ({ meta: [{ title: "알림 — Ditto" }] }),
+  head: () => ({ meta: [{ title: "알림 — 결" }] }),
   component: NotificationsPage,
 });
 

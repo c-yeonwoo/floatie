@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "이용약관 — Ditto" },
+      { title: "이용약관 — 결" },
       { name: "description", content: "결 서비스 이용약관." },
     ],
   }),

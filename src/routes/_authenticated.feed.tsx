@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBlockedIds } from "@/lib/blocks";
 
 export const Route = createFileRoute("/_authenticated/feed")({
-  head: () => ({ meta: [{ title: "홈 — Ditto" }] }),
+  head: () => ({ meta: [{ title: "홈 — 결" }] }),
   component: FeedPage,
 });
 
@@ -152,7 +152,7 @@ function FeedPage() {
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
             피드
           </span>
-          <h2 className="font-serif text-xl mt-1 leading-snug">오늘의 결</h2>
+          <h2 className="font-serif text-xl mt-1 leading-snug">새로운 결</h2>
         </div>
         <Link
           to="/notifications"
@@ -177,13 +177,13 @@ function FeedPage() {
               아직 보여드릴 결이 없어요.
             </p>
             <p className="text-[12px] text-muted-foreground mt-2">
-              오늘의 질문에 먼저 답하면, 비슷한 결의 사람들이 모입니다.
+              질문에 먼저 답하면, 비슷한 결의 사람들이 모입니다.
             </p>
             <Link
               to="/home"
               className="inline-block mt-5 text-[11px] uppercase tracking-widest bg-foreground text-background rounded-full px-4 py-2"
             >
-              오늘의 질문으로 →
+              질문 보러가기 →
             </Link>
           </div>
         ) : (

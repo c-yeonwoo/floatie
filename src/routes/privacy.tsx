@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "개인정보 처리방침 — Ditto" },
+      { title: "개인정보 처리방침 — 결" },
       { name: "description", content: "결 서비스 개인정보 처리방침." },
     ],
   }),

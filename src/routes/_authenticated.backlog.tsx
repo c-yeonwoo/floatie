@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/backlog")({
-  head: () => ({ meta: [{ title: "백로그 — Ditto" }] }),
+  head: () => ({ meta: [{ title: "백로그 — 결" }] }),
   component: BacklogPage,
 });
 

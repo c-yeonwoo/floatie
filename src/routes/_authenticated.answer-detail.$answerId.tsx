@@ -9,7 +9,7 @@ import { useBlockedIds } from "@/lib/blocks";
 
 
 export const Route = createFileRoute("/_authenticated/answer-detail/$answerId")({
-  head: () => ({ meta: [{ title: "결 — Ditto" }] }),
+  head: () => ({ meta: [{ title: "결 — 결" }] }),
   component: AnswerDetailPage,
 });
 
