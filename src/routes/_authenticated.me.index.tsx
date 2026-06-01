@@ -215,7 +215,7 @@ function MePage() {
                 to="/answer-detail/$answerId"
                 params={{ answerId: String(a.id) }}
               >
-                <img
+                <StorageImg
                   src={a.photos?.[0]}
                   alt=""
                   className="w-full aspect-square object-cover rounded-sm border border-border"
