@@ -56,13 +56,8 @@ function HomePage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 flex justify-between items-end border-b border-border">
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
         <h1 className="font-serif text-2xl tracking-tight">기록</h1>
-        {data?.answeredCount !== undefined && (
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-            {data.answeredCount}개의 기록
-          </span>
-        )}
       </header>
 
       <section className="px-6 py-10">
