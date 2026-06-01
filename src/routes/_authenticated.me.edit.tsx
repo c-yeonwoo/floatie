@@ -107,8 +107,7 @@ function EditProfilePage() {
           .from("answers")
           .upload(path, cleaned, { upsert: true, contentType: cleaned.type });
         if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("answers").getPublicUrl(path);
-        nextAvatarUrl = pub.publicUrl;
+        nextAvatarUrl = path;
       }
 
 
