@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/question/$questionId")({
-  head: () => ({ meta: [{ title: "질문 — 결" }] }),
+  head: () => ({ meta: [{ title: "질문 — Ditto" }] }),
   component: QuestionPage,
   errorComponent: ({ error }) => (
     <div className="p-8 text-sm text-muted-foreground">

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/home")({
-  head: () => ({ meta: [{ title: "오늘 — 결" }] }),
+  head: () => ({ meta: [{ title: "오늘 — Ditto" }] }),
   component: HomePage,
 });
 
@@ -111,7 +111,7 @@ function HomePage() {
   return (
     <main>
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 flex justify-between items-end border-b border-border">
-        <h1 className="font-serif text-2xl tracking-tighter">결</h1>
+        <h1 className="font-serif text-2xl tracking-tight">Ditto</h1>
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
           {today.replace(/-/g, ". ")}
         </span>

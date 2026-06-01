@@ -7,7 +7,7 @@ import { stripExifAndCompress } from "@/lib/image-utils";
 import { pickPhoto, validatePickedPhoto } from "@/lib/native-photo";
 
 export const Route = createFileRoute("/_authenticated/answer/$questionId")({
-  head: () => ({ meta: [{ title: "답변 — 결" }] }),
+  head: () => ({ meta: [{ title: "답변 — Ditto" }] }),
   component: AnswerPage,
 });
 

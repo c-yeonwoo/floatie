@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBlockedIds } from "@/lib/blocks";
 
 export const Route = createFileRoute("/_authenticated/feed")({
-  head: () => ({ meta: [{ title: "홈 — 결" }] }),
+  head: () => ({ meta: [{ title: "홈 — Ditto" }] }),
   component: FeedPage,
 });
 

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/me/blocked")({
-  head: () => ({ meta: [{ title: "차단 목록 — 결" }] }),
+  head: () => ({ meta: [{ title: "차단 목록 — Ditto" }] }),
   component: BlockedListPage,
 });
 

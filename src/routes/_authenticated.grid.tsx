@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBlockedIds } from "@/lib/blocks";
 
 export const Route = createFileRoute("/_authenticated/grid")({
-  head: () => ({ meta: [{ title: "탐색 — 결" }] }),
+  head: () => ({ meta: [{ title: "탐색 — Ditto" }] }),
   component: GridPage,
 });
 
