@@ -136,7 +136,12 @@ function LoginPage() {
     <main className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <Link to="/" className="block text-center mb-12">
-          <h1 className="font-serif text-5xl tracking-tight text-foreground">숨결</h1>
+          <img
+            src={logoSymbol.url}
+            alt="숨결"
+            className="mx-auto h-20 w-20 object-contain"
+          />
+          <h1 className="mt-4 font-serif text-4xl tracking-tight text-foreground">숨결</h1>
           <p className="mt-3 text-sm text-muted-foreground">사진 한 장으로 답하는 공간</p>
         </Link>
 
