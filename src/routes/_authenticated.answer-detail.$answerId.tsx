@@ -226,7 +226,8 @@ function AnswerDetailPage() {
             aria-label={data.liked ? "좋아요 취소" : "좋아요"}
           >
             <Heart
-              size={22}
+              size={20}
+              strokeWidth={1.75}
               className={data.liked ? "fill-accent text-accent" : ""}
             />
             <span className="tabular-nums">{data.likeCount}</span>
@@ -236,7 +237,7 @@ function AnswerDetailPage() {
             className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             aria-label="댓글"
           >
-            <MessageCircle size={22} />
+            <MessageCircle size={20} strokeWidth={1.75} />
             <span className="tabular-nums">{visibleComments.length}</span>
           </a>
         </div>
