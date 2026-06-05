@@ -119,11 +119,18 @@ function EditProfilePage() {
           // Keep existing handle if user left it blank (preserves /u/handle URL)
           ...(h ? { handle: h } : {}),
           bio: bio.trim() || null,
-          gender: gender || null,
           avatar_url: nextAvatarUrl,
         } as any)
         .eq("id", profile.uid);
       if (error) throw error;
+
+      const { error: settingsErr } = await supabase
+        .from("user_settings")
+        .upsert(
+          { user_id: profile.uid, gender: gender || null },
+          { onConflict: "user_id" },
+        );
+      if (settingsErr) throw settingsErr;
 
       toast.success("프로필을 저장했어요.");
       qc.invalidateQueries({ queryKey: ["my-gyeol"] });
