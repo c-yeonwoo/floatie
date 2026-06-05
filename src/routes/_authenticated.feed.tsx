@@ -68,6 +68,7 @@ function FeedPage() {
       const now = Date.now();
       const scored = (answers ?? [])
         .filter((a: any) => !blocked.has(a.user_id))
+        .filter((a: any) => Array.isArray(a.photos) && a.photos.length > 0)
         .map((a: any) => {
         const isFollow = followedSet.has(a.user_id);
         const ageHours = (now - new Date(a.created_at).getTime()) / 36e5;
@@ -220,11 +221,6 @@ function FeedPage() {
                       </span>
                     )}
                   </div>
-                  {it.reason === "follow" && (
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      팔로잉
-                    </span>
-                  )}
                 </div>
 
                 {it.questions && (
