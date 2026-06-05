@@ -230,6 +230,30 @@ export type Database = {
           },
         ]
       }
+      persona_similarity_cache: {
+        Row: {
+          computed_at: string
+          score: number
+          shared_keywords: string[]
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          computed_at?: string
+          score: number
+          shared_keywords?: string[]
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          computed_at?: string
+          score?: number
+          shared_keywords?: string[]
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

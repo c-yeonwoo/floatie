@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "release:preflight": "node scripts/release-preflight.mjs",
+    "persona:refresh-similarity": "node scripts/refresh-persona-similarity.mjs",
     "cap:sync": "npx cap sync",
     "cap:sync:ios": "npx cap sync ios",
     "cap:sync:android": "npx cap sync android",
