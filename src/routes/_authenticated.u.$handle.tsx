@@ -167,7 +167,7 @@ function UserProfilePage() {
           ←
         </button>
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          @{p.handle}
+          프로필
         </span>
         {data.isMe ? (
           <span className="w-6" />
