@@ -45,25 +45,33 @@ function QuestionPage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
-        <button
-          type="button"
-          onClick={() => router.history.back()}
-          className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2"
-        >
-          ← 탐색
-        </button>
-        <span className="text-[10px] uppercase tracking-widest text-accent">
-          질문
-        </span>
-        <h1 className="font-serif text-2xl mt-1 leading-snug text-balance break-keep [word-break:keep-all]">
-          {data?.question?.text ?? "..."}
-        </h1>
-        {data?.answers && (
-          <p className="text-[11px] text-muted-foreground mt-3">
-            {data.answers.length}개의 숨
-          </p>
-        )}
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-4 py-4 border-b border-border">
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            type="button"
+            onClick={() => router.history.back()}
+            aria-label="뒤로"
+            className="p-2 -ml-2 text-foreground hover:bg-secondary rounded-full transition-colors"
+          >
+            <ChevronLeft className="size-5" strokeWidth={1.5} />
+          </button>
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            탐색으로
+          </span>
+        </div>
+        <div className="px-2">
+          <span className="text-[10px] uppercase tracking-widest text-accent">
+            질문
+          </span>
+          <h1 className="font-serif text-2xl mt-1 leading-snug text-balance break-keep [word-break:keep-all]">
+            {data?.question?.text ?? "..."}
+          </h1>
+          {data?.answers && (
+            <p className="text-[11px] text-muted-foreground mt-3">
+              {data.answers.length}개의 숨
+            </p>
+          )}
+        </div>
       </header>
 
       <section className="px-4 py-6">
