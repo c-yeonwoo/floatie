@@ -236,7 +236,6 @@ export type Database = {
           bio: string | null
           created_at: string | null
           display_name: string | null
-          gender: string | null
           handle: string | null
           id: string
           onboarded: boolean | null
@@ -246,7 +245,6 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
-          gender?: string | null
           handle?: string | null
           id: string
           onboarded?: boolean | null
@@ -256,7 +254,6 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
-          gender?: string | null
           handle?: string | null
           id?: string
           onboarded?: boolean | null
@@ -338,12 +335,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          created_at: string
+          gender: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gender?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gender?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_blocked_by: { Args: { target_user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

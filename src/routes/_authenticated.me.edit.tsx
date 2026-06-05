@@ -29,12 +29,11 @@ function EditProfilePage() {
     queryFn: async () => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", uid)
-        .maybeSingle();
-      return { uid, profile: data };
+      const [{ data }, { data: settings }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
+        supabase.from("user_settings").select("gender").eq("user_id", uid).maybeSingle(),
+      ]);
+      return { uid, profile: data, gender: settings?.gender ?? "" };
     },
   });
 
@@ -51,7 +50,7 @@ function EditProfilePage() {
       setDisplayName(profile.profile.display_name ?? "");
       setHandle(profile.profile.handle ?? "");
       setBio(profile.profile.bio ?? "");
-      setGender((profile.profile as any).gender ?? "");
+      setGender(profile.gender ?? "");
       setAvatarUrl(profile.profile.avatar_url ?? null);
     }
   }, [profile]);
@@ -120,11 +119,18 @@ function EditProfilePage() {
           // Keep existing handle if user left it blank (preserves /u/handle URL)
           ...(h ? { handle: h } : {}),
           bio: bio.trim() || null,
-          gender: gender || null,
           avatar_url: nextAvatarUrl,
         } as any)
         .eq("id", profile.uid);
       if (error) throw error;
+
+      const { error: settingsErr } = await supabase
+        .from("user_settings")
+        .upsert(
+          { user_id: profile.uid, gender: gender || null },
+          { onConflict: "user_id" },
+        );
+      if (settingsErr) throw settingsErr;
 
       toast.success("프로필을 저장했어요.");
       qc.invalidateQueries({ queryKey: ["my-gyeol"] });
