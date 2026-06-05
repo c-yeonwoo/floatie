@@ -77,13 +77,6 @@ function MePage() {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex justify-between items-center">
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">내 결</span>
         <div className="flex items-center gap-4">
-          <Link
-            to="/notifications"
-            aria-label="알림"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Bell className="size-5" strokeWidth={1.5} />
-          </Link>
           <button onClick={onLogout} className="text-[11px] text-muted-foreground hover:text-foreground">
             로그아웃
           </button>
