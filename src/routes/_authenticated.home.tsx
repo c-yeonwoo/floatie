@@ -115,20 +115,30 @@ function HomePage() {
               </h2>
             </div>
 
-            <Link
-              to="/answer/$questionId"
-              params={{ questionId: String(data.question.id) }}
-              className="block"
-            >
-              <div className="w-full aspect-square bg-surface rounded-2xl border border-border grid place-items-center hover:bg-secondary transition-colors">
-                <div className="text-center">
-                  <div className="text-2xl mb-2">＋</div>
-                  <span className="text-[13px] uppercase tracking-widest text-muted-foreground">
-                    사진으로 답하기
-                  </span>
+            <div className="relative">
+              <Link
+                to="/answer/$questionId"
+                params={{ questionId: String(data.question.id) }}
+                className="block"
+              >
+                <div className="w-full aspect-square bg-surface rounded-2xl border border-border grid place-items-center hover:bg-secondary transition-colors">
+                  <div className="text-center">
+                    <div className="text-2xl mb-2">＋</div>
+                    <span className="text-[13px] uppercase tracking-widest text-muted-foreground">
+                      사진으로 답하기
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              <button
+                type="button"
+                onClick={handleSkip}
+                disabled={skipping}
+                className="absolute top-3 right-3 text-[11px] text-muted-foreground bg-background/80 backdrop-blur rounded-full px-2.5 py-1 border border-border hover:text-foreground disabled:opacity-50"
+              >
+                {skipping ? "찾는 중…" : "이 질문 skip"}
+              </button>
+            </div>
             <div className="mt-5 flex flex-col items-center gap-3">
               <Link
                 to="/question/$questionId"
@@ -137,14 +147,6 @@ function HomePage() {
               >
                 다른 사람들의 숨 먼저 보기 →
               </Link>
-              <button
-                type="button"
-                onClick={handleSkip}
-                disabled={skipping}
-                className="text-[13px] text-muted-foreground underline underline-offset-4 disabled:opacity-50"
-              >
-                {skipping ? "다른 질문을 찾는 중…" : "이 질문은 다음에 답할게요"}
-              </button>
             </div>
           </>
         )}
