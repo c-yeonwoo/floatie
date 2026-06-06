@@ -160,26 +160,50 @@ function AnswerDetailPage() {
           ← 뒤로
         </button>
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">숨</span>
-        {data.me === a.user_id ? (
-          <Link
-            to="/answer-edit/$answerId"
-            params={{ answerId }}
-            aria-label="수정하기"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Pencil className="size-4" strokeWidth={1.5} />
-          </Link>
-        ) : (
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setReportOpen(true)}
-            aria-label="신고하기"
+            onClick={async () => {
+              const qid = (a.questions as any)?.id ?? a.question_id;
+              const url = `${window.location.origin}/invite/${qid}`;
+              const text = `"${a.questions?.text ?? ""}"\n\n숨결에서 이 질문에 답해보세요.`;
+              try {
+                if (navigator.share) {
+                  await navigator.share({ title: "숨결", text, url });
+                } else {
+                  await navigator.clipboard.writeText(`${text}\n${url}`);
+                  toast.success("링크를 복사했어요.");
+                }
+              } catch {
+                // user cancelled
+              }
+            }}
+            aria-label="질문 공유하기"
             className="text-muted-foreground hover:text-foreground"
           >
-            <Flag className="size-4" strokeWidth={1.5} />
+            <Share2 className="size-4" strokeWidth={1.5} />
           </button>
-        )}
+          {data.me === a.user_id ? (
+            <Link
+              to="/answer-edit/$answerId"
+              params={{ answerId }}
+              aria-label="수정하기"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="size-4" strokeWidth={1.5} />
+            </Link>
+          ) : (
+            <button
+              onClick={() => setReportOpen(true)}
+              aria-label="신고하기"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Flag className="size-4" strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
 
       </header>
+
 
       <section className="px-6 py-6">
         <div className="mb-5">
