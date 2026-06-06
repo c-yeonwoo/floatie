@@ -21,14 +21,14 @@ function normalizeInitialPath() {
 
 normalizeInitialPath();
 
-function ensureTsrFallback(router: ReturnType<typeof createRouter>) {
+function ensureTsrFallback(router: any) {
   if (typeof window === "undefined") return;
 
   const existingState = (window as any).$_TSR;
   if (existingState?.router) return;
 
   try {
-    const fallbackTsr = {
+    const fallbackTsr: any = {
       h() {
         this.hydrated = true;
         this.c();
@@ -55,8 +55,9 @@ function ensureTsrFallback(router: ReturnType<typeof createRouter>) {
           script();
         }
       },
-      buffer: [],
+      buffer: [] as Array<() => void>,
     };
+
 
     const resolvedMatches =
       router.matchRoutes(router.stores.location.get()) ??
@@ -74,7 +75,7 @@ function ensureTsrFallback(router: ReturnType<typeof createRouter>) {
         })();
     if (!matches.length) return;
 
-    const serializedMatches = matches.map((match) => ({ i: match.routeId }));
+    const serializedMatches = matches.map((match: any) => ({ i: match.routeId }));
 
     (window as any).$_TSR = {
       ...fallbackTsr,

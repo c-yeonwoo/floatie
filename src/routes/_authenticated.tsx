@@ -34,9 +34,7 @@ function AuthenticatedLayout() {
         <div
           className="flex-1 overflow-y-auto overscroll-contain"
           style={{
-            paddingBottom: hideTabs
-              ? "env(safe-area-inset-bottom)"
-              : "calc(3.25rem + env(safe-area-inset-bottom))",
+            paddingBottom: hideTabs ? "0px" : "3.5rem",
           }}
         >
           <Outlet />
@@ -46,6 +44,7 @@ function AuthenticatedLayout() {
     </div>
   );
 }
+
 
 function TabBar({ pathname }: { pathname: string }) {
   const items: Array<{ to: "/home" | "/feed" | "/grid" | "/me"; label: string }> = [
