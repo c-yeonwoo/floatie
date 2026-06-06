@@ -170,16 +170,15 @@ function AnswerDetailPage() {
 
       <section className="px-6 py-6">
         <div className="mb-5">
-          <span className="text-[11px] uppercase tracking-widest text-accent">
-            {a.questions?.category}
-          </span>
-          <h2 className="font-serif text-2xl mt-1 leading-snug text-balance break-keep [word-break:keep-all]">
+          <CategoryBadge category={a.questions?.category} />
+          <h2 className="font-serif text-2xl mt-2 leading-snug text-balance break-keep [word-break:keep-all]">
             {a.questions?.text}
           </h2>
           <p className="text-[12px] text-muted-foreground mt-2">
             @{a.profiles?.handle ?? "anon"}
           </p>
         </div>
+
 
         <div className="relative">
           <StorageImg

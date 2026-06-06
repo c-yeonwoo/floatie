@@ -159,13 +159,12 @@ function AnswerEditPage() {
 
       <section className="px-6 py-8">
         <div className="mb-6">
-          <span className="text-[11px] uppercase tracking-widest text-accent">
-            {a.questions?.category}
-          </span>
-          <h2 className="font-serif text-xl mt-1 leading-snug text-balance">
+          <CategoryBadge category={a.questions?.category} />
+          <h2 className="font-serif text-xl mt-2 leading-snug text-balance">
             {a.questions?.text}
           </h2>
         </div>
+
 
         {originalUrls.length > 1 && (
           <p className="text-[11px] text-muted-foreground mb-3">

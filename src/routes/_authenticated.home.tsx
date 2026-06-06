@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { CategoryBadge } from "@/components/category-badge";
+
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({ meta: [{ title: "오늘의 숨 — 숨결" }] }),
@@ -76,13 +78,12 @@ function HomePage() {
         ) : (
           <>
             <div className="mb-7">
-              <span className="text-[11px] font-semibold text-accent uppercase tracking-widest">
-                질문
-              </span>
-              <h2 className="font-serif text-[26px] mt-2 leading-snug text-balance break-keep [word-break:keep-all]">
+              <CategoryBadge category={data.question.category} />
+              <h2 className="font-serif text-[26px] mt-2.5 leading-snug text-balance break-keep [word-break:keep-all]">
                 {data.question.text}
               </h2>
             </div>
+
 
             <Link
               to="/answer/$questionId"

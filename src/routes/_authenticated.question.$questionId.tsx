@@ -60,10 +60,8 @@ function QuestionPage() {
           </span>
         </div>
         <div className="px-2">
-          <span className="text-[10px] uppercase tracking-widest text-accent">
-            질문
-          </span>
-          <h1 className="font-serif text-2xl mt-1 leading-snug text-balance break-keep [word-break:keep-all]">
+          <CategoryBadge category={data?.question?.category} />
+          <h1 className="font-serif text-2xl mt-2 leading-snug text-balance break-keep [word-break:keep-all]">
             {data?.question?.text ?? "..."}
           </h1>
           {data?.answers && (
@@ -72,6 +70,7 @@ function QuestionPage() {
             </p>
           )}
         </div>
+
       </header>
 
       <section className="px-4 py-6">

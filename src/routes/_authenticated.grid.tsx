@@ -116,18 +116,15 @@ function GridPage() {
               className="block border border-border rounded-2xl overflow-hidden hover:border-foreground/30 transition-colors"
             >
               <div className="px-5 pt-5 pb-3">
-                {q.category && (
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {q.category}
-                  </span>
-                )}
-                <p className="font-serif text-[16px] mt-1 leading-snug">
+                <CategoryBadge category={q.category} />
+                <p className="font-serif text-[16px] mt-2 leading-snug">
                   {q.text}
                 </p>
                 <span className="text-[11px] text-muted-foreground">
                   숨 {q.count}개
                 </span>
               </div>
+
               <div className="grid grid-cols-4 gap-px bg-border">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="aspect-square bg-background">
