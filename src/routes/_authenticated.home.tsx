@@ -20,7 +20,7 @@ function HomePage() {
   const navigate = useNavigate({ from: "/home" });
   const [skipSeed, setSkipSeed] = useState(0);
   const [skipping, setSkipping] = useState(false);
-  const [nudgeOpen, setNudgeOpen] = useState(false);
+  
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["current-question", skipSeed, category ?? ""],
