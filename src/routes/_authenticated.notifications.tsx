@@ -8,12 +8,12 @@ export const Route = createFileRoute("/_authenticated/notifications")({
 function NotificationsPage() {
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
-        <Link to="/feed" className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          ← 돌아가기
-        </Link>
-        <h2 className="font-serif text-xl mt-1 leading-snug">알림</h2>
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex items-center justify-between gap-3">
+        <Link to="/feed" className="text-sm text-muted-foreground">← 뒤로</Link>
+        <h1 className="font-serif text-lg tracking-tight">알림</h1>
+        <span className="w-10" />
       </header>
+
       <section className="px-6 py-20 text-center">
         <p className="text-sm text-muted-foreground">
           아직 알림이 없어요.

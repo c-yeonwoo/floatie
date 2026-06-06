@@ -30,13 +30,12 @@ function BacklogPage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex items-center justify-between">
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex items-center justify-between gap-3">
         <Link to="/home" className="text-sm text-muted-foreground">← 뒤로</Link>
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          남은 질문
-        </span>
+        <h1 className="font-serif text-lg tracking-tight">남은 질문</h1>
         <span className="w-10" />
       </header>
+
 
       <section className="px-6 py-6">
         {isLoading ? (

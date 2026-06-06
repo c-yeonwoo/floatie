@@ -70,15 +70,9 @@ function GridPage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border space-y-4">
-        <div>
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-            탐색
-          </span>
-          <h2 className="font-serif text-xl mt-1 leading-snug">
-            키워드로 질문 찾기
-          </h2>
-        </div>
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border space-y-3">
+        <h1 className="font-serif text-2xl tracking-tight">탐색</h1>
+
         <div className="relative">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"

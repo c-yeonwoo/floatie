@@ -74,16 +74,15 @@ function MePage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex justify-between items-center">
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">내 결</span>
-        <div className="flex items-center gap-4">
-          <button onClick={onLogout} className="text-[11px] text-muted-foreground hover:text-foreground">
-            로그아웃
-          </button>
-        </div>
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex justify-between items-center">
+        <h1 className="font-serif text-2xl tracking-tight">내 결</h1>
+        <button onClick={onLogout} className="text-[13px] text-muted-foreground hover:text-foreground">
+          로그아웃
+        </button>
       </header>
 
-      <section className="px-6 py-10 text-center flex flex-col items-center">
+      <section className="px-6 py-8 text-center flex flex-col items-center">
+
         {data?.profile?.avatar_url ? (
           <StorageImg
             src={data.profile.avatar_url}

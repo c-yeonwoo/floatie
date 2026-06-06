@@ -136,21 +136,17 @@ function FeedPage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 pt-3 pb-4 border-b border-border flex items-start justify-between gap-3">
-        <div>
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-            피드
-          </span>
-          <h2 className="font-serif text-xl mt-1 leading-snug">새로운 숨</h2>
-        </div>
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex items-center justify-between gap-3">
+        <h1 className="font-serif text-2xl tracking-tight">피드</h1>
         <Link
           to="/notifications"
           aria-label="알림"
-          className="p-2 -mt-1 -mr-2 text-muted-foreground hover:text-foreground"
+          className="p-2 -mr-2 text-muted-foreground hover:text-foreground"
         >
           <Bell className="size-5" strokeWidth={1.5} />
         </Link>
       </header>
+
 
       <section className="px-4 py-6 space-y-10">
         {isLoading ? (

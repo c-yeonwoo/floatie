@@ -57,12 +57,12 @@ function BlockedListPage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
-        <Link to="/me" className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          ← 내 결
-        </Link>
-        <h2 className="font-serif text-xl mt-1 leading-snug">차단 목록</h2>
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex items-center justify-between gap-3">
+        <Link to="/me" className="text-sm text-muted-foreground">← 뒤로</Link>
+        <h1 className="font-serif text-lg tracking-tight">차단 목록</h1>
+        <span className="w-10" />
       </header>
+
 
       <section className="px-6 py-6">
         {isLoading ? (

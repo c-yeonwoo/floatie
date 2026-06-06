@@ -56,12 +56,12 @@ function HomePage() {
 
   return (
     <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border">
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">숨:결</span>
-        <h1 className="font-serif text-2xl tracking-tight mt-1">오늘의 숨</h1>
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border">
+        <h1 className="font-serif text-2xl tracking-tight">오늘의 숨</h1>
       </header>
 
-      <section className="px-6 py-10">
+
+      <section className="px-6 py-8">
         {isLoading ? (
           <div className="aspect-square bg-muted rounded-2xl animate-pulse" />
         ) : !data ? (
@@ -75,14 +75,15 @@ function HomePage() {
           </div>
         ) : (
           <>
-            <div className="mb-8">
+            <div className="mb-7">
               <span className="text-[11px] font-semibold text-accent uppercase tracking-widest">
                 질문
               </span>
-              <h2 className="font-serif text-3xl mt-2 leading-snug text-balance break-keep [word-break:keep-all]">
+              <h2 className="font-serif text-[26px] mt-2 leading-snug text-balance break-keep [word-break:keep-all]">
                 {data.question.text}
               </h2>
             </div>
+
             <Link
               to="/answer/$questionId"
               params={{ questionId: String(data.question.id) }}
