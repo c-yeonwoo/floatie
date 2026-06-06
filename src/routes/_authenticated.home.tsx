@@ -104,41 +104,41 @@ function HomePage() {
           </div>
         ) : (
           <>
-            <div className="mb-7">
-              <CategoryBadge
-                category={data.question.category}
-                onClick={onBadgeClick}
-                active={category === data.question.category}
-              />
-              <h2 className="font-serif text-[26px] mt-2.5 leading-snug text-balance break-keep [word-break:keep-all]">
-                {data.question.text}
-              </h2>
-            </div>
-
-            <div className="relative">
-              <Link
-                to="/answer/$questionId"
-                params={{ questionId: String(data.question.id) }}
-                className="block"
-              >
-                <div className="w-full aspect-square bg-surface rounded-2xl border border-border grid place-items-center hover:bg-secondary transition-colors">
-                  <div className="text-center">
-                    <div className="text-2xl mb-2">＋</div>
-                    <span className="text-[13px] uppercase tracking-widest text-muted-foreground">
-                      사진으로 답하기
-                    </span>
-                  </div>
-                </div>
-              </Link>
+            <div className="mb-7 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <CategoryBadge
+                  category={data.question.category}
+                  onClick={onBadgeClick}
+                  active={category === data.question.category}
+                />
+                <h2 className="font-serif text-[26px] mt-2.5 leading-snug text-balance break-keep [word-break:keep-all]">
+                  {data.question.text}
+                </h2>
+              </div>
               <button
                 type="button"
                 onClick={handleSkip}
                 disabled={skipping}
-                className="absolute top-3 right-3 text-[11px] text-muted-foreground bg-background/80 backdrop-blur rounded-full px-2.5 py-1 border border-border hover:text-foreground disabled:opacity-50"
+                className="shrink-0 mt-1 text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4 disabled:opacity-50"
               >
                 {skipping ? "찾는 중…" : "이 질문 skip"}
               </button>
             </div>
+
+            <Link
+              to="/answer/$questionId"
+              params={{ questionId: String(data.question.id) }}
+              className="block"
+            >
+              <div className="w-full aspect-square bg-surface rounded-2xl border border-border grid place-items-center hover:bg-secondary transition-colors">
+                <div className="text-center">
+                  <div className="text-2xl mb-2">＋</div>
+                  <span className="text-[13px] uppercase tracking-widest text-muted-foreground">
+                    사진으로 답하기
+                  </span>
+                </div>
+              </div>
+            </Link>
             <div className="mt-5 flex flex-col items-center gap-3">
               <Link
                 to="/question/$questionId"
