@@ -2,10 +2,8 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { CategoryBadge } from "@/components/category-badge";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
-import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
-import { NudgeDialog } from "@/components/nudge-dialog";
 
 export const Route = createFileRoute("/_authenticated/question/$questionId")({
   head: () => ({ meta: [{ title: "질문 — 숨결" }] }),
