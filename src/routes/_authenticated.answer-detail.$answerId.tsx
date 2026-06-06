@@ -35,8 +35,9 @@ function AnswerDetailPage() {
         supabase
           .from("answers")
           .select(
-            "id, photos, user_id, created_at, questions(text, category), profiles(handle, display_name)",
+            "id, photos, user_id, question_id, created_at, questions(id, text, category), profiles(handle, display_name)",
           )
+
           .eq("id", id)
           .maybeSingle(),
         supabase
