@@ -29,12 +29,18 @@ function AuthenticatedLayout() {
     location.pathname === "/onboarding";
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div
-        className="max-w-md mx-auto min-h-screen relative"
-        style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}
-      >
-        <Outlet />
+    <div className="h-[100dvh] bg-background text-foreground overflow-hidden">
+      <div className="max-w-md mx-auto h-full flex flex-col relative">
+        <div
+          className="flex-1 overflow-y-auto overscroll-contain"
+          style={{
+            paddingBottom: hideTabs
+              ? "env(safe-area-inset-bottom)"
+              : "calc(3.25rem + env(safe-area-inset-bottom))",
+          }}
+        >
+          <Outlet />
+        </div>
         {!hideTabs && <TabBar pathname={location.pathname} />}
       </div>
     </div>
@@ -50,31 +56,39 @@ function TabBar({ pathname }: { pathname: string }) {
   ];
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-background border-t border-border flex justify-around items-center px-10 z-40 shadow-nav"
+      className="absolute bottom-0 left-0 right-0 bg-background border-t border-border flex z-40 shadow-nav"
       style={{
-        height: "calc(3rem + env(safe-area-inset-bottom))",
+        height: "calc(3.25rem + env(safe-area-inset-bottom))",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      {items.map((it) => {
+      {items.map((it, idx) => {
         const active = pathname === it.to;
         return (
-          <Link key={it.to} to={it.to} className="flex flex-col items-center gap-1 py-1.5">
-            <span
-              className={
-                "text-[11px] uppercase tracking-widest font-medium transition-colors " +
-                (active ? "text-foreground" : "text-muted-foreground")
-              }
+          <div key={it.to} className="flex-1 flex items-stretch">
+            <Link
+              to={it.to}
+              className="flex-1 flex flex-col items-center justify-center gap-1 py-1.5"
             >
-              {it.label}
-            </span>
-            <span
-              className={
-                "size-1 rounded-full transition-all " +
-                (active ? "bg-foreground" : "bg-transparent")
-              }
-            />
-          </Link>
+              <span
+                className={
+                  "text-[13px] tracking-wide font-medium transition-colors " +
+                  (active ? "text-foreground" : "text-muted-foreground")
+                }
+              >
+                {it.label}
+              </span>
+              <span
+                className={
+                  "size-1 rounded-full transition-all " +
+                  (active ? "bg-foreground" : "bg-transparent")
+                }
+              />
+            </Link>
+            {idx < items.length - 1 && (
+              <span className="w-px my-3 bg-border" aria-hidden />
+            )}
+          </div>
         );
       })}
     </nav>

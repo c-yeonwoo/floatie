@@ -91,20 +91,27 @@ function HomePage() {
               <div className="w-full aspect-square bg-surface rounded-2xl border border-border grid place-items-center hover:bg-secondary transition-colors">
                 <div className="text-center">
                   <div className="text-2xl mb-2">＋</div>
-                  <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  <span className="text-[13px] uppercase tracking-widest text-muted-foreground">
                     사진으로 답하기
                   </span>
                 </div>
               </div>
             </Link>
-            <div className="mt-4 flex justify-center">
+            <div className="mt-5 flex flex-col items-center gap-3">
+              <Link
+                to="/question/$questionId"
+                params={{ questionId: String(data.question.id) }}
+                className="text-sm text-foreground underline underline-offset-4"
+              >
+                다른 사람들의 숨 먼저 보기 →
+              </Link>
               <button
                 type="button"
                 onClick={handleSkip}
                 disabled={skipping}
-                className="text-xs text-muted-foreground underline underline-offset-4 disabled:opacity-50"
+                className="text-[13px] text-muted-foreground underline underline-offset-4 disabled:opacity-50"
               >
-                {skipping ? "다른 질문을 찾는 중…" : "이 질문은 다음에 답할게요 →"}
+                {skipping ? "다른 질문을 찾는 중…" : "이 질문은 다음에 답할게요"}
               </button>
             </div>
           </>
