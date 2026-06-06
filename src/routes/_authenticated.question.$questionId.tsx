@@ -2,8 +2,10 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { CategoryBadge } from "@/components/category-badge";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
+import { NudgeDialog } from "@/components/nudge-dialog";
 
 export const Route = createFileRoute("/_authenticated/question/$questionId")({
   head: () => ({ meta: [{ title: "질문 — 숨결" }] }),
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/question/$questionId")({
 function QuestionPage() {
   const { questionId } = Route.useParams();
   const router = useRouter();
+  const [nudgeOpen, setNudgeOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["question-grid", questionId],
@@ -121,7 +124,7 @@ function QuestionPage() {
                 </Link>
               ))}
             </div>
-            <div className="mt-8 text-center">
+            <div className="mt-8 flex flex-col items-center gap-3">
               <Link
                 to="/answer/$questionId"
                 params={{ questionId }}
@@ -129,10 +132,26 @@ function QuestionPage() {
               >
                 이 질문에 답하기 →
               </Link>
+              <button
+                type="button"
+                onClick={() => setNudgeOpen(true)}
+                className="text-xs underline underline-offset-4 text-muted-foreground"
+              >
+                친구에게 물어보기 →
+              </button>
             </div>
           </>
         )}
       </section>
+
+      {data?.question && (
+        <NudgeDialog
+          open={nudgeOpen}
+          onClose={() => setNudgeOpen(false)}
+          questionId={data.question.id}
+          questionText={data.question.text}
+        />
+      )}
     </main>
   );
 }
