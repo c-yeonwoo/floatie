@@ -88,10 +88,9 @@ function FeedPage() {
           )
           .eq("visibility", "public")
           .neq("user_id", uid)
-          .not("photos", "is", null)
-          .gt("array_length(photos,1)", 0)
           .order("created_at", { ascending: false })
           .limit(80),
+
 
         supabase
           .from("questions")
