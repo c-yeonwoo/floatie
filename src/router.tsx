@@ -28,7 +28,7 @@ function ensureTsrFallback(router: ReturnType<typeof createRouter>) {
   if (existingState?.router) return;
 
   try {
-    const fallbackTsr = {
+    const fallbackTsr: any = {
       h() {
         this.hydrated = true;
         this.c();
@@ -55,8 +55,9 @@ function ensureTsrFallback(router: ReturnType<typeof createRouter>) {
           script();
         }
       },
-      buffer: [],
+      buffer: [] as Array<() => void>,
     };
+
 
     const resolvedMatches =
       router.matchRoutes(router.stores.location.get()) ??
