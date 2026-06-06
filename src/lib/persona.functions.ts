@@ -3,11 +3,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const LOVABLE_API_KEY_ENV = "LOVABLE_API_KEY";
+const AI_TIMEOUT_MS = 8000;
+const AI_GATEWAY_URL_ENV = "AI_GATEWAY_URL";
+const AI_MODEL_ENV = "AI_MODEL";
 
 export const generatePersonaRead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({}).optional())
-  .handler(async ({ context }) => {
+  .inputValidator(z.object({ forceRecompute: z.boolean().optional() }).optional())
+  .handler(async ({ context, data }) => {
     const apiKey = process.env[LOVABLE_API_KEY_ENV];
     if (!apiKey) throw new Error("AI 키가 설정되지 않았어요.");
 
@@ -23,6 +26,29 @@ export const generatePersonaRead = createServerFn({ method: "POST" })
     if (!answers || answers.length < 3) {
       throw new Error("기록이 3개 이상 모이면 결을 읽어드릴 수 있어요.");
     }
+
+    const { data: latestPersona, error: cacheError } = await supabase
+      .from("persona_reads")
+      .select("summary, keywords, based_on_count, generated_at")
+      .eq("user_id", userId)
+      .order("generated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (cacheError) {
+      throw new Error(cacheError.message);
+    }
+    const shouldReuseCache = !data?.forceRecompute;
+    if (shouldReuseCache && latestPersona && latestPersona.based_on_count >= answers.length) {
+      return {
+        summary: latestPersona.summary,
+        keywords: latestPersona.keywords ?? [],
+        based_on_count: answers.length,
+        fromCache: true,
+      };
+    }
+
+    const aiGatewayUrl = process.env[AI_GATEWAY_URL_ENV] ?? "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const aiModel = process.env[AI_MODEL_ENV] ?? "google/gemini-2.5-flash";
 
     const corpus = answers
       .map((a: any, i: number) => {
@@ -42,24 +68,37 @@ export const generatePersonaRead = createServerFn({ method: "POST" })
 - 키워드는 한국어 단어, 띄어쓰기 없이 (예: "오후의빛", "조용한관찰자").
 - JSON으로만 답해: {"summary": "...", "keywords": ["...", "..."]}`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: `다음은 한 사용자가 사진으로 답한 질문들이야. 어떤 질문에 시선이 머물렀는지 보고 그 사람의 결을 읽어줘:\n\n${corpus}`,
-          },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(aiGatewayUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: aiModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: `다음은 한 사용자가 사진으로 답한 질문들이야. 어떤 질문에 시선이 머물렀는지 보고 그 사람의 결을 읽어줘:\n\n${corpus}`,
+            },
+          ],
+          response_format: { type: "json_object" },
+        }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new Error("AI 처리 시간이 초과되었어요. 잠시 후 다시 시도해 주세요.");
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!res.ok) {
       const text = await res.text();

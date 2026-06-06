@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
-import logoSymbol from "@/assets/logo-symbol-frame.png.asset.json";
+import logoSymbol from "@/assets/logo-icon.png";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -72,10 +71,11 @@ function LoginPage() {
     }
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + "/home",
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + "/home" },
       });
-      if (result.error) throw result.error;
+      if (error) throw error;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "구글 로그인에 실패했어요.");
       setLoading(false);
@@ -136,8 +136,8 @@ function LoginPage() {
     <main className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <Link to="/" className="block text-center mb-12">
-          <img
-            src={logoSymbol.url}
+            <img
+            src={logoSymbol}
             alt="숨결"
             className="mx-auto h-20 w-20 object-contain"
           />
