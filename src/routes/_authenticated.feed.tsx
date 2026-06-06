@@ -144,13 +144,7 @@ function FeedPage() {
     <main>
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex items-center justify-between gap-3">
         <h1 className="font-serif text-2xl tracking-tight">피드</h1>
-        <Link
-          to="/notifications"
-          aria-label="알림"
-          className="p-2 -mr-2 text-muted-foreground hover:text-foreground"
-        >
-          <Bell className="size-5" strokeWidth={1.5} />
-        </Link>
+        <NotificationsBell />
       </header>
 
 
@@ -271,5 +265,36 @@ function FeedPage() {
         {hasMore && <div ref={sentinelRef} className="h-10" />}
       </section>
     </main>
+  );
+}
+
+function NotificationsBell() {
+  const { data: unread } = useQuery({
+    queryKey: ["nudges-unread-count"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const me = userData.user?.id;
+      if (!me) return 0;
+      const { count } = await supabase
+        .from("nudges")
+        .select("id", { count: "exact", head: true })
+        .eq("receiver_id", me)
+        .eq("status", "pending");
+      return count ?? 0;
+    },
+    refetchOnWindowFocus: true,
+  });
+
+  return (
+    <Link
+      to="/notifications"
+      aria-label="알림"
+      className="relative p-2 -mr-2 text-muted-foreground hover:text-foreground"
+    >
+      <Bell className="size-5" strokeWidth={1.5} />
+      {!!unread && unread > 0 && (
+        <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-accent" />
+      )}
+    </Link>
   );
 }

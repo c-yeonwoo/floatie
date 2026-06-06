@@ -195,6 +195,36 @@ export type Database = {
           },
         ]
       }
+      nudges: {
+        Row: {
+          created_at: string
+          id: number
+          question_id: number
+          receiver_id: string
+          responded_at: string | null
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          question_id: number
+          receiver_id: string
+          responded_at?: string | null
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          question_id?: number
+          receiver_id?: string
+          responded_at?: string | null
+          sender_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       persona_reads: {
         Row: {
           based_on_count: number
@@ -385,6 +415,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      are_mutual_follows: { Args: { _a: string; _b: string }; Returns: boolean }
       is_blocked_by: { Args: { target_user_id: string }; Returns: boolean }
     }
     Enums: {
