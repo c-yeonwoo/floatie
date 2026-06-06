@@ -175,18 +175,3 @@ function HomePage() {
     </main>
   );
 }
-          </>
-        )}
-      </section>
-
-      <section className="px-6 pb-8">
-        <Link
-          to="/backlog"
-          className="block text-center text-sm text-muted-foreground underline underline-offset-4"
-        >
-          질문 전체 보기
-        </Link>
-      </section>
-    </main>
-  );
-}
