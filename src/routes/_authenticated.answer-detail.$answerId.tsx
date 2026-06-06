@@ -27,36 +27,48 @@ function AnswerDetailPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["answer-detail", answerId],
     queryFn: async () => {
-      const { data: answer } = await supabase
-        .from("answers")
-        .select("id, photos, user_id, created_at, questions(text, category), profiles(handle, display_name)")
-        .eq("id", Number(answerId))
-        .maybeSingle();
-      if (!answer) return null;
-      const { data: comments } = await supabase
-        .from("comments")
-        .select("id, body, created_at, user_id, profiles(handle, display_name)")
-        .eq("answer_id", Number(answerId))
-        .order("created_at", { ascending: true });
-      const { data: userData } = await supabase.auth.getUser();
-      const me = userData.user?.id;
-      const { count: likeCount } = await supabase
-        .from("likes")
-        .select("*", { count: "exact", head: true })
-        .eq("answer_id", Number(answerId));
-      let liked = false;
-      if (me) {
-        const { data: myLike } = await supabase
+      const id = Number(answerId);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const me = sessionData.session?.user?.id;
+
+      const [answerRes, commentsRes, likeCountRes, myLikeRes] = await Promise.all([
+        supabase
+          .from("answers")
+          .select(
+            "id, photos, user_id, created_at, questions(text, category), profiles(handle, display_name)",
+          )
+          .eq("id", id)
+          .maybeSingle(),
+        supabase
+          .from("comments")
+          .select("id, body, created_at, user_id, profiles(handle, display_name)")
+          .eq("answer_id", id)
+          .order("created_at", { ascending: true }),
+        supabase
           .from("likes")
-          .select("user_id")
-          .eq("answer_id", Number(answerId))
-          .eq("user_id", me)
-          .maybeSingle();
-        liked = !!myLike;
-      }
-      return { answer, comments: comments ?? [], me, likeCount: likeCount ?? 0, liked };
+          .select("*", { count: "exact", head: true })
+          .eq("answer_id", id),
+        me
+          ? supabase
+              .from("likes")
+              .select("user_id")
+              .eq("answer_id", id)
+              .eq("user_id", me)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      if (!answerRes.data) return null;
+      return {
+        answer: answerRes.data,
+        comments: commentsRes.data ?? [],
+        me,
+        likeCount: likeCountRes.count ?? 0,
+        liked: !!myLikeRes.data,
+      };
     },
   });
+
 
   const addComment = useMutation({
     mutationFn: async (text: string) => {

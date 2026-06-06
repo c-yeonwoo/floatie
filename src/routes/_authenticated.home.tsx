@@ -22,28 +22,33 @@ function HomePage() {
   const [skipping, setSkipping] = useState(false);
   
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["current-question", skipSeed, category ?? ""],
     queryFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user!.id;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) return null;
 
-      const { data: answered } = await supabase
-        .from("answers")
-        .select("question_id")
-        .eq("user_id", userId);
-      const answeredIds = new Set<number>((answered ?? []).map((r: any) => r.question_id));
-
-      let q = supabase
+      let qBuilder = supabase
         .from("questions")
         .select("id, text, category, sort_order")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
-        .limit(500);
-      if (category) q = q.eq("category", category);
-      const { data: candidates } = await q;
+        .limit(200);
+      if (category) qBuilder = qBuilder.eq("category", category);
 
-      const pool = (candidates ?? []).filter((q: any) => !answeredIds.has(q.id));
+      const [answeredRes, candidatesRes] = await Promise.all([
+        supabase.from("answers").select("question_id").eq("user_id", userId),
+        qBuilder,
+      ]);
+
+      const answeredIds = new Set<number>(
+        (answeredRes.data ?? []).map((r: any) => r.question_id),
+      );
+
+      const pool = (candidatesRes.data ?? []).filter(
+        (q: any) => !answeredIds.has(q.id),
+      );
       if (pool.length === 0) return null;
 
       const question = skipSeed > 0
@@ -54,16 +59,15 @@ function HomePage() {
     },
   });
 
-  async function handleSkip() {
+  function handleSkip() {
     if (skipping) return;
     setSkipping(true);
-    try {
-      setSkipSeed((s) => s + 1);
-      await refetch();
-    } finally {
-      setSkipping(false);
-    }
+    // setSkipSeed changes the query key, which triggers a fresh fetch.
+    setSkipSeed((s) => s + 1);
+    // brief debounce so the button shows feedback
+    setTimeout(() => setSkipping(false), 300);
   }
+
 
   const onBadgeClick = (c: string) => {
     navigate({ search: category === c ? {} : { category: c } });

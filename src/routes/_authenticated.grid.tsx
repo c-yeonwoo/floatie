@@ -40,7 +40,7 @@ function GridPage() {
         .select("question_id, user_id, photos, created_at, questions(id, text, category)")
         .eq("visibility", "public")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(200);
 
       const blocked = blockedIds ?? new Set<string>();
       const map = new Map<number, QCard>();

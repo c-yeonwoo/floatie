@@ -41,8 +41,8 @@ function NotificationsBell() {
   const { data: unread } = useQuery({
     queryKey: ["nudges-unread-count"],
     queryFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const me = userData.user?.id;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const me = sessionData.session?.user?.id;
       if (!me) return 0;
       const { count } = await supabase
         .from("nudges")
@@ -51,6 +51,7 @@ function NotificationsBell() {
         .eq("status", "pending");
       return count ?? 0;
     },
+    staleTime: 30_000,
     refetchOnWindowFocus: true,
   });
 
@@ -73,13 +74,27 @@ function FeedPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["home-feed", Array.from(blockedIds ?? []).sort().join(",")],
     queryFn: async (): Promise<FeedItem[]> => {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData.session?.user?.id;
       if (!uid) return [];
 
-      const [followsRes, mineRes] = await Promise.all([
+      const [followsRes, mineRes, answersRes, qsRes] = await Promise.all([
         supabase.from("follows").select("following_id").eq("follower_id", uid),
         supabase.from("answers").select("question_id").eq("user_id", uid),
+        supabase
+          .from("answers")
+          .select(
+            "id, user_id, photos, created_at, questions(id, text, category), profiles(handle, display_name, avatar_url)",
+          )
+          .eq("visibility", "public")
+          .neq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(80),
+        supabase
+          .from("questions")
+          .select("id, text, category")
+          .eq("is_active", true)
+          .limit(60),
       ]);
 
       const followedSet = new Set(
@@ -89,20 +104,9 @@ function FeedPage() {
         (mineRes.data ?? []).map((a: any) => a.question_id as number),
       );
 
-      const { data: answers } = await supabase
-        .from("answers")
-        .select(
-          "id, user_id, photos, created_at, questions(id, text, category), profiles(handle, display_name, avatar_url)",
-        )
-
-        .eq("visibility", "public")
-        .neq("user_id", uid)
-        .order("created_at", { ascending: false })
-        .limit(200);
-
       const blocked = blockedIds ?? new Set<string>();
       const now = Date.now();
-      const scored = (answers ?? [])
+      const scored = (answersRes.data ?? [])
         .filter((a: any) => !blocked.has(a.user_id))
         .filter((a: any) => Array.isArray(a.photos) && a.photos.length > 0)
         .map((a: any) => {
@@ -124,14 +128,10 @@ function FeedPage() {
 
       scored.sort((a, b) => b.score - a.score);
 
-      const { data: qs } = await supabase
-        .from("questions")
-        .select("id, text, category")
-        .eq("is_active", true)
-        .limit(60);
-      const unanswered = (qs ?? [])
+      const unanswered = (qsRes.data ?? [])
         .filter((q: any) => !answeredQs.has(q.id))
         .slice(0, 12);
+
 
       const items: FeedItem[] = [];
       let promptIdx = 0;

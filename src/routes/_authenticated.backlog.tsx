@@ -20,20 +20,23 @@ function BacklogPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["backlog"],
+    staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user!.id;
-      const { data: answered } = await supabase
-        .from("answers")
-        .select("question_id")
-        .eq("user_id", uid);
-      const answeredIds = new Set((answered ?? []).map((a) => a.question_id));
-      const { data: questions } = await supabase
-        .from("questions")
-        .select("id, text, category")
-        .eq("is_active", true)
-        .order("sort_order");
-      return (questions ?? []).filter((q) => !answeredIds.has(q.id));
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData.session?.user?.id;
+      if (!uid) return [];
+      const [answeredRes, questionsRes] = await Promise.all([
+        supabase.from("answers").select("question_id").eq("user_id", uid),
+        supabase
+          .from("questions")
+          .select("id, text, category")
+          .eq("is_active", true)
+          .order("sort_order"),
+      ]);
+      const answeredIds = new Set(
+        (answeredRes.data ?? []).map((a) => a.question_id),
+      );
+      return (questionsRes.data ?? []).filter((q) => !answeredIds.has(q.id));
     },
   });
 

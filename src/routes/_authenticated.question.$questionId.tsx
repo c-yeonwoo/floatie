@@ -29,19 +29,21 @@ function QuestionPage() {
     queryKey: ["question-grid", questionId],
     queryFn: async () => {
       const qid = Number(questionId);
-      const { data: q } = await supabase
-        .from("questions")
-        .select("id, text, category")
-        .eq("id", qid)
-        .maybeSingle();
-      const { data: answers } = await supabase
-        .from("answers")
-        .select("id, photos, profiles(handle)")
-        .eq("question_id", qid)
-        .eq("visibility", "public")
-        .order("created_at", { ascending: false })
-        .limit(120);
-      return { question: q, answers: (answers ?? []) as any[] };
+      const [qRes, answersRes] = await Promise.all([
+        supabase
+          .from("questions")
+          .select("id, text, category")
+          .eq("id", qid)
+          .maybeSingle(),
+        supabase
+          .from("answers")
+          .select("id, photos, profiles(handle)")
+          .eq("question_id", qid)
+          .eq("visibility", "public")
+          .order("created_at", { ascending: false })
+          .limit(120),
+      ]);
+      return { question: qRes.data, answers: (answersRes.data ?? []) as any[] };
     },
   });
 
