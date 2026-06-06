@@ -1,15 +1,23 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CategoryBadge } from "@/components/category-badge";
+import { CategoryBadge, CategoryFilterChip } from "@/components/category-badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+type Search = { category?: string };
+
 export const Route = createFileRoute("/_authenticated/backlog")({
   head: () => ({ meta: [{ title: "백로그 — 숨결" }] }),
+  validateSearch: (search: Record<string, unknown>): Search => {
+    const c = typeof search.category === "string" ? search.category.trim() : "";
+    return c ? { category: c } : {};
+  },
   component: BacklogPage,
 });
 
 function BacklogPage() {
-  const navigate = useNavigate();
+  const { category } = Route.useSearch();
+  const navigate = useNavigate({ from: "/backlog" });
+
   const { data, isLoading } = useQuery({
     queryKey: ["backlog"],
     queryFn: async () => {
@@ -29,6 +37,14 @@ function BacklogPage() {
     },
   });
 
+  const filtered = (data ?? []).filter(
+    (q) => !category || q.category === category,
+  );
+
+  const onBadgeClick = (c: string) => {
+    navigate({ search: category === c ? {} : { category: c } });
+  };
+
   return (
     <main>
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex items-center justify-between gap-3">
@@ -37,6 +53,14 @@ function BacklogPage() {
         <span className="w-10" />
       </header>
 
+      {category && (
+        <div className="px-6 pt-4">
+          <CategoryFilterChip
+            category={category}
+            onClear={() => navigate({ search: {} })}
+          />
+        </div>
+      )}
 
       <section className="px-6 py-6">
         {isLoading ? (
@@ -45,24 +69,33 @@ function BacklogPage() {
               <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
             ))}
           </div>
-        ) : !data || data.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-20">
-            모든 질문에 답하셨어요. 대단하세요.
+            {category
+              ? `‘${category}’에 남은 질문이 없어요.`
+              : "모든 질문에 답하셨어요. 대단하세요."}
           </p>
         ) : (
           <ul className="space-y-2">
-            {data.map((q) => (
+            {filtered.map((q) => (
               <li key={q.id}>
                 <button
                   onClick={() =>
-                    navigate({ to: "/answer/$questionId", params: { questionId: String(q.id) } })
+                    navigate({
+                      to: "/answer/$questionId",
+                      params: { questionId: String(q.id) },
+                      search: {} as any,
+                    })
                   }
                   className="w-full text-left p-5 bg-surface border border-border rounded-xl hover:bg-secondary transition-colors"
                 >
-                  <CategoryBadge category={q.category} />
+                  <CategoryBadge
+                    category={q.category}
+                    onClick={onBadgeClick}
+                    active={category === q.category}
+                  />
                   <p className="font-serif text-lg mt-2">{q.text}</p>
                 </button>
-
               </li>
             ))}
           </ul>

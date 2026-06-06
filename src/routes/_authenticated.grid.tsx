@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { CategoryBadge } from "@/components/category-badge";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { CategoryBadge, CategoryFilterChip } from "@/components/category-badge";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -7,8 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBlockedIds } from "@/lib/blocks";
 import { StorageImg } from "@/components/storage-img";
 
+type SearchParams = { category?: string };
+
 export const Route = createFileRoute("/_authenticated/grid")({
   head: () => ({ meta: [{ title: "탐색 — 숨결" }] }),
+  validateSearch: (search: Record<string, unknown>): SearchParams => {
+    const c = typeof search.category === "string" ? search.category.trim() : "";
+    return c ? { category: c } : {};
+  },
   component: GridPage,
 });
 
@@ -21,8 +27,11 @@ type QCard = {
 };
 
 function GridPage() {
+  const { category } = Route.useSearch();
+  const navigate = useNavigate({ from: "/grid" });
   const { data: blockedIds } = useBlockedIds();
   const [query, setQuery] = useState("");
+
   const { data, isLoading } = useQuery({
     queryKey: ["explore-questions", Array.from(blockedIds ?? []).sort().join(",")],
     queryFn: async (): Promise<QCard[]> => {
@@ -61,13 +70,19 @@ function GridPage() {
   const filtered = useMemo(() => {
     if (!data) return [];
     const q = query.trim().toLowerCase();
-    if (!q) return data;
-    return data.filter(
-      (item) =>
+    return data.filter((item) => {
+      if (category && item.category !== category) return false;
+      if (!q) return true;
+      return (
         item.text.toLowerCase().includes(q) ||
-        (item.category ?? "").toLowerCase().includes(q),
-    );
-  }, [data, query]);
+        (item.category ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [data, query, category]);
+
+  const onBadgeClick = (c: string) => {
+    navigate({ search: category === c ? {} : { category: c } });
+  };
 
   return (
     <main>
@@ -97,6 +112,15 @@ function GridPage() {
             </button>
           )}
         </div>
+
+        {category && (
+          <div className="pt-1">
+            <CategoryFilterChip
+              category={category}
+              onClear={() => navigate({ search: {} })}
+            />
+          </div>
+        )}
       </header>
 
       <section className="px-4 py-6 space-y-4">
@@ -106,7 +130,11 @@ function GridPage() {
           ))
         ) : filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-16">
-            {query ? `"${query}"에 맞는 질문이 없어요.` : "아직 모인 숨이 없어요."}
+            {query
+              ? `"${query}"에 맞는 질문이 없어요.`
+              : category
+                ? `‘${category}’에 모인 숨이 없어요.`
+                : "아직 모인 숨이 없어요."}
           </p>
         ) : (
           filtered.map((q) => (
@@ -117,7 +145,11 @@ function GridPage() {
               className="block border border-border rounded-2xl overflow-hidden hover:border-foreground/30 transition-colors"
             >
               <div className="px-5 pt-5 pb-3">
-                <CategoryBadge category={q.category} />
+                <CategoryBadge
+                  category={q.category}
+                  onClick={onBadgeClick}
+                  active={category === q.category}
+                />
                 <p className="font-serif text-[16px] mt-2 leading-snug">
                   {q.text}
                 </p>
