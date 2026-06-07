@@ -28,6 +28,7 @@ function AuthenticatedLayout() {
     location.pathname.startsWith("/answer-edit/") ||
     location.pathname === "/onboarding";
   const lockPageScroll = location.pathname === "/me";
+  const tabBarHeight = hideTabs ? "0px" : "3.25rem";
 
   return (
     <div
@@ -43,10 +44,11 @@ function AuthenticatedLayout() {
             "flex-1 min-h-0 " +
             (lockPageScroll ? "overflow-hidden" : "overflow-y-auto overscroll-contain")
           }
+          style={{ paddingBottom: hideTabs ? 0 : tabBarHeight }}
         >
           <Outlet />
         </div>
-        {!hideTabs && <TabBar pathname={location.pathname} />}
+        {!hideTabs && <TabBar pathname={location.pathname} height={tabBarHeight} />}
       </div>
     </div>
   );
@@ -54,7 +56,7 @@ function AuthenticatedLayout() {
 
 
 
-function TabBar({ pathname }: { pathname: string }) {
+function TabBar({ pathname, height }: { pathname: string; height: string }) {
   const items: Array<{ to: "/home" | "/feed" | "/grid" | "/me"; label: string }> = [
     { to: "/home", label: "오늘의 숨" },
     { to: "/feed", label: "피드" },
@@ -63,10 +65,10 @@ function TabBar({ pathname }: { pathname: string }) {
   ];
   return (
     <nav
-      className="shrink-0 w-full bg-background border-t border-border flex z-40 shadow-nav"
+      className="absolute bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 bg-background border-t border-border flex z-40 shadow-nav"
       style={{
-        height: "calc(3.25rem + max(env(safe-area-inset-bottom, 0px), 0px))",
-        paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0px)",
+        height,
+        paddingBottom: "min(env(safe-area-inset-bottom, 0px), 0.5rem)",
       }}
     >
 
