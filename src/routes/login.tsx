@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-ro
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import logoSymbol from "@/assets/logo-symbol-frame.png";
+import logoSymbolAsset from "@/assets/logo-symbol-frame.png.asset.json";
+const logoSymbol = logoSymbolAsset.url;
 
 export const Route = createFileRoute("/login")({
   head: () => ({
