@@ -119,14 +119,12 @@ function HomePage() {
                   {data.question.text}
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={handleSkip}
-                disabled={skipping}
-                className="shrink-0 mt-1 text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4 disabled:opacity-50"
+              <Link
+                to="/backlog"
+                className="shrink-0 mt-1 text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4"
               >
-                {skipping ? "찾는 중…" : "이 질문 skip"}
-              </button>
+                질문 전체 보기
+              </Link>
             </div>
 
             <Link
@@ -157,12 +155,14 @@ function HomePage() {
       </section>
 
       <section className="px-6 pb-8">
-        <Link
-          to="/backlog"
-          className="block text-center text-sm text-muted-foreground underline underline-offset-4"
+        <button
+          type="button"
+          onClick={handleSkip}
+          disabled={skipping || !data?.question}
+          className="block w-full text-center text-sm text-muted-foreground underline underline-offset-4 disabled:opacity-50"
         >
-          질문 전체 보기
-        </Link>
+          {skipping ? "찾는 중…" : "이 질문 skip"}
+        </button>
       </section>
     </main>
   );
