@@ -30,8 +30,14 @@ function AuthenticatedLayout() {
   const lockPageScroll = location.pathname === "/me";
 
   return (
-    <div className="fixed inset-0 bg-background text-foreground overflow-hidden">
-      <div className="max-w-md mx-auto h-[100dvh] min-h-0 flex flex-col overflow-hidden">
+    <div
+      className="fixed inset-0 bg-background text-foreground overflow-hidden"
+      style={{ height: "var(--app-vh)" }}
+    >
+      <div
+        className="max-w-md mx-auto min-h-0 flex flex-col overflow-hidden"
+        style={{ height: "var(--app-vh)" }}
+      >
         <div
           className={
             "flex-1 min-h-0 " +
@@ -47,6 +53,7 @@ function AuthenticatedLayout() {
 }
 
 
+
 function TabBar({ pathname }: { pathname: string }) {
   const items: Array<{ to: "/home" | "/feed" | "/grid" | "/me"; label: string }> = [
     { to: "/home", label: "오늘의 숨" },
@@ -58,10 +65,11 @@ function TabBar({ pathname }: { pathname: string }) {
     <nav
       className="shrink-0 w-full bg-background border-t border-border flex z-40 shadow-nav"
       style={{
-        height: "calc(3rem + env(safe-area-inset-bottom, 0px))",
-        paddingBottom: "env(safe-area-inset-bottom)",
+        height: "calc(3.25rem + max(env(safe-area-inset-bottom, 0px), 0px))",
+        paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0px)",
       }}
     >
+
       {items.map((it, idx) => {
         const active = pathname === it.to;
         return (

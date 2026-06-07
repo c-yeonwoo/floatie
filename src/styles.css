@@ -94,20 +94,37 @@
     border-color: var(--color-border);
   }
 
+  :root {
+    /* JS가 visualViewport.height 기반으로 갱신. 미지원 환경은 100dvh 폴백 */
+    --app-vh: 100dvh;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   html, body {
     height: 100%;
+    width: 100%;
     margin: 0;
     overflow: hidden;
     overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+    touch-action: pan-y;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
 
-  body > div {
-    min-height: 100dvh;
+  body {
+    position: fixed;
+    inset: 0;
+    overscroll-behavior-y: none;
   }
+
+  body > div {
+    height: var(--app-vh);
+    min-height: var(--app-vh);
+  }
+
 
   .font-serif {
     font-family: var(--font-serif);

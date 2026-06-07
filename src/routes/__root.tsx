@@ -115,14 +115,58 @@ function AuthSync() {
   return null;
 }
 
+function ViewportSync() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+    const set = () => {
+      const h = (window.visualViewport?.height ?? window.innerHeight) + "px";
+      root.style.setProperty("--app-vh", h);
+    };
+    set();
+    window.addEventListener("resize", set);
+    window.addEventListener("orientationchange", set);
+    window.visualViewport?.addEventListener("resize", set);
+    window.visualViewport?.addEventListener("scroll", set);
+
+    // iOS Safari bounce / 문서 자체 스크롤 잠금 강화
+    const preventDocScroll = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      // 스크롤 가능한 컨테이너 내부 터치는 허용
+      let el: HTMLElement | null = target;
+      while (el && el !== document.body) {
+        const style = window.getComputedStyle(el);
+        const oy = style.overflowY;
+        if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) {
+          return;
+        }
+        el = el.parentElement;
+      }
+      e.preventDefault();
+    };
+    document.addEventListener("touchmove", preventDocScroll, { passive: false });
+
+    return () => {
+      window.removeEventListener("resize", set);
+      window.removeEventListener("orientationchange", set);
+      window.visualViewport?.removeEventListener("resize", set);
+      window.visualViewport?.removeEventListener("scroll", set);
+      document.removeEventListener("touchmove", preventDocScroll);
+    };
+  }, []);
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ViewportSync />
       <AuthSync />
       <Outlet />
       <Toaster position="top-center" toastOptions={{ style: { fontFamily: "var(--font-sans)" } }} />
     </QueryClientProvider>
   );
 }
+
