@@ -102,7 +102,7 @@ function LoginPage() {
 
   if (confirmSent) {
     return (
-      <main className="h-[100dvh] overflow-hidden bg-background flex items-center justify-center px-6">
+      <main className="fixed inset-0 h-[100dvh] overflow-hidden overscroll-none bg-background flex items-center justify-center px-6 touch-none">
 
         <div className="w-full max-w-sm text-center">
           <h1 className="font-serif text-3xl mb-4">메일을 보냈어요</h1>
@@ -135,16 +135,16 @@ function LoginPage() {
   }
 
   return (
-    <main className="h-[100dvh] overflow-hidden bg-background flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <Link to="/" className="block text-center mb-12">
+    <main className="fixed inset-0 h-[100dvh] overflow-hidden overscroll-none bg-background flex items-center justify-center px-6 touch-none">
+      <div className="w-full max-w-sm max-h-[100dvh] py-6">
+        <Link to="/" className="block text-center mb-8 sm:mb-10">
             <img
             src={logoSymbol}
             alt="숨결"
-            className="mx-auto h-20 w-20 object-contain"
+            className="mx-auto h-16 w-16 sm:h-20 sm:w-20 object-contain"
           />
-          <h1 className="mt-4 font-serif text-4xl tracking-tight text-foreground">숨결</h1>
-          <p className="mt-3 text-sm text-muted-foreground">사진 한 장으로 답하는 공간</p>
+          <h1 className="mt-3 font-serif text-4xl tracking-tight text-foreground">숨결</h1>
+          <p className="mt-2 text-sm text-muted-foreground">사진 한 장으로 답하는 공간</p>
         </Link>
 
         <form onSubmit={onSubmit} className="space-y-4">
@@ -213,7 +213,7 @@ function LoginPage() {
           </button>
         </form>
 
-        <div className="flex items-center my-6 gap-3">
+        <div className="flex items-center my-5 gap-3">
           <div className="flex-1 h-px bg-border" />
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">또는</span>
           <div className="flex-1 h-px bg-border" />
@@ -228,7 +228,7 @@ function LoginPage() {
           Google로 계속하기
         </button>
 
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           {mode === "signin" ? "처음이신가요?" : "이미 가입하셨나요?"}{" "}
           <button
             type="button"
@@ -239,7 +239,7 @@ function LoginPage() {
           </button>
         </p>
 
-        <p className="mt-6 text-center text-[10px] text-muted-foreground">
+        <p className="mt-4 text-center text-[10px] text-muted-foreground">
           <Link to="/terms" className="hover:text-foreground">이용약관</Link>
           {" · "}
           <Link to="/privacy" className="hover:text-foreground">개인정보 처리방침</Link>
