@@ -12,8 +12,8 @@ export const Route = createFileRoute("/terms")({
 
 function TermsPage() {
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="max-w-2xl mx-auto px-6 py-12">
+    <main className="fixed inset-0 bg-background text-foreground overflow-y-auto overscroll-contain">
+      <div className="max-w-2xl mx-auto px-6 py-12 min-h-[100dvh]">
         <Link to="/login" className="text-[11px] uppercase tracking-widest text-muted-foreground">
           ← 돌아가기
         </Link>

@@ -27,15 +27,16 @@ function AuthenticatedLayout() {
     location.pathname.startsWith("/answer-detail/") ||
     location.pathname.startsWith("/answer-edit/") ||
     location.pathname === "/onboarding";
+  const lockPageScroll = location.pathname === "/me";
 
   return (
     <div className="fixed inset-0 bg-background text-foreground overflow-hidden">
-      <div className="max-w-md mx-auto h-full flex flex-col">
+      <div className="max-w-md mx-auto h-[100dvh] min-h-0 flex flex-col overflow-hidden">
         <div
-          className="flex-1 overflow-y-auto overscroll-contain"
-          style={{
-            paddingBottom: hideTabs ? "0px" : "calc(3.25rem + env(safe-area-inset-bottom))",
-          }}
+          className={
+            "flex-1 min-h-0 " +
+            (lockPageScroll ? "overflow-hidden" : "overflow-y-auto overscroll-contain")
+          }
         >
           <Outlet />
         </div>
@@ -55,9 +56,9 @@ function TabBar({ pathname }: { pathname: string }) {
   ];
   return (
     <nav
-      className="fixed bottom-0 left-1/2 right-auto w-full max-w-md -translate-x-1/2 bg-background border-t border-border flex z-40 shadow-nav"
+      className="shrink-0 w-full bg-background border-t border-border flex z-40 shadow-nav"
       style={{
-        height: "calc(3.25rem + env(safe-area-inset-bottom))",
+        height: "calc(3rem + env(safe-area-inset-bottom, 0px))",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
@@ -67,7 +68,7 @@ function TabBar({ pathname }: { pathname: string }) {
           <div key={it.to} className="flex-1 flex items-stretch">
             <Link
               to={it.to}
-              className="flex-1 flex flex-col items-center justify-center gap-1 py-1.5"
+              className="flex-1 flex flex-col items-center justify-center gap-1 py-1"
             >
               <span
                 className={

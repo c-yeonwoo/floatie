@@ -63,6 +63,7 @@ function MePage() {
   });
 
   const answerCount = data?.answers.length ?? 0;
+  const visibleAnswers = data?.answers.slice(0, 6) ?? [];
   const canGenerate = answerCount >= 3;
   const persona = data?.persona;
   const showRegenerate = persona && answerCount - persona.based_on_count >= 3;
@@ -73,34 +74,34 @@ function MePage() {
   };
 
   return (
-    <main>
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex justify-between items-center">
+    <main className="h-full overflow-hidden flex flex-col">
+      <header className="shrink-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex justify-between items-center">
         <h1 className="font-serif text-2xl tracking-tight">내 결</h1>
         <button onClick={onLogout} className="text-[13px] text-muted-foreground hover:text-foreground">
           로그아웃
         </button>
       </header>
 
-      <section className="px-6 py-8 text-center flex flex-col items-center">
+      <section className="shrink-0 px-6 py-5 text-center flex flex-col items-center">
 
         {data?.profile?.avatar_url ? (
           <StorageImg
             src={data.profile.avatar_url}
             alt=""
-            className="size-20 rounded-full object-cover border border-border mb-4"
+            className="size-16 rounded-full object-cover border border-border mb-3"
           />
         ) : (
-          <div className="size-20 rounded-full bg-surface border border-border mb-4" />
+          <div className="size-16 rounded-full bg-surface border border-border mb-3" />
         )}
         <h2 className="font-serif text-2xl">
           {data?.profile?.display_name ?? "..."}
         </h2>
         {data?.profile?.bio && (
-          <p className="text-[14px] text-foreground/80 mt-3 max-w-sm text-pretty">
+          <p className="text-[13px] text-foreground/80 mt-2 max-w-sm text-pretty line-clamp-2">
             {data.profile.bio}
           </p>
         )}
-        <div className="flex items-center gap-8 mt-6">
+        <div className="flex items-center gap-8 mt-4">
           <StatBlock label="기록" value={answerCount} />
           {data?.profile?.handle ? (
             <Link to="/u/$handle/followers" params={{ handle: data.profile.handle }}>
@@ -119,26 +120,26 @@ function MePage() {
         </div>
         <Link
           to="/me/edit"
-          className="mt-4 text-[11px] uppercase tracking-widest text-accent border border-accent/40 rounded-full px-4 py-1.5 hover:bg-accent hover:text-accent-foreground transition-colors"
+          className="mt-3 text-[11px] uppercase tracking-widest text-accent border border-accent/40 rounded-full px-4 py-1.5 hover:bg-accent hover:text-accent-foreground transition-colors"
         >
           프로필 수정
         </Link>
       </section>
 
-      <section className="px-6 mb-10">
-        <div className="bg-surface border border-border rounded-2xl p-6">
-          <div className="flex items-center gap-2 mb-3">
+      <section className="shrink-0 px-6 mb-4">
+        <div className="bg-surface border border-border rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-2">
             <div className="size-1.5 bg-accent rounded-full" />
             <span className="text-[10px] uppercase tracking-widest text-accent">AI 결 요약</span>
           </div>
           {persona ? (
             <>
-              <p className="text-[15px] leading-relaxed text-foreground text-pretty">
+              <p className="text-[14px] leading-relaxed text-foreground text-pretty line-clamp-3">
                 {persona.summary}
               </p>
               {persona.keywords && persona.keywords.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {persona.keywords.map((k: string) => (
+                <div className="flex flex-wrap gap-2 mt-3 max-h-7 overflow-hidden">
+                  {persona.keywords.slice(0, 4).map((k: string) => (
                     <span
                       key={k}
                       className="px-3 py-1 bg-muted rounded-full text-xs text-muted-foreground"
@@ -148,7 +149,7 @@ function MePage() {
                   ))}
                 </div>
               )}
-              <p className="text-[11px] text-muted-foreground mt-4">
+              <p className="text-[11px] text-muted-foreground mt-3">
                 {persona.based_on_count}개 기록 기준
               </p>
               {showRegenerate && (
@@ -182,10 +183,10 @@ function MePage() {
         </div>
       </section>
 
-      <section className="px-6">
+      <section className="flex-1 min-h-0 px-6 overflow-hidden">
         {isLoading ? (
           <div className="grid grid-cols-3 gap-1.5">
-            {Array.from({ length: 9 }).map((_, i) => (
+            {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="aspect-square bg-muted animate-pulse rounded-sm" />
             ))}
           </div>
@@ -198,7 +199,7 @@ function MePage() {
           </p>
         ) : (
           <div className="grid grid-cols-3 gap-1.5">
-            {data!.answers.map((a: any) => (
+            {visibleAnswers.map((a: any) => (
               <Link
                 key={a.id}
                 to="/answer-detail/$answerId"
@@ -216,7 +217,7 @@ function MePage() {
         )}
       </section>
 
-      <section className="px-6 mt-10 mb-12 text-center space-y-3">
+      <section className="shrink-0 px-6 py-3 text-center space-y-2">
         <Link
           to="/me/blocked"
           className="block text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
