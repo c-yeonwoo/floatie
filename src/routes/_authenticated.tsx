@@ -29,12 +29,12 @@ function AuthenticatedLayout() {
     location.pathname === "/onboarding";
 
   return (
-    <div className="h-[100dvh] bg-background text-foreground overflow-hidden">
-      <div className="max-w-md mx-auto h-full flex flex-col relative">
+    <div className="fixed inset-0 bg-background text-foreground overflow-hidden">
+      <div className="max-w-md mx-auto h-full flex flex-col">
         <div
           className="flex-1 overflow-y-auto overscroll-contain"
           style={{
-            paddingBottom: hideTabs ? "0px" : "3.5rem",
+            paddingBottom: hideTabs ? "0px" : "calc(3.25rem + env(safe-area-inset-bottom))",
           }}
         >
           <Outlet />
@@ -55,7 +55,7 @@ function TabBar({ pathname }: { pathname: string }) {
   ];
   return (
     <nav
-      className="absolute bottom-0 left-0 right-0 bg-background border-t border-border flex z-40 shadow-nav"
+      className="fixed bottom-0 left-1/2 right-auto w-full max-w-md -translate-x-1/2 bg-background border-t border-border flex z-40 shadow-nav"
       style={{
         height: "calc(3.25rem + env(safe-area-inset-bottom))",
         paddingBottom: "env(safe-area-inset-bottom)",
