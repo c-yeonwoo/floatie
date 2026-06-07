@@ -1,15 +1,28 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Capacitor config for packaging 결 as an iOS app.
+ * Capacitor config for packaging 숨결 as an iOS/Android app.
  *
- * Two modes:
- * 1) Production-like build (default): set `webDir` and run `npm run build`,
- *    then `npx cap sync ios`. The built static assets are bundled into the app.
- * 2) Live-reload during development: uncomment `server.url` below and point
- *    it at your dev server / Lovable preview URL.
+ * IMPORTANT — Why server.url is enabled by default
+ * -------------------------------------------------
+ * This project runs on TanStack Start, which is a SSR framework. The browser
+ * bundle expects an SSR-injected hydration payload (router state, head, etc.)
+ * to be present in the initial HTML. Capacitor's local web bundle only ships
+ * a static shell (`dist/client/index.html`) without that payload, so loading
+ * the bundled assets directly results in a blank/broken WebView.
  *
- * Build flow (run on a Mac with Xcode + Apple Developer account):
+ * The reliable fix is to point the native WebView at the live SSR endpoint:
+ *   https://sumgyeol.lovable.app   (published production URL — stable)
+ *
+ * This makes the iOS/Android app a thin native shell around the live SSR
+ * web app — Capacitor plugins (Camera, etc.) still work natively, but page
+ * rendering happens against the server.
+ *
+ * If you ever want to switch back to a fully bundled offline build, you must
+ * first migrate the project to a SPA build target (Vite SPA, not TanStack
+ * Start SSR), then comment out `server` below.
+ *
+ * Build flow:
  *   bun install
  *   bun run build
  *   npx cap add ios          # first time only
@@ -21,6 +34,12 @@ const config: CapacitorConfig = {
   appName: "결",
   webDir: "dist/client",
   bundledWebRuntime: false,
+  server: {
+    url: "https://sumgyeol.lovable.app",
+    cleartext: false,
+    androidScheme: "https",
+    iosScheme: "https",
+  },
   ios: {
     infoPlist: {
       NSCameraUsageDescription: "질문에 답변을 첨부하려고 카메라를 사용합니다.",
@@ -34,10 +53,6 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: false,
     backgroundColor: "#F9F8F6",
   },
-  // server: {
-  //   url: "https://id-preview--e7936f15-a0c6-4d73-beb0-73adbb2e98e3.lovable.app",
-  //   cleartext: false,
-  // },
 };
 
 export default config;
