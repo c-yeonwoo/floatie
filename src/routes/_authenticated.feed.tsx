@@ -110,8 +110,6 @@ function FeedPage() {
       const now = Date.now();
       const scored = (answersRes.data ?? [])
         .filter((a: any) => !blocked.has(a.user_id) && Array.isArray(a.photos) && a.photos.length > 0)
-
-        .filter((a: any) => Array.isArray(a.photos) && a.photos.length > 0)
         .map((a: any) => {
         const isFollow = followedSet.has(a.user_id);
         const ageHours = (now - new Date(a.created_at).getTime()) / 36e5;
