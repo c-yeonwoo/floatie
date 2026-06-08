@@ -135,6 +135,30 @@ function AnswerDetailPage() {
     onError: (e: any) => toast.error(e?.message ?? "잠시 후 다시 시도해 주세요."),
   });
 
+  const toggleStay = useMutation({
+    mutationFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user!.id;
+      if (data?.stayed) {
+        const { error } = await supabase
+          .from("stays")
+          .delete()
+          .eq("answer_id", Number(answerId))
+          .eq("user_id", uid);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("stays")
+          .insert({ answer_id: Number(answerId), user_id: uid });
+        if (error) throw error;
+        haptic("light");
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["answer-detail", answerId] }),
+    onError: (e: any) => toast.error(e?.message ?? "잠시 후 다시 시도해 주세요."),
+  });
+
+
   if (isLoading) {
     return <div className="p-10 text-center text-sm text-muted-foreground">불러오는 중...</div>;
   }
