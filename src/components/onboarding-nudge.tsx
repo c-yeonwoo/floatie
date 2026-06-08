@@ -238,8 +238,9 @@ function SeedFriendsCard({
         </span>
       </div>
       <p className="mt-1 text-[13px] text-muted-foreground leading-relaxed break-keep">
-        먼저 숨을 남긴 사람들이에요. 한두 명만 따라가 봐도 좋아요.
+        당신이 남긴 숨과 결이 비슷한 사람들이에요. 한두 명만 따라가 봐도 좋아요.
       </p>
+
       <ul className="mt-4 space-y-3">
         {seeds.map((p) => {
           const name = p.display_name || p.handle || "익명의 숨";
