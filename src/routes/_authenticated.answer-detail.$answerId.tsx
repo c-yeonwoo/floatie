@@ -308,6 +308,20 @@ function AnswerDetailPage() {
             />
             <span className="tabular-nums">{data.likeCount}</span>
           </button>
+          <button
+            onClick={() => toggleStay.mutate()}
+            disabled={toggleStay.isPending}
+            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+            aria-label={data.stayed ? "머무름 취소" : "이 숨에 머물렀어요"}
+            title="이 숨에 머물렀어요"
+          >
+            <Wind
+              size={20}
+              strokeWidth={1.75}
+              className={data.stayed ? "text-foreground" : ""}
+            />
+            <span className="tabular-nums">{data.stayCount}</span>
+          </button>
           <a
             href="#comments"
             className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
