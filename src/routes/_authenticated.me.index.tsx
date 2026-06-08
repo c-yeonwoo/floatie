@@ -77,7 +77,7 @@ function MePage() {
     <main className="h-full overflow-hidden flex flex-col">
       <header className="shrink-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border flex justify-between items-center">
         <h1 className="font-serif text-[26px] tracking-tight">내 결</h1>
-        <button onClick={onLogout} className="text-[13px] text-muted-foreground hover:text-foreground">
+        <button onClick={onLogout} className="text-[15px] text-muted-foreground hover:text-foreground">
           로그아웃
         </button>
       </header>
