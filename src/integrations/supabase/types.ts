@@ -389,6 +389,35 @@ export type Database = {
         }
         Relationships: []
       }
+      stays: {
+        Row: {
+          answer_id: number
+          created_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          answer_id: number
+          created_at?: string
+          id?: number
+          user_id: string
+        }
+        Update: {
+          answer_id?: number
+          created_at?: string
+          id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stays_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           created_at: string
