@@ -13,6 +13,103 @@ type SeedProfile = {
 };
 
 /**
+ * 시드 친구 추천을 사용자의 질문 톤/카테고리 선호 기반으로 고른다.
+ * 1) 내가 답한 질문들의 category 분포를 가중치로 사용
+ * 2) 최근 공개 답 중 같은 질문 답변자는 강한 가중치(+3), 카테고리 일치(+1)
+ * 3) 차단/이미 팔로우/본인 제외, 최대 5명
+ * 4) 톤/카테고리 신호가 부족하면 최근 활동 사용자로 폴백
+ */
+async function pickSeedsByPreference(uid: string): Promise<SeedProfile[]> {
+  // 내가 답한 질문 → 카테고리 가중치
+  const { data: myAns } = await supabase
+    .from("answers")
+    .select("question_id, questions(category, tone)")
+    .eq("user_id", uid)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const myQuestionIds = new Set<number>();
+  const categoryWeight = new Map<string, number>();
+  for (const row of (myAns ?? []) as Array<{
+    question_id: number;
+    questions: { category: string | null; tone: string | null } | null;
+  }>) {
+    myQuestionIds.add(row.question_id);
+    const cat = row.questions?.category;
+    if (cat) categoryWeight.set(cat, (categoryWeight.get(cat) ?? 0) + 1);
+  }
+
+  // 이미 팔로우 / 차단 관계는 제외
+  const [followsRes, blocksRes, blockedByRes] = await Promise.all([
+    supabase.from("follows").select("following_id").eq("follower_id", uid),
+    supabase.from("blocks").select("blocked_id").eq("blocker_id", uid),
+    supabase.from("blocks").select("blocker_id").eq("blocked_id", uid),
+  ]);
+  const excluded = new Set<string>([uid]);
+  for (const r of followsRes.data ?? []) excluded.add(r.following_id);
+  for (const r of blocksRes.data ?? []) excluded.add(r.blocked_id);
+  for (const r of blockedByRes.data ?? []) excluded.add(r.blocker_id);
+
+  // 최근 공개 답에서 후보 모으기
+  const { data: recent } = await supabase
+    .from("answers")
+    .select("user_id, question_id, created_at, questions(category)")
+    .eq("visibility", "public")
+    .order("created_at", { ascending: false })
+    .limit(300);
+
+  type Score = { score: number; lastAt: number };
+  const scores = new Map<string, Score>();
+  for (const row of (recent ?? []) as Array<{
+    user_id: string;
+    question_id: number;
+    created_at: string;
+    questions: { category: string | null } | null;
+  }>) {
+    if (excluded.has(row.user_id)) continue;
+    let s = 0;
+    if (myQuestionIds.has(row.question_id)) s += 3; // 같은 질문에 답함
+    const cat = row.questions?.category;
+    if (cat && categoryWeight.has(cat)) s += categoryWeight.get(cat)!;
+    if (s === 0) continue;
+    const ts = new Date(row.created_at).getTime();
+    const prev = scores.get(row.user_id);
+    if (!prev) scores.set(row.user_id, { score: s, lastAt: ts });
+    else {
+      prev.score += s;
+      if (ts > prev.lastAt) prev.lastAt = ts;
+    }
+  }
+
+  let orderedIds = [...scores.entries()]
+    .sort((a, b) => b[1].score - a[1].score || b[1].lastAt - a[1].lastAt)
+    .slice(0, 5)
+    .map(([id]) => id);
+
+  // 신호 부족 시 최근 활동 사용자로 폴백
+  if (orderedIds.length < 3) {
+    const seen = new Set(orderedIds);
+    for (const row of (recent ?? []) as Array<{ user_id: string }>) {
+      if (excluded.has(row.user_id) || seen.has(row.user_id)) continue;
+      seen.add(row.user_id);
+      orderedIds.push(row.user_id);
+      if (orderedIds.length >= 5) break;
+    }
+  }
+
+  if (orderedIds.length === 0) return [];
+  const { data: profs } = await supabase
+    .from("profiles")
+    .select("id, handle, display_name, avatar_url")
+    .in("id", orderedIds);
+  const byId = new Map((profs ?? []).map((p) => [p.id, p]));
+  return orderedIds
+    .map((id) => byId.get(id))
+    .filter(Boolean) as SeedProfile[];
+}
+
+
+/**
  * 온보딩 넛지 카드.
  * - 첫 3숨까지의 진행도(answeredCount < 3일 때)
  * - 결을 나눌 시드 친구 추천(following === 0이고, 최소 1숨 이상 남겼을 때)
