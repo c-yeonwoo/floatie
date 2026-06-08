@@ -87,7 +87,7 @@ function GridPage() {
   return (
     <main>
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-4 border-b border-border space-y-3">
-        <h1 className="font-serif text-2xl tracking-tight">탐색</h1>
+        <h1 className="font-serif text-[26px] tracking-tight">탐색</h1>
 
         <div className="relative">
           <Search
