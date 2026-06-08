@@ -28,7 +28,7 @@ function AuthenticatedLayout() {
     location.pathname.startsWith("/answer-edit/") ||
     location.pathname === "/onboarding";
   const lockPageScroll = location.pathname === "/me";
-  const tabBarHeight = hideTabs ? "0px" : "3.25rem";
+  const tabBarHeight = hideTabs ? "0px" : "3.75rem";
 
   return (
     <div
