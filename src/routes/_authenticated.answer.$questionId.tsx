@@ -72,8 +72,9 @@ function AnswerPage() {
       );
       if (insErr) throw insErr;
 
-      toast.success("오늘의 숨이 남았어요.");
-      navigate({ to: "/me" });
+      // 잔향 화면 + 햅틱 — 즉시 이동 대신 짧은 여운을 둔다.
+      haptic("success");
+      setAfterglow(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "업로드에 실패했어요.");
     } finally {
@@ -83,6 +84,10 @@ function AnswerPage() {
 
   return (
     <main className="min-h-screen">
+      <Afterglow
+        show={afterglow}
+        onDone={() => navigate({ to: "/me" })}
+      />
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex items-center justify-between">
         <Link to="/home" className="text-sm text-muted-foreground">← 취소</Link>
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground">답변</span>
