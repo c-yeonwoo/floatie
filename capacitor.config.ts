@@ -46,7 +46,7 @@ const config: CapacitorConfig = {
       NSPhotoLibraryUsageDescription: "사진 라이브러리에서 답변에 사용할 이미지를 선택합니다.",
       NSPhotoLibraryAddUsageDescription: "편집한 사진을 저장하기 위해 사진 라이브러리에 저장할 수 있습니다.",
     },
-    contentInset: "automatic",
+    contentInset: "never",
     backgroundColor: "#F9F8F6",
   },
   android: {

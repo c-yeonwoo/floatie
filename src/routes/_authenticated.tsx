@@ -28,7 +28,7 @@ function AuthenticatedLayout() {
     location.pathname.startsWith("/answer-edit/") ||
     location.pathname === "/onboarding";
   const lockPageScroll = location.pathname === "/me";
-  const tabBarHeight = hideTabs ? "0px" : "3.75rem";
+  const tabBarHeight = hideTabs ? "0px" : "var(--tabbar-height)";
 
   return (
     <div
@@ -65,20 +65,20 @@ function TabBar({ pathname, height }: { pathname: string; height: string }) {
   ];
   return (
     <nav
-      className="absolute bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 bg-background border-t border-border flex z-40 shadow-nav"
+      className="fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 bg-background border-t border-border flex items-start z-40 shadow-nav"
       style={{
         height,
-        paddingBottom: "min(env(safe-area-inset-bottom, 0px), 0.5rem)",
+        paddingBottom: "var(--safe-bottom)",
       }}
     >
 
       {items.map((it, idx) => {
         const active = pathname === it.to;
         return (
-          <div key={it.to} className="flex-1 flex items-stretch">
+          <div key={it.to} className="flex-1 h-[var(--tabbar-content-height)] flex items-stretch">
             <Link
               to={it.to}
-              className="flex-1 flex flex-col items-center justify-center gap-1 py-1"
+              className="flex-1 h-[var(--tabbar-content-height)] flex flex-col items-center justify-center gap-1"
             >
               <span
                 className={
