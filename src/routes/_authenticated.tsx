@@ -23,6 +23,8 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const location = useLocation();
   const hideTabs =
+    location.pathname.startsWith("/delivery/") ||
+    location.pathname.startsWith("/thread/") ||
     location.pathname.startsWith("/answer/") ||
     location.pathname.startsWith("/answer-detail/") ||
     location.pathname.startsWith("/answer-edit/") ||
@@ -57,10 +59,10 @@ function AuthenticatedLayout() {
 
 
 function TabBar({ pathname, height }: { pathname: string; height: string }) {
-  const items: Array<{ to: "/home" | "/feed" | "/grid" | "/me"; label: string }> = [
-    { to: "/home", label: "오늘의 숨" },
-    { to: "/feed", label: "피드" },
-    { to: "/grid", label: "탐색" },
+  const items: Array<{ to: "/home" | "/send" | "/outbox" | "/me"; label: string }> = [
+    { to: "/home", label: "받은" },
+    { to: "/send", label: "보내기" },
+    { to: "/outbox", label: "결과" },
     { to: "/me", label: "나" },
   ];
   return (
@@ -73,7 +75,7 @@ function TabBar({ pathname, height }: { pathname: string; height: string }) {
     >
 
       {items.map((it, idx) => {
-        const active = pathname === it.to;
+        const active = pathname === it.to || pathname.startsWith(it.to + "/");
         return (
           <div key={it.to} className="flex-1 h-[var(--tabbar-content-height)] flex items-stretch">
             <Link

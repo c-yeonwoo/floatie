@@ -31,7 +31,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "app.gyeol.client",
-  appName: "결",
+  appName: "쪽지",
   webDir: "dist/client",
   bundledWebRuntime: false,
   server: {

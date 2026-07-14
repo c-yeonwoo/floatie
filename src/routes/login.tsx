@@ -7,7 +7,7 @@ const logoSymbol = logoSymbolAsset.url;
 
 export const Route = createFileRoute("/login")({
   head: () => ({
-    meta: [{ title: "로그인 — 숨결" }],
+    meta: [{ title: "로그인 — 쪽지" }],
   }),
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
@@ -45,7 +45,7 @@ function LoginPage() {
           setConfirmSent(true);
           return;
         }
-        toast.success("가입이 완료되었어요. 숨결을 시작해 볼까요?");
+        toast.success("가입이 완료되었어요. 쪽지를 시작해 볼까요?");
         navigate({ to: "/home" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -140,11 +140,11 @@ function LoginPage() {
         <Link to="/" className="block text-center mb-8 sm:mb-10">
             <img
             src={logoSymbol}
-            alt="숨결"
+            alt="쪽지"
             className="mx-auto h-16 w-16 sm:h-20 sm:w-20 object-contain"
           />
-          <h1 className="mt-3 font-serif text-4xl tracking-tight text-foreground">숨결</h1>
-          <p className="mt-2 text-sm text-muted-foreground">사진 한 장으로 답하는 공간</p>
+          <h1 className="mt-3 font-serif text-4xl tracking-tight text-foreground">쪽지</h1>
+          <p className="mt-2 text-sm text-muted-foreground">익명 미션에 답하고, 서로 OK면 열려요</p>
         </Link>
 
         <form onSubmit={onSubmit} className="space-y-4">

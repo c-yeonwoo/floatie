@@ -17,6 +17,8 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteQuestionIdRouteImport } from './routes/invite.$questionId'
+import { Route as AuthenticatedSendRouteImport } from './routes/_authenticated.send'
+import { Route as AuthenticatedOutboxRouteImport } from './routes/_authenticated.outbox'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated.notifications'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated.home'
@@ -25,10 +27,12 @@ import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated.f
 import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated.backlog'
 import { Route as AuthenticatedMeIndexRouteImport } from './routes/_authenticated.me.index'
 import { Route as AuthenticatedUHandleRouteImport } from './routes/_authenticated.u.$handle'
+import { Route as AuthenticatedThreadThreadIdRouteImport } from './routes/_authenticated.thread.$threadId'
 import { Route as AuthenticatedQuestionQuestionIdRouteImport } from './routes/_authenticated.question.$questionId'
 import { Route as AuthenticatedMeReportRouteImport } from './routes/_authenticated.me.report'
 import { Route as AuthenticatedMeEditRouteImport } from './routes/_authenticated.me.edit'
 import { Route as AuthenticatedMeBlockedRouteImport } from './routes/_authenticated.me.blocked'
+import { Route as AuthenticatedDeliveryDeliveryIdRouteImport } from './routes/_authenticated.delivery.$deliveryId'
 import { Route as AuthenticatedAnswerQuestionIdRouteImport } from './routes/_authenticated.answer.$questionId'
 import { Route as AuthenticatedAnswerEditAnswerIdRouteImport } from './routes/_authenticated.answer-edit.$answerId'
 import { Route as AuthenticatedAnswerDetailAnswerIdRouteImport } from './routes/_authenticated.answer-detail.$answerId'
@@ -74,6 +78,16 @@ const InviteQuestionIdRoute = InviteQuestionIdRouteImport.update({
   path: '/invite/$questionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSendRoute = AuthenticatedSendRouteImport.update({
+  id: '/send',
+  path: '/send',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOutboxRoute = AuthenticatedOutboxRouteImport.update({
+  id: '/outbox',
+  path: '/outbox',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -115,6 +129,12 @@ const AuthenticatedUHandleRoute = AuthenticatedUHandleRouteImport.update({
   path: '/u/$handle',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedThreadThreadIdRoute =
+  AuthenticatedThreadThreadIdRouteImport.update({
+    id: '/thread/$threadId',
+    path: '/thread/$threadId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedQuestionQuestionIdRoute =
   AuthenticatedQuestionQuestionIdRouteImport.update({
     id: '/question/$questionId',
@@ -136,6 +156,12 @@ const AuthenticatedMeBlockedRoute = AuthenticatedMeBlockedRouteImport.update({
   path: '/me/blocked',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDeliveryDeliveryIdRoute =
+  AuthenticatedDeliveryDeliveryIdRouteImport.update({
+    id: '/delivery/$deliveryId',
+    path: '/delivery/$deliveryId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAnswerQuestionIdRoute =
   AuthenticatedAnswerQuestionIdRouteImport.update({
     id: '/answer/$questionId',
@@ -180,14 +206,18 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthenticatedHomeRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/outbox': typeof AuthenticatedOutboxRoute
+  '/send': typeof AuthenticatedSendRoute
   '/invite/$questionId': typeof InviteQuestionIdRoute
   '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer-edit/$answerId': typeof AuthenticatedAnswerEditAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/delivery/$deliveryId': typeof AuthenticatedDeliveryDeliveryIdRoute
   '/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
   '/me/report': typeof AuthenticatedMeReportRoute
   '/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
+  '/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
   '/u/$handle': typeof AuthenticatedUHandleRouteWithChildren
   '/me/': typeof AuthenticatedMeIndexRoute
   '/u/$handle/followers': typeof AuthenticatedUHandleFollowersRoute
@@ -206,14 +236,18 @@ export interface FileRoutesByTo {
   '/home': typeof AuthenticatedHomeRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/outbox': typeof AuthenticatedOutboxRoute
+  '/send': typeof AuthenticatedSendRoute
   '/invite/$questionId': typeof InviteQuestionIdRoute
   '/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/answer-edit/$answerId': typeof AuthenticatedAnswerEditAnswerIdRoute
   '/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/delivery/$deliveryId': typeof AuthenticatedDeliveryDeliveryIdRoute
   '/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
   '/me/report': typeof AuthenticatedMeReportRoute
   '/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
+  '/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
   '/u/$handle': typeof AuthenticatedUHandleRouteWithChildren
   '/me': typeof AuthenticatedMeIndexRoute
   '/u/$handle/followers': typeof AuthenticatedUHandleFollowersRoute
@@ -234,14 +268,18 @@ export interface FileRoutesById {
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/outbox': typeof AuthenticatedOutboxRoute
+  '/_authenticated/send': typeof AuthenticatedSendRoute
   '/invite/$questionId': typeof InviteQuestionIdRoute
   '/_authenticated/answer-detail/$answerId': typeof AuthenticatedAnswerDetailAnswerIdRoute
   '/_authenticated/answer-edit/$answerId': typeof AuthenticatedAnswerEditAnswerIdRoute
   '/_authenticated/answer/$questionId': typeof AuthenticatedAnswerQuestionIdRoute
+  '/_authenticated/delivery/$deliveryId': typeof AuthenticatedDeliveryDeliveryIdRoute
   '/_authenticated/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/_authenticated/me/edit': typeof AuthenticatedMeEditRoute
   '/_authenticated/me/report': typeof AuthenticatedMeReportRoute
   '/_authenticated/question/$questionId': typeof AuthenticatedQuestionQuestionIdRoute
+  '/_authenticated/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
   '/_authenticated/u/$handle': typeof AuthenticatedUHandleRouteWithChildren
   '/_authenticated/me/': typeof AuthenticatedMeIndexRoute
   '/_authenticated/u/$handle/followers': typeof AuthenticatedUHandleFollowersRoute
@@ -262,14 +300,18 @@ export interface FileRouteTypes {
     | '/home'
     | '/notifications'
     | '/onboarding'
+    | '/outbox'
+    | '/send'
     | '/invite/$questionId'
     | '/answer-detail/$answerId'
     | '/answer-edit/$answerId'
     | '/answer/$questionId'
+    | '/delivery/$deliveryId'
     | '/me/blocked'
     | '/me/edit'
     | '/me/report'
     | '/question/$questionId'
+    | '/thread/$threadId'
     | '/u/$handle'
     | '/me/'
     | '/u/$handle/followers'
@@ -288,14 +330,18 @@ export interface FileRouteTypes {
     | '/home'
     | '/notifications'
     | '/onboarding'
+    | '/outbox'
+    | '/send'
     | '/invite/$questionId'
     | '/answer-detail/$answerId'
     | '/answer-edit/$answerId'
     | '/answer/$questionId'
+    | '/delivery/$deliveryId'
     | '/me/blocked'
     | '/me/edit'
     | '/me/report'
     | '/question/$questionId'
+    | '/thread/$threadId'
     | '/u/$handle'
     | '/me'
     | '/u/$handle/followers'
@@ -315,14 +361,18 @@ export interface FileRouteTypes {
     | '/_authenticated/home'
     | '/_authenticated/notifications'
     | '/_authenticated/onboarding'
+    | '/_authenticated/outbox'
+    | '/_authenticated/send'
     | '/invite/$questionId'
     | '/_authenticated/answer-detail/$answerId'
     | '/_authenticated/answer-edit/$answerId'
     | '/_authenticated/answer/$questionId'
+    | '/_authenticated/delivery/$deliveryId'
     | '/_authenticated/me/blocked'
     | '/_authenticated/me/edit'
     | '/_authenticated/me/report'
     | '/_authenticated/question/$questionId'
+    | '/_authenticated/thread/$threadId'
     | '/_authenticated/u/$handle'
     | '/_authenticated/me/'
     | '/_authenticated/u/$handle/followers'
@@ -398,6 +448,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteQuestionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/send': {
+      id: '/_authenticated/send'
+      path: '/send'
+      fullPath: '/send'
+      preLoaderRoute: typeof AuthenticatedSendRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/outbox': {
+      id: '/_authenticated/outbox'
+      path: '/outbox'
+      fullPath: '/outbox'
+      preLoaderRoute: typeof AuthenticatedOutboxRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -454,6 +518,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUHandleRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/thread/$threadId': {
+      id: '/_authenticated/thread/$threadId'
+      path: '/thread/$threadId'
+      fullPath: '/thread/$threadId'
+      preLoaderRoute: typeof AuthenticatedThreadThreadIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/question/$questionId': {
       id: '/_authenticated/question/$questionId'
       path: '/question/$questionId'
@@ -480,6 +551,13 @@ declare module '@tanstack/react-router' {
       path: '/me/blocked'
       fullPath: '/me/blocked'
       preLoaderRoute: typeof AuthenticatedMeBlockedRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/delivery/$deliveryId': {
+      id: '/_authenticated/delivery/$deliveryId'
+      path: '/delivery/$deliveryId'
+      fullPath: '/delivery/$deliveryId'
+      preLoaderRoute: typeof AuthenticatedDeliveryDeliveryIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/answer/$questionId': {
@@ -540,13 +618,17 @@ interface AuthenticatedRouteChildren {
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedOutboxRoute: typeof AuthenticatedOutboxRoute
+  AuthenticatedSendRoute: typeof AuthenticatedSendRoute
   AuthenticatedAnswerDetailAnswerIdRoute: typeof AuthenticatedAnswerDetailAnswerIdRoute
   AuthenticatedAnswerEditAnswerIdRoute: typeof AuthenticatedAnswerEditAnswerIdRoute
   AuthenticatedAnswerQuestionIdRoute: typeof AuthenticatedAnswerQuestionIdRoute
+  AuthenticatedDeliveryDeliveryIdRoute: typeof AuthenticatedDeliveryDeliveryIdRoute
   AuthenticatedMeBlockedRoute: typeof AuthenticatedMeBlockedRoute
   AuthenticatedMeEditRoute: typeof AuthenticatedMeEditRoute
   AuthenticatedMeReportRoute: typeof AuthenticatedMeReportRoute
   AuthenticatedQuestionQuestionIdRoute: typeof AuthenticatedQuestionQuestionIdRoute
+  AuthenticatedThreadThreadIdRoute: typeof AuthenticatedThreadThreadIdRoute
   AuthenticatedUHandleRoute: typeof AuthenticatedUHandleRouteWithChildren
   AuthenticatedMeIndexRoute: typeof AuthenticatedMeIndexRoute
 }
@@ -558,14 +640,18 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedOutboxRoute: AuthenticatedOutboxRoute,
+  AuthenticatedSendRoute: AuthenticatedSendRoute,
   AuthenticatedAnswerDetailAnswerIdRoute:
     AuthenticatedAnswerDetailAnswerIdRoute,
   AuthenticatedAnswerEditAnswerIdRoute: AuthenticatedAnswerEditAnswerIdRoute,
   AuthenticatedAnswerQuestionIdRoute: AuthenticatedAnswerQuestionIdRoute,
+  AuthenticatedDeliveryDeliveryIdRoute: AuthenticatedDeliveryDeliveryIdRoute,
   AuthenticatedMeBlockedRoute: AuthenticatedMeBlockedRoute,
   AuthenticatedMeEditRoute: AuthenticatedMeEditRoute,
   AuthenticatedMeReportRoute: AuthenticatedMeReportRoute,
   AuthenticatedQuestionQuestionIdRoute: AuthenticatedQuestionQuestionIdRoute,
+  AuthenticatedThreadThreadIdRoute: AuthenticatedThreadThreadIdRoute,
   AuthenticatedUHandleRoute: AuthenticatedUHandleRouteWithChildren,
   AuthenticatedMeIndexRoute: AuthenticatedMeIndexRoute,
 }

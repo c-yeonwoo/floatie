@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { StorageImg } from "@/components/storage-img";
 
 export const Route = createFileRoute("/_authenticated/me/")({
-  head: () => ({ meta: [{ title: "내 결 — 숨결" }] }),
+  head: () => ({ meta: [{ title: "나 — 쪽지" }] }),
   component: MePage,
 });
 
