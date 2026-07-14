@@ -12,6 +12,7 @@ import {
   offerThreadContact,
   sendMessage,
 } from "@/lib/mission";
+import { ReportDialog } from "@/components/report-dialog";
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
   head: () => ({ meta: [{ title: "대화 — 쪽지" }] }),
@@ -26,6 +27,7 @@ function ThreadPage() {
   const [uid, setUid] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [contactDraft, setContactDraft] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,6 +69,9 @@ function ThreadPage() {
   const peerContact =
     role === "sender" ? thread?.receiver_contact : thread?.sender_contact;
   const bothOffered = !!(thread?.sender_contact && thread?.receiver_contact);
+
+  const peerId =
+    role === "sender" ? thread?.receiver_id : thread?.sender_id;
 
   const send = useMutation({
     mutationFn: async () => {
@@ -116,6 +121,15 @@ function ThreadPage() {
               : `${remaining}/${cap} · ${thread ? formatCountdown(thread.expires_at) : ""}`}
           </p>
         </div>
+        {peerId && (
+          <button
+            type="button"
+            onClick={() => setReportOpen(true)}
+            className="text-xs text-muted-foreground underline"
+          >
+            신고
+          </button>
+        )}
       </header>
 
       {closed && (
@@ -209,6 +223,14 @@ function ThreadPage() {
           전송
         </button>
       </form>
+
+      {peerId && (
+        <ReportDialog
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          target={{ type: "user", userId: peerId }}
+        />
+      )}
     </main>
   );
 }

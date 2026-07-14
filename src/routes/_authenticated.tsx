@@ -9,13 +9,34 @@ export const Route = createFileRoute("/_authenticated")({
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/login" });
 
-    if (location.pathname !== "/onboarding") {
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("onboarded")
-        .eq("id", data.user.id)
-        .maybeSingle();
-      if (!prof?.onboarded) throw redirect({ to: "/onboarding" });
+    const path = location.pathname;
+    const skipOnboard = path === "/onboarding";
+    const skipVerify =
+      path === "/verify" || path === "/banned" || path === "/onboarding";
+    const skipBanCheck = path === "/banned";
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: prof } = await (supabase as any)
+      .from("profiles")
+      .select("onboarded, status, identity_verified_at")
+      .eq("id", data.user.id)
+      .maybeSingle();
+
+    if (!skipBanCheck && prof?.status === "banned") {
+      throw redirect({ to: "/banned" });
+    }
+
+    if (!skipOnboard && !prof?.onboarded && prof?.status !== "banned") {
+      throw redirect({ to: "/onboarding" });
+    }
+
+    if (
+      !skipVerify &&
+      prof?.onboarded &&
+      prof?.status === "active" &&
+      !prof?.identity_verified_at
+    ) {
+      throw redirect({ to: "/verify" });
     }
   },
   component: AuthenticatedLayout,
@@ -27,6 +48,9 @@ function AuthenticatedLayout() {
     location.pathname.startsWith("/delivery/") ||
     location.pathname.startsWith("/thread/") ||
     location.pathname === "/onboarding" ||
+    location.pathname === "/verify" ||
+    location.pathname === "/banned" ||
+    location.pathname.startsWith("/admin/") ||
     location.pathname.startsWith("/me/edit") ||
     location.pathname.startsWith("/me/blocked");
   const tabBarHeight = hideTabs ? "0px" : "var(--tabbar-height)";

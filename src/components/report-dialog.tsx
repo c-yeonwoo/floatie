@@ -3,16 +3,17 @@ import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type ReportTarget =
-  | { type: "answer"; answerId: number }
-  | { type: "comment"; commentId: number }
-  | { type: "user"; userId: string };
+export type ReportTarget =
+  | { type: "user"; userId: string }
+  | { type: "delivery"; deliveryId: number; userId?: string }
+  | { type: "message"; messageId: number; userId?: string };
 
 const REASONS = [
-  "부적절한 사진 / 선정적",
+  "불쾌·성적 미션/메시지",
   "혐오·차별·괴롭힘",
   "스팸 또는 광고",
-  "타인 사칭 / 개인정보 노출",
+  "사칭·개인정보 요구",
+  "미성년 의심",
   "기타",
 ];
 
@@ -33,24 +34,36 @@ export function ReportDialog({
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) throw new Error("로그인이 필요해요.");
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const payload: any = {
         reporter_id: uid,
         target_type: target.type,
         reason,
         detail: detail.trim() || null,
+        status: "pending",
       };
-      if (target.type === "answer") payload.target_answer_id = target.answerId;
-      if (target.type === "comment") payload.target_comment_id = target.commentId;
       if (target.type === "user") payload.target_user_id = target.userId;
-      const { error } = await supabase.from("reports").insert(payload);
+      if (target.type === "delivery") {
+        payload.target_delivery_id = target.deliveryId;
+        if (target.userId) payload.target_user_id = target.userId;
+      }
+      if (target.type === "message") {
+        payload.target_message_id = target.messageId;
+        if (target.userId) payload.target_user_id = target.userId;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("reports").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("신고가 접수되었어요. 살펴볼게요.");
+      toast.success("신고가 접수됐어요. 관리자가 검토한 뒤 조치해요.");
       setDetail("");
       onClose();
     },
-    onError: (e: any) => toast.error(e?.message ?? "신고를 보내지 못했어요."),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "신고를 보내지 못했어요."),
   });
 
   if (!open) return null;
@@ -66,14 +79,11 @@ export function ReportDialog({
       >
         <h3 className="font-serif text-lg mb-1">신고하기</h3>
         <p className="text-[12px] text-muted-foreground mb-5">
-          어떤 점이 불편하셨나요?
+          신고된 계정은 관리자 검토 후 영구 제명될 수 있어요.
         </p>
         <div className="space-y-2 mb-4">
           {REASONS.map((r) => (
-            <label
-              key={r}
-              className="flex items-center gap-3 text-[14px] cursor-pointer"
-            >
+            <label key={r} className="flex items-center gap-3 text-[14px] cursor-pointer">
               <input
                 type="radio"
                 name="reason"
@@ -94,13 +104,11 @@ export function ReportDialog({
           className="w-full bg-transparent border border-border rounded-lg p-3 text-[13px] outline-none focus:border-foreground/40 resize-none mb-4"
         />
         <div className="flex gap-2 justify-end">
-          <button
-            onClick={onClose}
-            className="text-[12px] text-muted-foreground px-3 py-2"
-          >
+          <button type="button" onClick={onClose} className="text-[12px] text-muted-foreground px-3 py-2">
             취소
           </button>
           <button
+            type="button"
             onClick={() => submit.mutate()}
             disabled={submit.isPending}
             className="text-[12px] bg-foreground text-background px-4 py-2 rounded-md disabled:opacity-50"

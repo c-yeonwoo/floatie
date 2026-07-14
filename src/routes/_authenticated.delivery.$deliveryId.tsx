@@ -13,6 +13,7 @@ import {
   setVerdict,
 } from "@/lib/mission";
 import { StorageImg } from "@/components/storage-img";
+import { ReportDialog } from "@/components/report-dialog";
 
 export const Route = createFileRoute("/_authenticated/delivery/$deliveryId")({
   head: () => ({ meta: [{ title: "쪽지 — 쪽지" }] }),
@@ -27,6 +28,7 @@ function DeliveryPage() {
   const [uid, setUid] = useState<string | null>(null);
   const [reply, setReply] = useState("");
   const [chip, setChip] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
@@ -119,13 +121,24 @@ function DeliveryPage() {
 
   return (
     <main className="px-5 py-8 pb-16">
-      <button
-        type="button"
-        onClick={() => navigate({ to: role === "sender" ? "/outbox" : "/home" })}
-        className="text-sm text-muted-foreground mb-6"
-      >
-        ← 뒤로
-      </button>
+      <div className="flex items-center justify-between mb-6">
+        <button
+          type="button"
+          onClick={() => navigate({ to: role === "sender" ? "/outbox" : "/home" })}
+          className="text-sm text-muted-foreground"
+        >
+          ← 뒤로
+        </button>
+        {peerId && (
+          <button
+            type="button"
+            onClick={() => setReportOpen(true)}
+            className="text-xs text-muted-foreground underline"
+          >
+            신고
+          </button>
+        )}
+      </div>
 
       <p className="text-xs text-muted-foreground mb-2">
         {role === "receiver" ? "받은 익명 미션" : "내가 보낸 미션"}
@@ -267,6 +280,18 @@ function DeliveryPage() {
             </Link>
           )}
         </section>
+      )}
+
+      {peerId && (
+        <ReportDialog
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          target={{
+            type: "delivery",
+            deliveryId: id,
+            userId: peerId,
+          }}
+        />
       )}
     </main>
   );

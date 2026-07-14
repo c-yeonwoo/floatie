@@ -16,15 +16,18 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedVerifyRouteImport } from './routes/_authenticated.verify'
 import { Route as AuthenticatedSendRouteImport } from './routes/_authenticated.send'
 import { Route as AuthenticatedOutboxRouteImport } from './routes/_authenticated.outbox'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated.home'
+import { Route as AuthenticatedBannedRouteImport } from './routes/_authenticated.banned'
 import { Route as AuthenticatedMeIndexRouteImport } from './routes/_authenticated.me.index'
 import { Route as AuthenticatedThreadThreadIdRouteImport } from './routes/_authenticated.thread.$threadId'
 import { Route as AuthenticatedMeEditRouteImport } from './routes/_authenticated.me.edit'
 import { Route as AuthenticatedMeBlockedRouteImport } from './routes/_authenticated.me.blocked'
 import { Route as AuthenticatedDeliveryDeliveryIdRouteImport } from './routes/_authenticated.delivery.$deliveryId'
+import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated.admin.reports'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -60,6 +63,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedVerifyRoute = AuthenticatedVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSendRoute = AuthenticatedSendRouteImport.update({
   id: '/send',
   path: '/send',
@@ -78,6 +86,11 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBannedRoute = AuthenticatedBannedRouteImport.update({
+  id: '/banned',
+  path: '/banned',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedMeIndexRoute = AuthenticatedMeIndexRouteImport.update({
@@ -107,6 +120,12 @@ const AuthenticatedDeliveryDeliveryIdRoute =
     path: '/delivery/$deliveryId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminReportsRoute =
+  AuthenticatedAdminReportsRouteImport.update({
+    id: '/admin/reports',
+    path: '/admin/reports',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -115,10 +134,13 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/banned': typeof AuthenticatedBannedRoute
   '/home': typeof AuthenticatedHomeRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/outbox': typeof AuthenticatedOutboxRoute
   '/send': typeof AuthenticatedSendRoute
+  '/verify': typeof AuthenticatedVerifyRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/delivery/$deliveryId': typeof AuthenticatedDeliveryDeliveryIdRoute
   '/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
@@ -132,10 +154,13 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/banned': typeof AuthenticatedBannedRoute
   '/home': typeof AuthenticatedHomeRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/outbox': typeof AuthenticatedOutboxRoute
   '/send': typeof AuthenticatedSendRoute
+  '/verify': typeof AuthenticatedVerifyRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/delivery/$deliveryId': typeof AuthenticatedDeliveryDeliveryIdRoute
   '/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
@@ -151,10 +176,13 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/banned': typeof AuthenticatedBannedRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/outbox': typeof AuthenticatedOutboxRoute
   '/_authenticated/send': typeof AuthenticatedSendRoute
+  '/_authenticated/verify': typeof AuthenticatedVerifyRoute
+  '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/_authenticated/delivery/$deliveryId': typeof AuthenticatedDeliveryDeliveryIdRoute
   '/_authenticated/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/_authenticated/me/edit': typeof AuthenticatedMeEditRoute
@@ -170,10 +198,13 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/banned'
     | '/home'
     | '/onboarding'
     | '/outbox'
     | '/send'
+    | '/verify'
+    | '/admin/reports'
     | '/delivery/$deliveryId'
     | '/me/blocked'
     | '/me/edit'
@@ -187,10 +218,13 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/banned'
     | '/home'
     | '/onboarding'
     | '/outbox'
     | '/send'
+    | '/verify'
+    | '/admin/reports'
     | '/delivery/$deliveryId'
     | '/me/blocked'
     | '/me/edit'
@@ -205,10 +239,13 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/_authenticated/banned'
     | '/_authenticated/home'
     | '/_authenticated/onboarding'
     | '/_authenticated/outbox'
     | '/_authenticated/send'
+    | '/_authenticated/verify'
+    | '/_authenticated/admin/reports'
     | '/_authenticated/delivery/$deliveryId'
     | '/_authenticated/me/blocked'
     | '/_authenticated/me/edit'
@@ -277,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/verify': {
+      id: '/_authenticated/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof AuthenticatedVerifyRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/send': {
       id: '/_authenticated/send'
       path: '/send'
@@ -303,6 +347,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/banned': {
+      id: '/_authenticated/banned'
+      path: '/banned'
+      fullPath: '/banned'
+      preLoaderRoute: typeof AuthenticatedBannedRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/me/': {
@@ -340,14 +391,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDeliveryDeliveryIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/reports': {
+      id: '/_authenticated/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedBannedRoute: typeof AuthenticatedBannedRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedOutboxRoute: typeof AuthenticatedOutboxRoute
   AuthenticatedSendRoute: typeof AuthenticatedSendRoute
+  AuthenticatedVerifyRoute: typeof AuthenticatedVerifyRoute
+  AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
   AuthenticatedDeliveryDeliveryIdRoute: typeof AuthenticatedDeliveryDeliveryIdRoute
   AuthenticatedMeBlockedRoute: typeof AuthenticatedMeBlockedRoute
   AuthenticatedMeEditRoute: typeof AuthenticatedMeEditRoute
@@ -356,10 +417,13 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedBannedRoute: AuthenticatedBannedRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedOutboxRoute: AuthenticatedOutboxRoute,
   AuthenticatedSendRoute: AuthenticatedSendRoute,
+  AuthenticatedVerifyRoute: AuthenticatedVerifyRoute,
+  AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
   AuthenticatedDeliveryDeliveryIdRoute: AuthenticatedDeliveryDeliveryIdRoute,
   AuthenticatedMeBlockedRoute: AuthenticatedMeBlockedRoute,
   AuthenticatedMeEditRoute: AuthenticatedMeEditRoute,

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
 import { ageBand } from "@/lib/mission";
+import { fetchSafetyProfile } from "@/lib/safety";
 
 export const Route = createFileRoute("/_authenticated/me/")({
   head: () => ({ meta: [{ title: "나 — 쪽지" }] }),
@@ -23,6 +24,11 @@ function MePage() {
         .maybeSingle();
       return { profile };
     },
+  });
+
+  const { data: safety } = useQuery({
+    queryKey: ["safety-profile"],
+    queryFn: fetchSafetyProfile,
   });
 
   const onLogout = async () => {
@@ -78,11 +84,28 @@ function MePage() {
           프로필 수정
         </Link>
         <Link
+          to="/verify"
+          className="block rounded-xl border border-border px-4 py-3.5 text-[15px]"
+        >
+          본인인증
+          <span className="ml-2 text-xs text-muted-foreground">
+            {safety?.identity_verified_at ? "완료" : "필요"}
+          </span>
+        </Link>
+        <Link
           to="/me/blocked"
           className="block rounded-xl border border-border px-4 py-3.5 text-[15px]"
         >
           차단 목록
         </Link>
+        {safety?.is_admin && (
+          <Link
+            to="/admin/reports"
+            className="block rounded-xl border border-border px-4 py-3.5 text-[15px]"
+          >
+            관리자 · 신고 검토
+          </Link>
+        )}
         <Link
           to="/terms"
           className="block rounded-xl border border-border px-4 py-3.5 text-[15px] text-muted-foreground"
