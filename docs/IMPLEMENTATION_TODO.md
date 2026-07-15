@@ -1,11 +1,16 @@
-# 구현 TODO — 쪽지 (PRD v0.3)
+# 구현 TODO — 플로티 (PRD v0.3)
 
 ## P0 — 핵심 루프
 
 - [ ] **원격 DB** 마이그레이션 적용 (`docs/APPLY_MIGRATION.md`)
 - [x] 성별 역할 가드 (여 발송 / 남 수행)
 - [x] 일일 무료 1회 + 티켓
-- [x] 48h 만료 + 타이머 UI
+- [x] 48h 만료 + 타이머 UI → **12h 수락 후 타이머** (`20260715120000_bottlenote_flow.sql`)
+- [x] Floatie 표류 대기 화면 `/waiting/$id`
+- [x] 브랜드 **플로티 / Floatie** UI·문서 반영
+- [x] 도착/무응답/답장 in-app 알림 (toast poll)
+- [x] 남 trust_score + 만료 페널티
+- [x] 여 무응답 재발송 RPC
 - [ ] 여/남 2계정 E2E 수동 테스트
 
 ## P1 — 매칭 · 티켓

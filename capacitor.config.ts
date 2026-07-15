@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Capacitor config for packaging 숨결 as an iOS/Android app.
+ * Capacitor config for packaging 플로티 (Floatie) as an iOS/Android app.
  *
  * IMPORTANT — Why server.url is enabled by default
  * -------------------------------------------------
@@ -31,7 +31,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "app.gyeol.client",
-  appName: "쪽지",
+  appName: "플로티",
   webDir: "dist/client",
   bundledWebRuntime: false,
   server: {

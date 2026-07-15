@@ -1,4 +1,4 @@
-# Trust & Safety — 쪽지
+# Trust & Safety — 플로티 (Floatie)
 
 ## 원칙
 

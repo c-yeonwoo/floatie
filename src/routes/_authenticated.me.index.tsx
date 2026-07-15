@@ -6,7 +6,7 @@ import { ageBand } from "@/lib/mission";
 import { fetchSafetyProfile } from "@/lib/safety";
 
 export const Route = createFileRoute("/_authenticated/me/")({
-  head: () => ({ meta: [{ title: "나 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "나 — 플로티" }] }),
   component: MePage,
 });
 

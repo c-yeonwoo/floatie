@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { StorageImg } from "@/components/storage-img";
 
 export const Route = createFileRoute("/_authenticated/me/blocked")({
-  head: () => ({ meta: [{ title: "차단 목록 — 숨결" }] }),
+  head: () => ({ meta: [{ title: "차단 목록 — 플로티" }] }),
   component: BlockedListPage,
 });
 

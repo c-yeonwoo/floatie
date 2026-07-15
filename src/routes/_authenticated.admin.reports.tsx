@@ -9,7 +9,7 @@ import {
 } from "@/lib/safety";
 
 export const Route = createFileRoute("/_authenticated/admin/reports")({
-  head: () => ({ meta: [{ title: "신고 검토 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "신고 검토 — 플로티" }] }),
   component: AdminReportsPage,
 });
 

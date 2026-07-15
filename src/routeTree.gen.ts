@@ -23,6 +23,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated.home'
 import { Route as AuthenticatedBannedRouteImport } from './routes/_authenticated.banned'
 import { Route as AuthenticatedMeIndexRouteImport } from './routes/_authenticated.me.index'
+import { Route as AuthenticatedWaitingDeliveryIdRouteImport } from './routes/_authenticated.waiting.$deliveryId'
 import { Route as AuthenticatedThreadThreadIdRouteImport } from './routes/_authenticated.thread.$threadId'
 import { Route as AuthenticatedMeEditRouteImport } from './routes/_authenticated.me.edit'
 import { Route as AuthenticatedMeBlockedRouteImport } from './routes/_authenticated.me.blocked'
@@ -98,6 +99,12 @@ const AuthenticatedMeIndexRoute = AuthenticatedMeIndexRouteImport.update({
   path: '/me/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedWaitingDeliveryIdRoute =
+  AuthenticatedWaitingDeliveryIdRouteImport.update({
+    id: '/waiting/$deliveryId',
+    path: '/waiting/$deliveryId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedThreadThreadIdRoute =
   AuthenticatedThreadThreadIdRouteImport.update({
     id: '/thread/$threadId',
@@ -145,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
+  '/waiting/$deliveryId': typeof AuthenticatedWaitingDeliveryIdRoute
   '/me/': typeof AuthenticatedMeIndexRoute
 }
 export interface FileRoutesByTo {
@@ -165,6 +173,7 @@ export interface FileRoutesByTo {
   '/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/me/edit': typeof AuthenticatedMeEditRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
+  '/waiting/$deliveryId': typeof AuthenticatedWaitingDeliveryIdRoute
   '/me': typeof AuthenticatedMeIndexRoute
 }
 export interface FileRoutesById {
@@ -187,6 +196,7 @@ export interface FileRoutesById {
   '/_authenticated/me/blocked': typeof AuthenticatedMeBlockedRoute
   '/_authenticated/me/edit': typeof AuthenticatedMeEditRoute
   '/_authenticated/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
+  '/_authenticated/waiting/$deliveryId': typeof AuthenticatedWaitingDeliveryIdRoute
   '/_authenticated/me/': typeof AuthenticatedMeIndexRoute
 }
 export interface FileRouteTypes {
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/me/blocked'
     | '/me/edit'
     | '/thread/$threadId'
+    | '/waiting/$deliveryId'
     | '/me/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/me/blocked'
     | '/me/edit'
     | '/thread/$threadId'
+    | '/waiting/$deliveryId'
     | '/me'
   id:
     | '__root__'
@@ -250,6 +262,7 @@ export interface FileRouteTypes {
     | '/_authenticated/me/blocked'
     | '/_authenticated/me/edit'
     | '/_authenticated/thread/$threadId'
+    | '/_authenticated/waiting/$deliveryId'
     | '/_authenticated/me/'
   fileRoutesById: FileRoutesById
 }
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/waiting/$deliveryId': {
+      id: '/_authenticated/waiting/$deliveryId'
+      path: '/waiting/$deliveryId'
+      fullPath: '/waiting/$deliveryId'
+      preLoaderRoute: typeof AuthenticatedWaitingDeliveryIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/thread/$threadId': {
       id: '/_authenticated/thread/$threadId'
       path: '/thread/$threadId'
@@ -413,6 +433,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMeBlockedRoute: typeof AuthenticatedMeBlockedRoute
   AuthenticatedMeEditRoute: typeof AuthenticatedMeEditRoute
   AuthenticatedThreadThreadIdRoute: typeof AuthenticatedThreadThreadIdRoute
+  AuthenticatedWaitingDeliveryIdRoute: typeof AuthenticatedWaitingDeliveryIdRoute
   AuthenticatedMeIndexRoute: typeof AuthenticatedMeIndexRoute
 }
 
@@ -428,6 +449,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMeBlockedRoute: AuthenticatedMeBlockedRoute,
   AuthenticatedMeEditRoute: AuthenticatedMeEditRoute,
   AuthenticatedThreadThreadIdRoute: AuthenticatedThreadThreadIdRoute,
+  AuthenticatedWaitingDeliveryIdRoute: AuthenticatedWaitingDeliveryIdRoute,
   AuthenticatedMeIndexRoute: AuthenticatedMeIndexRoute,
 }
 
@@ -447,3 +469,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

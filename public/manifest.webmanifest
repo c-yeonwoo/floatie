@@ -1,7 +1,7 @@
 {
-  "name": "숨결",
-  "short_name": "숨결",
-  "description": "사진 한 장으로 답하는 공간",
+  "name": "플로티",
+  "short_name": "플로티",
+  "description": "익명 미션을 둥실 떠다니게 보내고, 서로 OK면 그때 열립니다.",
   "start_url": "/home",
   "scope": "/",
   "display": "standalone",

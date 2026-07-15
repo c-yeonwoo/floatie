@@ -2,12 +2,13 @@ import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-ro
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BRAND_KO, pageTitle } from "@/lib/brand";
 import logoSymbolAsset from "@/assets/logo-symbol-frame.png.asset.json";
 const logoSymbol = logoSymbolAsset.url;
 
 export const Route = createFileRoute("/login")({
   head: () => ({
-    meta: [{ title: "로그인 — 쪽지" }],
+    meta: [{ title: pageTitle("로그인") }],
   }),
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
@@ -45,7 +46,7 @@ function LoginPage() {
           setConfirmSent(true);
           return;
         }
-        toast.success("가입이 완료되었어요. 쪽지를 시작해 볼까요?");
+        toast.success(`가입이 완료되었어요. ${BRAND_KO}를 시작해 볼까요?`);
         navigate({ to: "/home" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -140,11 +141,11 @@ function LoginPage() {
         <Link to="/" className="block text-center mb-8 sm:mb-10">
             <img
             src={logoSymbol}
-            alt="쪽지"
+            alt="플로티"
             className="mx-auto h-16 w-16 sm:h-20 sm:w-20 object-contain"
           />
-          <h1 className="mt-3 font-serif text-4xl tracking-tight text-foreground">쪽지</h1>
-          <p className="mt-2 text-sm text-muted-foreground">익명 미션에 답하고, 서로 OK면 열려요</p>
+          <h1 className="mt-3 font-serif text-4xl tracking-tight text-foreground">플로티</h1>
+          <p className="mt-2 text-sm text-muted-foreground">익명 미션을 둥실, 서로 OK면 열려요</p>
         </Link>
 
         <form onSubmit={onSubmit} className="space-y-4">

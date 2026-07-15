@@ -14,7 +14,7 @@ import {
 } from "@/lib/mission";
 
 export const Route = createFileRoute("/_authenticated/send")({
-  head: () => ({ meta: [{ title: "보내기 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "보내기 — 플로티" }] }),
   component: SendPage,
 });
 
@@ -89,23 +89,26 @@ function SendPage() {
         ...payload,
       });
     },
-    onSuccess: () => {
-      toast.success(
+    onSuccess: (result) => {
+        toast.success(
         needsTicket
-          ? "티켓으로 쪽지를 보냈어요."
-          : "쪽지를 보냈어요. 누군가에게 도착했어요.",
+          ? `티켓으로 ${BRAND_KO}를 보냈어요.`
+          : "바다 위로 보냈어요. 누군가 받으면 알려드릴게요.",
       );
       qc.invalidateQueries({ queryKey: ["mission-outbox"] });
       qc.invalidateQueries({ queryKey: ["sends-today"] });
       qc.invalidateQueries({ queryKey: ["my-mission-profile"] });
-      navigate({ to: "/outbox" });
+      navigate({
+        to: "/waiting/$deliveryId",
+        params: { deliveryId: String(result.deliveryId) },
+      });
     },
     onError: (err) => {
       const msg =
         (err as { message?: string })?.message ||
         (err instanceof Error ? err.message : "보내지 못했어요.");
       if (msg.includes("only female")) {
-        toast.error("미션 쪽지는 여성 회원만 보낼 수 있어요.");
+        toast.error("미션은 여성 회원만 보낼 수 있어요.");
       } else if (msg.includes("no eligible recipient")) {
         toast.error("지금 받을 수 있는 사람이 없어요. 조건을 낮추거나 잠시 뒤 다시 시도해 주세요.");
       } else if (msg.includes("ticket required") || msg.includes("daily send cap")) {
@@ -129,14 +132,14 @@ function SendPage() {
       <main className="px-5 py-8">
         <h1 className="font-serif text-3xl">보내기</h1>
         <p className="mt-4 text-[15px] text-muted-foreground leading-relaxed">
-          지금은 <strong className="text-foreground">여성 회원만</strong> 미션 쪽지를 보낼 수
+          지금은 <strong className="text-foreground">여성 회원만</strong> 미션을 보낼 수
           있어요. 남성 회원은 받은 미션에 답하는 역할이에요.
         </p>
         <Link
           to="/home"
           className="mt-8 inline-flex rounded-full bg-foreground text-background px-5 py-2.5 text-sm"
         >
-          받은 쪽지 보기
+          받은 미션 보기
         </Link>
       </main>
     );
@@ -150,10 +153,10 @@ function SendPage() {
   return (
     <main className="px-5 py-8 pb-28">
       <header className="mb-6">
-        <p className="text-xs tracking-widest text-muted-foreground uppercase">쪽지</p>
+        <p className="text-xs tracking-widest text-muted-foreground uppercase">Floatie</p>
         <h1 className="font-serif text-3xl mt-1">보내기</h1>
         <p className="text-[15px] text-muted-foreground mt-2">
-          하루 1회 무료 · 추가 발송은 티켓 · 이상형 조건 1개까지 무료
+          미션을 바다 위로. 하루 1회 무료 · 추가 발송은 티켓 · 이상형 조건 1개까지 무료
           <span className="block text-xs mt-1 opacity-80">조건 2개 이상은 티켓 상품 연동 후 개방</span>
         </p>
         <div className="mt-3 flex gap-3 text-xs text-muted-foreground">
@@ -308,7 +311,7 @@ function SendPage() {
             ? "보내는 중…"
             : needsTicket
               ? "티켓으로 보내기"
-              : "익명으로 보내기"}
+              : "바다 위로 보내기"}
         </button>
       </div>
     </main>

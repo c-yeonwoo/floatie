@@ -3,8 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "개인정보 처리방침 — 쪽지" },
-      { name: "description", content: "쪽지 서비스 개인정보 처리방침." },
+      { title: "개인정보 처리방침 — 플로티" },
+      { name: "description", content: "플로티(Floatie) 서비스 개인정보 처리방침." },
     ],
   }),
   component: PrivacyPage,
@@ -19,7 +19,7 @@ function PrivacyPage() {
         </Link>
         <h1 className="font-serif text-3xl mt-4 mb-8">개인정보 처리방침</h1>
         <div className="space-y-6 text-sm leading-relaxed text-foreground/80">
-          <p className="text-muted-foreground">초안 · 서비스명 임시 “쪽지” · 법률 문안 확정 전</p>
+          <p className="text-muted-foreground">초안 · 서비스명 “플로티(Floatie)” · 법률 문안 확정 전</p>
 
           <Section title="1. 수집 항목">
             이메일(또는 소셜 계정 식별자), 닉네임, 프로필 사진(선택), 한 줄 소개,

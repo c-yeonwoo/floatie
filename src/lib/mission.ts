@@ -19,7 +19,8 @@ export type MissionDelivery = {
   sender_verdict: "pending" | "ok" | "pass";
   receiver_verdict: "pending" | "ok" | "pass";
   unlocked_at: string | null;
-  expires_at: string;
+  accepted_at: string | null;
+  expires_at: string | null;
   created_at: string;
   mission?: { body: string; kind: string; chips: string[] };
 };
@@ -31,6 +32,7 @@ export type MyMissionProfile = {
   region: string | null;
   height_cm: number | null;
   ticket_balance: number;
+  trust_score: number;
   display_name: string | null;
 };
 
@@ -56,7 +58,7 @@ export async function fetchMyMissionProfile(): Promise<MyMissionProfile | null> 
   if (!uid) return null;
   const { data, error } = await db
     .from("profiles")
-    .select("id, gender, birth_year, region, height_cm, ticket_balance, display_name")
+    .select("id, gender, birth_year, region, height_cm, ticket_balance, trust_score, display_name")
     .eq("id", uid)
     .maybeSingle();
   if (error) throw error;
@@ -143,7 +145,7 @@ export async function fetchInbox(userId: string): Promise<MissionDelivery[]> {
     const { data, error } = await db
       .from("mission_deliveries")
       .select(
-        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, expires_at, created_at, mission:missions(body, kind, chips)",
+        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips)",
       )
       .eq("receiver_id", userId)
       .in("status", ["delivered", "replied"])
@@ -158,7 +160,7 @@ export async function fetchOutbox(userId: string): Promise<MissionDelivery[]> {
     const { data, error } = await db
       .from("mission_deliveries")
       .select(
-        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, expires_at, created_at, mission:missions(body, kind, chips)",
+        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips)",
       )
       .eq("sender_id", userId)
       .order("created_at", { ascending: false })
@@ -173,7 +175,7 @@ export async function fetchDelivery(id: number): Promise<MissionDelivery | null>
     const { data, error } = await db
       .from("mission_deliveries")
       .select(
-        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, expires_at, created_at, mission:missions(body, kind, chips)",
+        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips)",
       )
       .eq("id", id)
       .maybeSingle();
@@ -182,18 +184,29 @@ export async function fetchDelivery(id: number): Promise<MissionDelivery | null>
   });
 }
 
-export async function replyToDelivery(id: number, replyBody: string) {
-  const { error } = await db
-    .from("mission_deliveries")
-    .update({
-      reply_body: replyBody.trim(),
-      replied_at: new Date().toISOString(),
-      status: "replied",
-    })
-    .eq("id", id)
-    .is("reply_body", null)
-    .eq("status", "delivered");
+export async function acceptDelivery(id: number) {
+  const { error } = await db.rpc("accept_delivery", { p_delivery_id: id });
   if (error) throw error;
+}
+
+export async function replyToDelivery(id: number, replyBody: string) {
+  const { error } = await db.rpc("reply_to_delivery", {
+    p_delivery_id: id,
+    p_body: replyBody.trim(),
+  });
+  if (error) throw error;
+}
+
+export async function resendExpiredMission(
+  deliveryId: number,
+  useTicket = false,
+): Promise<number> {
+  const { data, error } = await db.rpc("resend_expired_mission", {
+    p_delivery_id: deliveryId,
+    p_use_ticket: useTicket,
+  });
+  if (error) throw error;
+  return data as number;
 }
 
 export async function setVerdict(
@@ -317,12 +330,14 @@ export function ageBand(birthYear: number | null | undefined): string | null {
   return "40대+";
 }
 
-/** Remaining ms until expires_at; negative if past. */
-export function msUntil(iso: string): number {
+/** Remaining ms until expires_at; negative if past or no deadline. */
+export function msUntil(iso: string | null | undefined): number {
+  if (!iso) return Infinity;
   return new Date(iso).getTime() - Date.now();
 }
 
-export function formatCountdown(iso: string): string {
+export function formatCountdown(iso: string | null | undefined): string {
+  if (!iso) return "수락 대기";
   const ms = msUntil(iso);
   if (ms <= 0) return "만료";
   const totalMin = Math.floor(ms / 60000);

@@ -7,7 +7,7 @@ import { stripExifAndCompress } from "@/lib/image-utils";
 import { StorageImg } from "@/components/storage-img";
 
 export const Route = createFileRoute("/_authenticated/me/edit")({
-  head: () => ({ meta: [{ title: "프로필 수정 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "프로필 수정 — 플로티" }] }),
   component: EditProfilePage,
 });
 

@@ -4,7 +4,7 @@ import { fetchSafetyProfile } from "@/lib/safety";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/banned")({
-  head: () => ({ meta: [{ title: "이용 제한 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "이용 제한 — 플로티" }] }),
   component: BannedPage,
 });
 

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/forgot-password")({
-  head: () => ({ meta: [{ title: "비밀번호 찾기 — 숨결" }] }),
+  head: () => ({ meta: [{ title: "비밀번호 찾기 — 플로티" }] }),
   component: ForgotPasswordPage,
 });
 
@@ -53,7 +53,7 @@ function ForgotPasswordPage() {
     <main className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <Link to="/" className="block text-center mb-12">
-          <h1 className="font-serif text-5xl tracking-tight text-foreground">숨결</h1>
+          <h1 className="font-serif text-5xl tracking-tight text-foreground">플로티</h1>
         </Link>
         <h2 className="text-center text-lg mb-2">비밀번호를 잊으셨나요?</h2>
         <p className="text-center text-sm text-muted-foreground mb-8">

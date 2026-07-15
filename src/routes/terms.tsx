@@ -3,8 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "이용약관 — 쪽지" },
-      { name: "description", content: "쪽지 서비스 이용약관." },
+      { title: "이용약관 — 플로티" },
+      { name: "description", content: "플로티(Floatie) 서비스 이용약관." },
     ],
   }),
   component: TermsPage,
@@ -19,10 +19,10 @@ function TermsPage() {
         </Link>
         <h1 className="font-serif text-3xl mt-4 mb-8">이용약관</h1>
         <div className="space-y-6 text-sm leading-relaxed text-foreground/80">
-          <p className="text-muted-foreground">초안 · 서비스명 임시 “쪽지” · 법률 문안 확정 전</p>
+          <p className="text-muted-foreground">초안 · 서비스명 “플로티(Floatie)” · 법률 문안 확정 전</p>
 
           <Section title="1. 목적">
-            본 약관은 쪽지(이하 “서비스”)가 제공하는 익명 미션·상호 인정 기반
+            본 약관은 플로티(Floatie)(이하 “서비스”)가 제공하는 익명 미션·상호 인정 기반
             라이트 소셜 서비스의 이용 조건과 절차를 정합니다.
           </Section>
 

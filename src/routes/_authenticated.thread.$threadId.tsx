@@ -15,7 +15,7 @@ import {
 import { ReportDialog } from "@/components/report-dialog";
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
-  head: () => ({ meta: [{ title: "대화 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "대화 — 플로티" }] }),
   component: ThreadPage,
 });
 

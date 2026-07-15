@@ -180,4 +180,128 @@ body.app-ready #boot-splash {
   50% { opacity: 1; transform: scale(1); }
 }
 
+/* BottleNote — sea drift waiting scene (draft) */
+.bottle-sea-scene {
+  background: linear-gradient(
+    180deg,
+    oklch(0.88 0.04 230) 0%,
+    oklch(0.82 0.06 215) 45%,
+    oklch(0.72 0.08 210) 100%
+  );
+}
+
+.bottle-sea-sky {
+  position: absolute;
+  inset: 0 0 40%;
+  background: linear-gradient(
+    180deg,
+    oklch(0.94 0.03 240 / 0.6) 0%,
+    transparent 100%
+  );
+}
+
+.bottle-sea-horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 42%;
+  height: 1px;
+  background: oklch(1 0 0 / 0.25);
+}
+
+.bottle-sea-wave {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  height: 48px;
+  border-radius: 45%;
+  background: oklch(0.68 0.07 215 / 0.55);
+  animation: bottle-wave 6s ease-in-out infinite;
+}
+
+.bottle-sea-wave--back {
+  bottom: 18%;
+  opacity: 0.5;
+  animation-duration: 8s;
+  animation-delay: -2s;
+}
+
+.bottle-sea-wave--front {
+  bottom: 8%;
+  opacity: 0.75;
+}
+
+@keyframes bottle-wave {
+  0%, 100% { transform: translateX(0) scaleY(1); }
+  50% { transform: translateX(4%) scaleY(1.08); }
+}
+
+.bottle-drift-float {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bottle-drift-float--active {
+  animation: bottle-drift 7s ease-in-out infinite;
+}
+
+@keyframes bottle-drift {
+  0%, 100% { transform: translate(0, 0) rotate(-2deg); }
+  25% { transform: translate(12px, -6px) rotate(1deg); }
+  50% { transform: translate(-8px, 4px) rotate(-1deg); }
+  75% { transform: translate(6px, -3px) rotate(2deg); }
+}
+
+.bottle-drift-bottle {
+  position: relative;
+  width: 56px;
+  filter: drop-shadow(0 8px 16px oklch(0.2 0.02 240 / 0.25));
+}
+
+.bottle-drift-neck {
+  width: 14px;
+  height: 18px;
+  margin: 0 auto;
+  border-radius: 4px 4px 0 0;
+  background: oklch(0.75 0.04 145 / 0.85);
+  border: 1px solid oklch(1 0 0 / 0.2);
+}
+
+.bottle-drift-glass {
+  width: 56px;
+  min-height: 72px;
+  padding: 10px 8px;
+  border-radius: 8px 8px 14px 14px;
+  background: linear-gradient(
+    135deg,
+    oklch(0.82 0.06 145 / 0.55) 0%,
+    oklch(0.72 0.08 160 / 0.65) 100%
+  );
+  border: 1px solid oklch(1 0 0 / 0.35);
+  backdrop-filter: blur(2px);
+}
+
+.bottle-drift-scroll {
+  color: oklch(0.25 0.02 60);
+  background: oklch(0.97 0.01 85);
+  border-radius: 4px;
+  padding: 6px;
+  box-shadow: inset 0 1px 2px oklch(0.2 0.01 50 / 0.08);
+}
+
+.bottle-drift-ripple {
+  width: 72px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: oklch(1 0 0 / 0.2);
+  animation: bottle-ripple 3s ease-in-out infinite;
+}
+
+@keyframes bottle-ripple {
+  0%, 100% { transform: scaleX(1); opacity: 0.5; }
+  50% { transform: scaleX(1.15); opacity: 0.25; }
+}
 

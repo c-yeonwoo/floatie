@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ageBand,
+  acceptDelivery,
   fetchDelivery,
   fetchThreadByDelivery,
   fetchUnlockedPeer,
   formatCountdown,
+  msUntil,
   replyToDelivery,
   setVerdict,
 } from "@/lib/mission";
@@ -16,7 +18,7 @@ import { StorageImg } from "@/components/storage-img";
 import { ReportDialog } from "@/components/report-dialog";
 
 export const Route = createFileRoute("/_authenticated/delivery/$deliveryId")({
-  head: () => ({ meta: [{ title: "쪽지 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "미션 — 플로티" }] }),
   component: DeliveryPage,
 });
 
@@ -62,6 +64,16 @@ function DeliveryPage() {
     queryFn: () => fetchThreadByDelivery(id),
   });
 
+  const acceptMut = useMutation({
+    mutationFn: () => acceptDelivery(id),
+    onSuccess: () => {
+      toast.success("미션을 수락했어요. 12시간 안에 답해 주세요.");
+      qc.invalidateQueries({ queryKey: ["mission-delivery", id] });
+      qc.invalidateQueries({ queryKey: ["mission-inbox"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "수락하지 못했어요."),
+  });
+
   const replyMut = useMutation({
     mutationFn: async () => {
       const body = (chip ?? reply).trim();
@@ -100,7 +112,7 @@ function DeliveryPage() {
   if (error || !delivery || !role) {
     return (
       <main className="px-5 py-8">
-        <p className="text-sm text-muted-foreground">쪽지를 찾을 수 없어요.</p>
+        <p className="text-sm text-muted-foreground">미션을 찾을 수 없어요.</p>
         <button type="button" className="mt-4 text-sm underline" onClick={() => navigate({ to: "/home" })}>
           돌아가기
         </button>
@@ -112,7 +124,17 @@ function DeliveryPage() {
   const chips = mission?.chips ?? [];
   const myVerdict = role === "sender" ? delivery.sender_verdict : delivery.receiver_verdict;
   const theirVerdict = role === "sender" ? delivery.receiver_verdict : delivery.sender_verdict;
-  const canReply = role === "receiver" && !delivery.reply_body && new Date(delivery.expires_at) > new Date();
+  const needsAccept =
+    role === "receiver" &&
+    !delivery.accepted_at &&
+    !delivery.reply_body &&
+    delivery.status !== "expired";
+  const canReply =
+    role === "receiver" &&
+    !!delivery.accepted_at &&
+    !delivery.reply_body &&
+    delivery.expires_at != null &&
+    msUntil(delivery.expires_at) > 0;
   const showVerdict =
     !!delivery.reply_body &&
     myVerdict === "pending" &&
@@ -146,11 +168,34 @@ function DeliveryPage() {
       <h1 className="font-serif text-2xl leading-snug">{mission?.body}</h1>
       {!delivery.reply_body && delivery.status !== "expired" && (
         <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-          남은 시간 ⏱ {formatCountdown(delivery.expires_at)}
+          {needsAccept
+            ? "수락하면 답장 기한 12시간이 시작돼요"
+            : delivery.accepted_at && delivery.expires_at
+              ? `남은 시간 ⏱ ${formatCountdown(delivery.expires_at)}`
+              : role === "sender"
+                ? "상대가 수락할 때까지 표류 중"
+                : null}
         </p>
       )}
 
-      {!delivery.unlocked_at && (
+      {needsAccept && (
+        <section className="mt-8 space-y-3">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            익명 미션이에요. 수락하면 12시간 안에 답장해 주세요. 무응답 시 신뢰 점수가 내려갈 수
+            있어요.
+          </p>
+          <button
+            type="button"
+            disabled={acceptMut.isPending}
+            onClick={() => acceptMut.mutate()}
+            className="w-full rounded-full bg-foreground text-background py-3.5 text-sm font-medium"
+          >
+            {acceptMut.isPending ? "수락 중…" : "미션 수락하기"}
+          </button>
+        </section>
+      )}
+
+      {!delivery.unlocked_at && !needsAccept && (
         <p className="mt-3 text-sm text-muted-foreground">
           프로필은 서로 OK하기 전까지 비밀이에요.
           {theirVerdict === "ok" && myVerdict === "pending" && " · 상대는 OK했어요."}

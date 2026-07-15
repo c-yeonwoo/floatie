@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
-  head: () => ({ meta: [{ title: "시작하기 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "시작하기 — 플로티" }] }),
   component: OnboardingPage,
 });
 
@@ -87,7 +87,7 @@ function OnboardingPage() {
         })
         .eq("id", uid);
       if (error) throw error;
-      toast.success("쪽지를 시작해 볼까요?");
+      toast.success("플로티를 시작해 볼까요?");
       navigate({ to: "/home" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "다시 시도해 주세요.");
@@ -178,7 +178,7 @@ function OnboardingPage() {
               />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-2">받고 싶은 쪽지 (성별)</p>
+              <p className="text-xs text-muted-foreground mb-2">받고 싶은 미션 (성별)</p>
               <div className="flex gap-2">
                 {(
                   [
@@ -227,7 +227,7 @@ function OnboardingPage() {
 
         {step === "intro" && (
           <div>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">쪽지</span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">플로티</span>
             <h2 className="font-serif text-[28px] mt-3 leading-snug">
               익명으로 미션이 오고,
               <br />

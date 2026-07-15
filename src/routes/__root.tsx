@@ -64,13 +64,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" },
-      { title: "쪽지 — 익명 미션이 도착하면" },
+      { title: "플로티 — 익명 미션이 둥실 떠다니다" },
       { name: "description", content: "익명 미션에 답하고, 서로 OK면 그때 프로필이 열립니다." },
       { name: "theme-color", content: "#F9F8F6" },
-      { property: "og:title", content: "쪽지" },
+      { property: "og:title", content: "플로티" },
       { property: "og:description", content: "익명 미션에 답하고, 서로 OK면 그때 프로필이 열립니다." },
       { property: "og:type", content: "website" },
-      { name: "twitter:title", content: "쪽지" },
+      { name: "twitter:title", content: "플로티" },
       { name: "twitter:description", content: "익명 미션에 답하고, 서로 OK면 그때 프로필이 열립니다." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c1c1ac07-cacb-4d76-81a9-543e9431b769/id-preview-66f224c0--e7936f15-a0c6-4d73-beb0-73adbb2e98e3.lovable.app-1780246467661.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c1c1ac07-cacb-4d76-81a9-543e9431b769/id-preview-66f224c0--e7936f15-a0c6-4d73-beb0-73adbb2e98e3.lovable.app-1780246467661.png" },
@@ -95,7 +95,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <body>
         <div id="boot-splash" aria-hidden="true">
           <img src="/app-icon.png" alt="" width={88} height={88} />
-          <span>숨결</span>
+          <span>플로티</span>
         </div>
         {children}
         <Scripts />

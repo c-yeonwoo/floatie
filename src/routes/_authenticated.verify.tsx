@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { confirmPhoneOtp, requestPhoneOtp } from "@/lib/safety";
 
 export const Route = createFileRoute("/_authenticated/verify")({
-  head: () => ({ meta: [{ title: "본인인증 — 쪽지" }] }),
+  head: () => ({ meta: [{ title: "본인인증 — 플로티" }] }),
   component: VerifyPage,
 });
 

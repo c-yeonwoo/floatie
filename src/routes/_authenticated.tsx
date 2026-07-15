@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, Link, useLocation } from "@tanstack/
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { touchLastActive } from "@/lib/mission";
+import { NotificationToasts } from "@/components/notification-toasts";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
@@ -47,6 +48,7 @@ function AuthenticatedLayout() {
   const hideTabs =
     location.pathname.startsWith("/delivery/") ||
     location.pathname.startsWith("/thread/") ||
+    location.pathname.startsWith("/waiting/") ||
     location.pathname === "/onboarding" ||
     location.pathname === "/verify" ||
     location.pathname === "/banned" ||
@@ -80,6 +82,7 @@ function AuthenticatedLayout() {
         </div>
         {!hideTabs && <TabBar pathname={location.pathname} height={tabBarHeight} />}
       </div>
+      <NotificationToasts />
     </div>
   );
 }
