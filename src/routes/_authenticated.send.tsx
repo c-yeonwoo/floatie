@@ -12,6 +12,7 @@ import {
   type IdealFilter,
   type MissionPreset,
 } from "@/lib/mission";
+import { BRAND_KO } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/send")({
   head: () => ({ meta: [{ title: "보내기 — 플로티" }] }),
