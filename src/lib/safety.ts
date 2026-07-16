@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
+/** Permanently delete the signed-in user's account and all their data. */
+export async function deleteAccount(): Promise<void> {
+  const { error } = await db.rpc("delete_my_account");
+  if (error) throw error;
+  await supabase.auth.signOut();
+}
+
 export type SafetyProfile = {
   id: string;
   status: "active" | "banned";

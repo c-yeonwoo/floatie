@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
 import { ageBand } from "@/lib/mission";
-import { fetchSafetyProfile } from "@/lib/safety";
+import { fetchSafetyProfile, deleteAccount } from "@/lib/safety";
 
 export const Route = createFileRoute("/_authenticated/me/")({
   head: () => ({ meta: [{ title: "나 — 플로티" }] }),
@@ -31,9 +33,23 @@ function MePage() {
     queryFn: fetchSafetyProfile,
   });
 
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const onLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/login";
+  };
+
+  const onDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      window.location.href = "/login";
+    } catch {
+      toast.error("탈퇴에 실패했어요. 잠시 뒤 다시 시도해 주세요.");
+      setDeleting(false);
+    }
   };
 
   const p = data?.profile;
@@ -119,6 +135,43 @@ function MePage() {
           개인정보 처리방침
         </Link>
       </nav>
+
+      <section className="mt-10 pt-6 border-t border-border">
+        {!confirming ? (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className="text-[13px] text-muted-foreground hover:text-destructive transition-colors"
+          >
+            회원 탈퇴
+          </button>
+        ) : (
+          <div className="rounded-2xl bg-secondary p-4">
+            <p className="text-sm font-semibold">정말 탈퇴할까요?</p>
+            <p className="mt-1 text-[13px] text-muted-foreground leading-relaxed">
+              계정과 모든 미션·대화·프로필이 영구 삭제되고, 되돌릴 수 없어요.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={onDelete}
+                className="flex-1 rounded-full bg-destructive text-destructive-foreground py-2.5 text-sm font-semibold disabled:opacity-50"
+              >
+                {deleting ? "탈퇴 중…" : "영구 탈퇴하기"}
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setConfirming(false)}
+                className="flex-1 rounded-full bg-surface py-2.5 text-sm font-medium"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
