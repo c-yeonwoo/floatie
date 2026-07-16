@@ -135,15 +135,16 @@ function LoginPage() {
   }
 
   return (
-    <main className="fixed inset-0 h-[100dvh] overflow-hidden overscroll-none bg-background flex items-center justify-center px-6">
-      <div className="w-full max-w-sm max-h-[100dvh] py-6">
-        <div className="mb-7 sm:mb-9">
-          <SeaBanner />
-          <h1 className="mt-5 text-center font-serif text-4xl tracking-tight text-foreground">플로티</h1>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
-            가벼운 질문 하나로 시작해요. 서로 좋으면, 그때 열려요.
-          </p>
-        </div>
+    <main className="fixed inset-0 h-[100dvh] overflow-hidden overscroll-none bg-background flex flex-col">
+      <SeaBanner className="h-44 shrink-0" />
+      <div className="flex-1 min-h-0 overflow-y-auto px-6">
+        <div className="mx-auto w-full max-w-sm pt-7 pb-8">
+          <div className="mb-7 text-center">
+            <h1 className="font-serif text-4xl tracking-tight text-foreground">플로티</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              가벼운 질문 하나로 시작해요. 서로 좋으면, 그때 열려요.
+            </p>
+          </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
@@ -242,6 +243,7 @@ function LoginPage() {
           {" · "}
           <Link to="/privacy" className="hover:text-foreground">개인정보 처리방침</Link>
         </p>
+        </div>
       </div>
     </main>
   );

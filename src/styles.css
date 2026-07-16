@@ -388,7 +388,13 @@ body.app-ready #boot-splash {
 }
 .animate-floatie-ping { animation: floatie-ping 1.8s cubic-bezier(0,0,0.2,1) infinite; }
 
+/* Continuously flowing sea — wave layers drift left forever (seamless loop) */
+@keyframes wave-flow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.animate-wave-flow { animation: wave-flow 9s linear infinite; }
+.animate-wave-flow-slow { animation: wave-flow 16s linear infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-floatie-bob, .animate-floatie-ping { animation: none; }
+  .animate-floatie-bob, .animate-floatie-ping,
+  .animate-wave-flow, .animate-wave-flow-slow { animation: none; }
 }
 
