@@ -28,7 +28,7 @@ function PrivacyPage() {
           </Section>
 
           <Section title="2. 수집 목적">
-            계정 식별, 익명 미션 매칭, 양방향 OK 후 프로필 공유, 안전(신고·차단),
+            계정 식별, 익명 미션 매칭, 양방향 동의 후 프로필 공유, 안전(신고·차단),
             서비스 개선.
           </Section>
 

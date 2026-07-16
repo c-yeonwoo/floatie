@@ -88,7 +88,7 @@ function MePage() {
             "프로필을 채워 주세요"}
         </p>
         <p className="text-[12px] text-muted-foreground mt-2 max-w-xs leading-relaxed">
-          unlock 전에는 상대에게 거의 보이지 않아요. 서로 OK한 뒤에만 공유됩니다.
+          열리기 전에는 거의 보이지 않아요. 서로 좋다고 하면 그때 공유돼요.
         </p>
       </section>
 

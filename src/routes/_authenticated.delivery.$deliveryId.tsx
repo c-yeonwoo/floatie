@@ -94,7 +94,7 @@ function DeliveryPage() {
       await setVerdict(id, role, verdict);
     },
     onSuccess: (_, verdict) => {
-      toast.success(verdict === "ok" ? "OK 했어요." : "패스했어요.");
+      toast.success(verdict === "ok" ? "좋다고 했어요." : "패스했어요.");
       qc.invalidateQueries({ queryKey: ["mission-delivery", id] });
       qc.invalidateQueries({ queryKey: ["mission-inbox"] });
       qc.invalidateQueries({ queryKey: ["mission-outbox"] });
@@ -196,8 +196,8 @@ function DeliveryPage() {
 
       {!delivery.unlocked_at && !needsAccept && (
         <p className="mt-3 text-sm text-muted-foreground">
-          프로필은 서로 OK하기 전까지 비밀이에요.
-          {theirVerdict === "ok" && myVerdict === "pending" && " · 상대는 OK했어요."}
+          프로필은 서로 좋다고 하기 전까지 비밀이에요.
+          {theirVerdict === "ok" && myVerdict === "pending" && " · 상대도 좋다고 했어요."}
         </p>
       )}
 
@@ -260,7 +260,7 @@ function DeliveryPage() {
             onClick={() => verdictMut.mutate("ok")}
             className="flex-1 rounded-full bg-warm text-warm-foreground py-3 text-sm font-bold"
           >
-            괜찮았어요 (OK)
+            괜찮았어요
           </button>
           <button
             type="button"
@@ -275,14 +275,14 @@ function DeliveryPage() {
 
       {myVerdict !== "pending" && !delivery.unlocked_at && (
         <p className="mt-6 text-sm text-muted-foreground">
-          내 선택: {myVerdict === "ok" ? "OK" : "패스"}
+          내 선택: {myVerdict === "ok" ? "괜찮았어요" : "패스"}
           {theirVerdict === "pending" ? " · 상대 기다리는 중" : ` · 상대: ${theirVerdict}`}
         </p>
       )}
 
       {delivery.unlocked_at && peer && (
         <section className="mt-8 rounded-2xl border border-warm/50 bg-warm-wash px-4 py-5 shadow-sm">
-          <p className="text-xs tracking-widest text-warm-deep font-semibold mb-3">UNLOCK</p>
+          <p className="text-xs tracking-widest text-warm-deep font-semibold mb-3">열림</p>
           <div className="flex items-center gap-4">
             {peer.avatar_url ? (
               <StorageImg

@@ -169,7 +169,7 @@ function EditProfilePage() {
             )}
           </div>
           <p className="text-[11px] uppercase tracking-widest text-muted-foreground mt-3 text-center">
-            사진 변경 · unlock 후 공유
+            사진 변경 · 열린 뒤 공유
           </p>
         </label>
       </section>
@@ -243,7 +243,7 @@ function EditProfilePage() {
             maxLength={160}
             rows={3}
             className="w-full bg-transparent border-b border-border py-2 text-base focus:outline-none focus:border-foreground resize-none"
-            placeholder="unlock 후 상대에게 보여요."
+            placeholder="열린 뒤 상대에게 보여요."
           />
         </Field>
       </section>

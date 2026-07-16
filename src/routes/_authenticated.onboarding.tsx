@@ -118,7 +118,7 @@ function OnboardingPage() {
             <div className="text-center mb-10">
               <h1 className="font-serif text-3xl">반가워요</h1>
               <p className="text-[15px] text-muted-foreground mt-3 leading-relaxed">
-                unlock 후에만 보이는 닉네임이에요.
+                열린 뒤에만 보이는 닉네임이에요.
               </p>
             </div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -139,7 +139,7 @@ function OnboardingPage() {
             <div>
               <h1 className="font-serif text-3xl">기본 정보</h1>
               <p className="text-[15px] text-muted-foreground mt-2">
-                매칭 가드에만 쓰여요. unlock 전엔 상대에게 거의 안 보여요.
+                매칭에만 쓰여요. 열리기 전엔 상대에게 거의 안 보여요.
               </p>
             </div>
             <div>
@@ -231,10 +231,10 @@ function OnboardingPage() {
             <h2 className="font-serif text-[28px] mt-3 leading-snug">
               익명으로 미션이 오고,
               <br />
-              서로 OK면 열려요.
+              서로 좋으면 열려요.
             </h2>
             <p className="text-[15px] text-muted-foreground mt-5 leading-relaxed">
-              가벼운 질문이나 미션에 답해 보세요. 한쪽만 OK면 정체는 비밀로 남아요. 패스해도 괜찮아요.
+              가벼운 질문이나 미션에 답해 보세요. 한쪽만 좋다고 하면 정체는 비밀로 남아요. 패스해도 괜찮아요.
             </p>
           </div>
         )}
