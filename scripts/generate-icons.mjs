@@ -24,3 +24,17 @@ for (const [size, out] of targets) {
     .toFile(join(root, out));
   console.log(`✔ ${out} (${size}×${size})`);
 }
+
+// Splash sources for @capacitor/assets: sea-mist (light) / deep-sea (dark)
+// canvas with the icon centered, generous margin so device crops stay safe.
+const logo = await sharp(svg, { density: 512 }).resize(760, 760).png().toBuffer();
+for (const [bg, out] of [
+  ["#f1f7f5", "assets/splash.png"],
+  ["#0f1e21", "assets/splash-dark.png"],
+]) {
+  await sharp({ create: { width: 2732, height: 2732, channels: 4, background: bg } })
+    .composite([{ input: logo, gravity: "center" }])
+    .png()
+    .toFile(join(root, out));
+  console.log(`✔ ${out} (2732×2732, ${bg})`);
+}
