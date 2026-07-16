@@ -12,4 +12,12 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Web (Cloudflare) build only: enable the Nitro deploy plugin to emit a
+  // Cloudflare Pages bundle into dist/ (_worker.js + static). Gated by env so
+  // the default `build` stays a mobile/Capacitor client build (dist/client).
+  //   web:    DEPLOY_TARGET=cloudflare vite build   (npm run build:web)
+  //   mobile: vite build                            (npm run build)
+  ...(process.env.DEPLOY_TARGET === "cloudflare"
+    ? { nitro: { preset: "cloudflare-pages" } }
+    : {}),
 });

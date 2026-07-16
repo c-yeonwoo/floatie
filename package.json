@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && npm run build:mobile:assets",
+    "build:web": "DEPLOY_TARGET=cloudflare vite build",
     "start": "vite",
     "build:dev": "vite build --mode development",
     "build:mobile:assets": "node scripts/generate-mobile-web-index.mjs",
