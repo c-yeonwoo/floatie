@@ -133,8 +133,8 @@ function ThreadPage() {
       </header>
 
       {closed && (
-        <div className="px-5 py-2 bg-foreground/5 text-xs text-muted-foreground text-center border-b border-border">
-          메시지 한도 또는 기간이 끝나 soft close 됐어요.
+        <div className="px-5 py-2 bg-secondary text-xs text-muted-foreground text-center">
+          이 대화는 여기까지예요. 좋은 흐름이었어요.
         </div>
       )}
 

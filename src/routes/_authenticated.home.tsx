@@ -51,7 +51,7 @@ function InboxPage() {
         <h1 className="font-serif text-3xl mt-1">받은 미션</h1>
         <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
           {isMale
-            ? "익명 미션을 수락하고 12시간 안에 답해 보세요. 서로 OK면 그때 열려요."
+            ? "도착한 미션을 수락하고 12시간 안에 답해 보세요. 서로 좋으면 그때 열려요."
             : "남성 회원에게 도착한 미션이 여기에 쌓여요. 보내기는 여성만 가능해요."}
         </p>
       </header>
@@ -72,7 +72,7 @@ function InboxPage() {
       {error && (
         <div className="rounded-lg border border-border p-4">
           <p className="text-sm text-muted-foreground">
-            받은 미션을 불러오지 못했어요. DB 마이그레이션이 적용됐는지 확인해 주세요.
+            잠깐 파도가 높네요. 잠시 뒤 다시 시도해 주세요.
           </p>
           <button
             type="button"

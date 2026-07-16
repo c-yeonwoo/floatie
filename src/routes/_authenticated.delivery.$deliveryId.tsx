@@ -163,7 +163,7 @@ function DeliveryPage() {
       </div>
 
       <p className="text-xs text-muted-foreground mb-2">
-        {role === "receiver" ? "받은 익명 미션" : "내가 보낸 미션"}
+        {role === "receiver" ? "받은 미션" : "내가 보낸 미션"}
       </p>
       <h1 className="font-serif text-2xl leading-snug">{mission?.body}</h1>
       {!delivery.reply_body && delivery.status !== "expired" && (
@@ -181,8 +181,7 @@ function DeliveryPage() {
       {needsAccept && (
         <section className="mt-8 space-y-3">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            익명 미션이에요. 수락하면 12시간 안에 답장해 주세요. 무응답 시 신뢰 점수가 내려갈 수
-            있어요.
+            수락하면 12시간 안에 답장해 주세요. 답이 없으면 신뢰 점수가 조금 내려갈 수 있어요.
           </p>
           <button
             type="button"

@@ -102,7 +102,7 @@ function WaitingPage() {
         ? "수락 후 12시간 안에 답장이 오면 알려드릴게요."
         : phase === "replied"
           ? "결과에서 답장을 확인하고 평가해 주세요."
-          : "같은 미션 내용으로 플로티를 다시 보내시겠습니까?";
+          : "이 미션, 다른 사람에게 다시 띄워 볼까요?";
 
   return (
     <main className="px-5 py-8 pb-16 min-h-full flex flex-col">

@@ -3,8 +3,7 @@ import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BRAND_KO, pageTitle } from "@/lib/brand";
-import logoSymbolAsset from "@/assets/logo-symbol-frame.png.asset.json";
-const logoSymbol = logoSymbolAsset.url;
+import { SeaBanner } from "@/components/sea-banner";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -138,15 +137,13 @@ function LoginPage() {
   return (
     <main className="fixed inset-0 h-[100dvh] overflow-hidden overscroll-none bg-background flex items-center justify-center px-6">
       <div className="w-full max-w-sm max-h-[100dvh] py-6">
-        <Link to="/" className="block text-center mb-8 sm:mb-10">
-            <img
-            src={logoSymbol}
-            alt="플로티"
-            className="mx-auto h-16 w-16 sm:h-20 sm:w-20 object-contain"
-          />
-          <h1 className="mt-3 font-serif text-4xl tracking-tight text-foreground">플로티</h1>
-          <p className="mt-2 text-sm text-muted-foreground">익명 미션을 둥실, 서로 OK면 열려요</p>
-        </Link>
+        <div className="mb-7 sm:mb-9">
+          <SeaBanner />
+          <h1 className="mt-5 text-center font-serif text-4xl tracking-tight text-foreground">플로티</h1>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            가벼운 질문 하나로 시작해요. 서로 좋으면, 그때 열려요.
+          </p>
+        </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
