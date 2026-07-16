@@ -41,6 +41,7 @@
   /* Single typeface — Pretendard. No serif; hierarchy via weight/size. */
   --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   --font-serif: var(--font-sans);
+  --font-display: 'Jua', var(--font-sans);   /* soft rounded — wordmark + big titles */
   /* Subtle depth — keep restrained, gallery aesthetic */
   /* Buoyant depth — sea-tinted, present (not the old hairline gallery look). */
   --shadow-xs: 0 1px 2px oklch(0.30 0.03 210 / 0.06), 0 2px 6px oklch(0.30 0.03 210 / 0.06);
@@ -163,12 +164,13 @@
   }
 
 
-  /* No serif face anymore — 'font-serif' now means "display": bold Pretendard.
-     Keeps all existing call-sites working while unifying to one typeface. */
+  /* 'font-serif' = our display hook (wordmark + big titles). Soft rounded Jua,
+     lighter weight and relaxed tracking so large text feels warm, not rigid.
+     Body/UI stays Pretendard. */
   .font-serif {
-    font-family: var(--font-sans);
-    font-weight: 700;
-    letter-spacing: -0.012em;
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.005em;
   }
 
   /* Buoyant elevation — surfaces float on soft sea-tinted shadow, not hairlines. */
