@@ -30,7 +30,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  *   npx cap open ios         # opens Xcode
  */
 const config: CapacitorConfig = {
-  appId: "app.gyeol.client",
+  appId: "app.floatie.app",
   appName: "플로티",
   webDir: "dist/client",
   bundledWebRuntime: false,
@@ -47,11 +47,11 @@ const config: CapacitorConfig = {
       NSPhotoLibraryAddUsageDescription: "편집한 사진을 저장하기 위해 사진 라이브러리에 저장할 수 있습니다.",
     },
     contentInset: "never",
-    backgroundColor: "#F9F8F6",
+    backgroundColor: "#F1F7F5",
   },
   android: {
     webContentsDebuggingEnabled: false,
-    backgroundColor: "#F9F8F6",
+    backgroundColor: "#F1F7F5",
   },
 };
 
