@@ -188,7 +188,11 @@ function RootComponent() {
       <AuthSync />
       <BootSplashHide />
       <Outlet />
-      <Toaster position="top-center" toastOptions={{ style: { fontFamily: "var(--font-sans)" } }} />
+      <Toaster
+        position="top-center"
+        visibleToasts={1}
+        toastOptions={{ style: { fontFamily: "var(--font-sans)" } }}
+      />
     </QueryClientProvider>
   );
 }
