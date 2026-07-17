@@ -65,10 +65,12 @@ export function ParchmentNote({ content, onClose }: { content: NoteContent | nul
     return () => clearTimeout(t);
   }, [content]);
 
+  const tall = shown?.kind === "compose" || shown?.kind === "reply";
+
   return (
     <>
       <div className={"fl-scrim note-scrim" + (content ? " on" : "")} onClick={onClose} />
-      <div className={"fl-note" + (up ? " up" : "")}>
+      <div className={"fl-note" + (up ? " up" : "") + (tall ? " tall" : "")}>
         <div className="fl-grip" />
         {shown?.kind === "compose" && <ComposeBody c={shown} />}
         {shown?.kind === "floatie" && <FloatieBody c={shown} onClose={onClose} />}

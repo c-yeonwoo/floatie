@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "../integrations/supabase/client";
 import { Toaster } from "sonner";
+import { BRAND_EN } from "@/lib/brand";
 
 function NotFoundComponent() {
   return (
@@ -64,19 +65,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" },
-      { title: "플로티 — 서로 좋으면, 그때 열려요" },
+      { title: `${BRAND_EN} — 서로 좋으면, 그때 열려요` },
       { name: "description", content: "가벼운 질문에 답하고, 서로 좋으면 그때 프로필이 열려요." },
       { name: "theme-color", content: "#F1F7F5" },
-      { property: "og:title", content: "플로티" },
+      { property: "og:title", content: BRAND_EN },
       { property: "og:description", content: "가벼운 질문에 답하고, 서로 좋으면 그때 프로필이 열려요." },
       { property: "og:type", content: "website" },
-      { name: "twitter:title", content: "플로티" },
+      { name: "twitter:title", content: BRAND_EN },
       { name: "twitter:description", content: "가벼운 질문에 답하고, 서로 좋으면 그때 프로필이 열려요." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c1c1ac07-cacb-4d76-81a9-543e9431b769/id-preview-66f224c0--e7936f15-a0c6-4d73-beb0-73adbb2e98e3.lovable.app-1780246467661.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c1c1ac07-cacb-4d76-81a9-543e9431b769/id-preview-66f224c0--e7936f15-a0c6-4d73-beb0-73adbb2e98e3.lovable.app-1780246467661.png" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "icon", href: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       // Pretendard — single brand typeface. TODO(capacitor): self-host woff2 for offline.
       { rel: "preconnect", href: "https://cdn.jsdelivr.net", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" },

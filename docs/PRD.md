@@ -179,12 +179,15 @@
 
 ---
 
-## 13. 구현
+## 13. 구현 · 로드맵
 
-할 일 목록: [`IMPLEMENTATION_TODO.md`](./IMPLEMENTATION_TODO.md)
+- 할 일: [`IMPLEMENTATION_TODO.md`](./IMPLEMENTATION_TODO.md)  
+- 베타 운영: [`BETA_OPS.md`](./BETA_OPS.md)  
+- To-Be 포지션: [`POSITIONING_TOBE.md`](./POSITIONING_TOBE.md)  
+- 로드맵: [`ROADMAP.md`](./ROADMAP.md)
 
 1. 원격 DB 마이그레이션 적용  
-2. E2E 재검증  
+2. E2E 재검증 (`BETA_OPS`)  
 3. TestFlight
 
 ---

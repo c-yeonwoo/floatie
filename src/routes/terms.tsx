@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "이용약관 — 플로티" },
+      { title: pageTitle("이용약관") },
       { name: "description", content: "플로티(Floatie) 서비스 이용약관." },
     ],
   }),

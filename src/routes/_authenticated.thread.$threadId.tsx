@@ -13,9 +13,11 @@ import {
   sendMessage,
 } from "@/lib/mission";
 import { ReportDialog } from "@/components/report-dialog";
+import { pageTitle } from "@/lib/brand";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
-  head: () => ({ meta: [{ title: "대화 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("대화") }] }),
   component: ThreadPage,
 });
 
@@ -76,6 +78,7 @@ function ThreadPage() {
       await sendMessage(id, text);
     },
     onSuccess: () => {
+      if (messages.length === 0) track("msg_first", { threadId: id });
       setText("");
       qc.invalidateQueries({ queryKey: ["mission-messages", id] });
       qc.invalidateQueries({ queryKey: ["mission-thread-detail", id] });

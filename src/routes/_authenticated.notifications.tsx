@@ -8,9 +8,10 @@ import {
   type InAppNotification,
 } from "@/lib/notifications";
 import { EmptyState } from "@/components/empty-state";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
-  head: () => ({ meta: [{ title: "알림 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("알림") }] }),
   component: NotificationsPage,
 });
 

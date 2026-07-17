@@ -3,9 +3,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { confirmPhoneOtp, requestPhoneOtp } from "@/lib/safety";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/verify")({
-  head: () => ({ meta: [{ title: "본인인증 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("본인인증") }] }),
   component: VerifyPage,
 });
 

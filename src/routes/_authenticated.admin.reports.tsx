@@ -7,9 +7,10 @@ import {
   fetchSafetyProfile,
   type AdminReport,
 } from "@/lib/safety";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/admin/reports")({
-  head: () => ({ meta: [{ title: "신고 검토 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("신고 검토") }] }),
   component: AdminReportsPage,
 });
 

@@ -21,7 +21,6 @@ import {
   SMOKE_CHIPS,
   DRINK_CHIPS,
   TATTOO_CHIPS,
-  WEEKEND_CHIPS,
   VIBE_CHIPS,
   PACE_CHIPS,
   PROFILE_REGIONS,
@@ -32,11 +31,13 @@ import {
   I1_QUESTION,
   I2_QUESTION,
   parseHeightCm,
+  s4ChipOptions,
   type IntroAnswersV2,
 } from "@/lib/interview-chips";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/me/edit")({
-  head: () => ({ meta: [{ title: "프로필 수정 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("프로필 수정") }] }),
   component: EditProfilePage,
 });
 
@@ -200,7 +201,17 @@ function EditProfilePage() {
   const runRegen = async () => {
     setRegenBusy(true);
     try {
-      const draft = await generateProfileDraft([...answers, weekend], { vibes, pace });
+      const draft = await generateProfileDraft([...answers, weekend], { vibes, pace }, {
+        displayName: displayName.trim(),
+        gender,
+        birthYear: birthYear ? +birthYear : null,
+        region,
+        heightCm: parseHeightCm(heightCm),
+        jobChip,
+        smoke,
+        drink,
+        tattoo,
+      });
       const left = await regenerateIntro(draft.intro, draft.tags, draft.idealLine);
       setIntro(draft.intro);
       setIdealLine(draft.idealLine);
@@ -295,11 +306,13 @@ function EditProfilePage() {
       if (error) throw error;
 
       toast.success("프로필을 저장했어요.");
-      qc.invalidateQueries({ queryKey: ["my-profile"] });
-      qc.invalidateQueries({ queryKey: ["my-profile-edit"] });
-      qc.invalidateQueries({ queryKey: ["my-mission-profile"] });
-      qc.invalidateQueries({ queryKey: ["sea-me"] });
-      navigate({ to: "/me" });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["my-profile"] }),
+        qc.invalidateQueries({ queryKey: ["my-profile-edit"] }),
+        qc.invalidateQueries({ queryKey: ["my-mission-profile"] }),
+        qc.refetchQueries({ queryKey: ["sea-me"] }),
+      ]);
+      navigate({ to: "/home", search: { me: true } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "저장에 실패했어요.");
     } finally {
@@ -436,7 +449,7 @@ function EditProfilePage() {
 
         <p className="fl-field-label">{S4_QUESTION}</p>
         <div className="fl-chipgrid">
-          {WEEKEND_CHIPS.map((c) => (
+          {s4ChipOptions(weekend).map((c) => (
             <button key={c} type="button" className={"fl-selchip" + (weekend === c ? " on" : "")} onClick={() => setWeekend(c)}>
               {c}
             </button>

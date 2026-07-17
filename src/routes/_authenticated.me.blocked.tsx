@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { StorageImg } from "@/components/storage-img";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/me/blocked")({
-  head: () => ({ meta: [{ title: "차단 목록 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("차단 목록") }] }),
   component: BlockedListPage,
 });
 

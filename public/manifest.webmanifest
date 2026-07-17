@@ -1,6 +1,6 @@
 {
-  "name": "플로티",
-  "short_name": "플로티",
+  "name": "Floatie",
+  "short_name": "Floatie",
   "description": "가벼운 질문에 답하고, 서로 좋으면 그때 프로필이 열려요.",
   "start_url": "/home",
   "scope": "/",

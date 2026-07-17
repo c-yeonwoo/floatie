@@ -46,14 +46,20 @@ import {
   MISSION_PRESETS_FALLBACK,
   type FloatieState,
 } from "@/lib/sea";
+import { pageTitle } from "@/lib/brand";
+import { track } from "@/lib/analytics";
+import { registerPush } from "@/lib/push";
 
-type HomeSearch = { d?: number };
+type HomeSearch = { d?: number; me?: boolean };
 
 export const Route = createFileRoute("/_authenticated/home")({
-  head: () => ({ meta: [{ title: "플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle() }] }),
   validateSearch: (raw: Record<string, unknown>): HomeSearch => {
     const n = raw.d != null ? Number(raw.d) : NaN;
-    return Number.isFinite(n) ? { d: n } : {};
+    const out: HomeSearch = {};
+    if (Number.isFinite(n)) out.d = n;
+    if (raw.me === true || raw.me === "1" || raw.me === "true") out.me = true;
+    return out;
   },
   component: SeaHome,
 });
@@ -110,14 +116,14 @@ function peerCard(p: UnlockedPeer, ageOf: (y: number | null) => string): Profile
 
 function SeaHome() {
   const navigate = useNavigate();
-  const { d: deepLinkId } = Route.useSearch();
+  const { d: deepLinkId, me: openMeProfile } = Route.useSearch();
   const qc = useQueryClient();
   const [note, setNote] = useState<NoteState>(null);
   const [confirm, setConfirm] = useState<ConfirmOpts | null>(null);
   const [profile, setProfile] = useState<{ data: ProfileCardData; delivery: MissionDelivery | null } | null>(null);
   const [page, setPage] = useState<null | "history" | "shop">(null);
   const [report, setReport] = useState<{ deliveryId: number; userId: string } | null>(null);
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   const ageOf = (y: number | null) => (y ? ageBand(y) : "") ?? "";
 
   useEffect(() => {
@@ -162,7 +168,7 @@ function SeaHome() {
   const { data: presetRows = [] } = useQuery({ queryKey: ["presets"], queryFn: fetchPresets });
   const presetBodies = useMemo(() => {
     const bodies = presetRows.map((p) => p.body).filter(Boolean);
-    return (bodies.length ? bodies : MISSION_PRESETS_FALLBACK).slice(0, 5);
+    return (bodies.length ? bodies : MISSION_PRESETS_FALLBACK).slice(0, 8);
   }, [presetRows]);
 
   const refresh = () => qc.invalidateQueries();
@@ -174,8 +180,12 @@ function SeaHome() {
     mutationFn: ({ body, askPhoto }: { body: string; askPhoto: boolean }) =>
       createAndDeliverMission({ kind: "question", body, useTicket: !canFree, photoAnswer: askPhoto }),
     onSuccess: () => {
+      track("send", { ticket: !canFree });
+      track("deliver_ok");
       setNote(null);
-      toast.success("플로티를 바다 위로 띄웠어요", { description: "어떤 분께 닿을지 기다려 볼까요?" });
+      toast.success("플로티를 바다 위로 띄웠어요", {
+        description: "표류 중이에요. 답장이 오면 바다에 반짝일 거예요.",
+      });
       refresh();
     },
     onError: (e) => toast.error(mapMissionError(e, "보내지 못했어요.")),
@@ -186,7 +196,10 @@ function SeaHome() {
       if (!d.accepted_at) await acceptDelivery(d.id);
       return d;
     },
-    onSuccess: (d) => setNote({ kind: "reply", d }),
+    onSuccess: (d) => {
+      track("open_accept", { deliveryId: d.id });
+      setNote({ kind: "reply", d });
+    },
     onError: (e) => toast.error(mapMissionError(e, "열지 못했어요.")),
   });
 
@@ -198,7 +211,8 @@ function SeaHome() {
         await setReplyPhoto(d.id, path);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_r, { d }) => {
+      track("reply", { deliveryId: d.id });
       setNote(null);
       toast.success("답장을 병에 담아 보냈어요", {
         description: "답장했다는 건 관심이 있다는 신호예요. 상대가 마음에 들면 프로필이 열려요.",
@@ -221,10 +235,12 @@ function SeaHome() {
       setVerdict(d.id, "sender", v),
     onSuccess: (_res, { d, v }) => {
       if (v === "ok") {
+        track("unlock", { deliveryId: d.id });
         toast.success("마음을 전했어요", { description: "내 프로필이 상대에게 열렸어요." });
         refresh();
         openPeer(d);
       } else {
+        track("pass_post", { deliveryId: d.id });
         toast("패스했어요", { description: "같은 분과는 잠시 다시 만나지 않아요." });
         setNote(null);
         refresh();
@@ -235,7 +251,8 @@ function SeaHome() {
 
   const decline = useMutation({
     mutationFn: (d: MissionDelivery) => declineDelivery(d.id),
-    onSuccess: () => {
+    onSuccess: (_r, d) => {
+      track("pass_preopen", { deliveryId: d.id });
       toast("패스했어요", { description: "페널티는 없어요. 같은 분과는 잠시 다시 만나지 않아요." });
       setNote(null);
       refresh();
@@ -245,7 +262,8 @@ function SeaHome() {
 
   const forfeit = useMutation({
     mutationFn: (d: MissionDelivery) => forfeitDelivery(d.id),
-    onSuccess: () => {
+    onSuccess: (_r, d) => {
+      track("forfeit", { deliveryId: d.id });
       setNote(null);
       toast("답장을 포기했어요", { description: "하루 동안 새 플로티를 받지 못해요." });
       refresh();
@@ -255,7 +273,8 @@ function SeaHome() {
 
   const match = useMutation({
     mutationFn: (d: MissionDelivery) => startMatch(d.id),
-    onSuccess: (threadId) => {
+    onSuccess: (threadId, d) => {
+      track("match", { deliveryId: d.id, threadId });
       setProfile(null);
       toast.success("매칭됐어요! 대화방이 열렸어요", {
         description: "7일 안에 연락처를 나눠 보세요. 메시지는 무제한이에요.",
@@ -283,6 +302,14 @@ function SeaHome() {
       delivery: null,
     });
   };
+
+  // After /me/edit save → land on "내 프로필" overlay
+  useEffect(() => {
+    if (!openMeProfile || !me) return;
+    openMyProfile();
+    navigate({ to: "/home", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openMeProfile, me?.id]);
 
   const recall = useMutation({
     mutationFn: (id: number) => recallDelivery(id),
@@ -313,13 +340,26 @@ function SeaHome() {
   const mood = useMemo(() => {
     if (isWoman) {
       if (bottles.some((x) => x.s === "replied")) return "답장이 도착했어요. 확인해볼까요?";
-      if (bottles.some((x) => x.s === "drift")) return "띄운 플로티가 누군가에게 닿는 중…";
+      const driftN = bottles.filter((x) => x.s === "drift").length;
+      if (driftN > 0) return `띄운 플로티 ${driftN}개가 아직 표류 중이에요`;
       return "오늘은 어떤 답장이 올까요?";
     }
-    return bottles.some((x) => x.s === "arrived")
-      ? "플로티를 발견했어요. 확인해볼까요?"
-      : "오늘은 어떤 안부가 닿을까요?";
-  }, [bottles, isWoman]);
+    const pending = bottles.find((x) => x.d.accepted_at && !x.d.reply_body && x.d.expires_at);
+    if (pending?.d.expires_at) {
+      const left = formatCountdown(pending.d.expires_at);
+      return left ? `답장 남은 시간 ${left}` : "답장할 플로티가 있어요";
+    }
+    if (bottles.some((x) => x.s === "arrived")) return "플로티를 발견했어요. 확인해볼까요?";
+    return "잔잔한 바다 — 곧 누군가의 질문이 떠오를지 몰라요";
+  }, [bottles, isWoman, tick]);
+
+  useEffect(() => {
+    if (bottles.length !== 0 || !me) return;
+    const key = `fl_empty_${me.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    track("empty_sea_view", { gender: me.gender });
+  }, [bottles.length, me]);
 
   async function tapBottle(d: MissionDelivery, s: FloatieState) {
     if (s === "opened" || s === "match") {
@@ -341,14 +381,14 @@ function SeaHome() {
         return;
       }
       const from = await fetchSenderCard(d.id).catch(() => null);
-      const name = from?.display_name ?? "누군가";
+      // Pre-open: age band + region only (no nick) — keep "words first" purity
       const meta = [from?.birth_year ? ageBand(from.birth_year) : "", from?.region]
         .filter(Boolean)
         .join(" · ");
       setConfirm({
         em: "✨",
-        title: `‘${name}’님이 띄운 플로티를 발견했어요`,
-        body: `${meta ? meta + " · " : ""}열어보면 질문이 보여요. 열기 전 패스는 페널티가 없어요.`,
+        title: "플로티를 발견했어요",
+        body: `${meta ? meta + " · " : ""}열어보면 질문이 보여요. 이름과 얼굴은 서로 마음이 올 때 열려요. 열기 전 패스는 페널티가 없어요.`,
         yes: "열어보기",
         no: "패스",
         onOk: () => setNote({ kind: "read", d }),
@@ -477,8 +517,23 @@ function SeaHome() {
     bottles.length === 0
       ? isWoman
         ? { b: "바다가 고요해요", s: "플로티를 하나 띄워 볼까요?" }
-        : { b: "잔잔한 바다예요", s: "곧 누군가의 플로티가 떠오를지 몰라요" }
+        : {
+            b: "잔잔한 바다예요",
+            s: "곧 누군가의 플로티가 떠내려올 예정이에요. 도착하면 알려 드릴까요?",
+          }
       : null;
+
+  const enableNotif = async () => {
+    track("notif_enable_tap");
+    const result = await registerPush().catch(() => "web" as const);
+    if (result === "granted") {
+      toast.success("알림을 켰어요", { description: "플로티가 도착하면 알려 드릴게요." });
+    } else if (result === "denied") {
+      toast.error("알림이 꺼져 있어요", { description: "기기 설정에서 알림을 허용해 주세요." });
+    } else {
+      toast("웹에서는 앱 알림으로 알려 드려요", { description: "상단 종 아이콘을 확인해 주세요." });
+    }
+  };
 
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
@@ -488,21 +543,29 @@ function SeaHome() {
         <div className="fl-empty">
           <b>{empty.b}</b>
           <span>{empty.s}</span>
+          {!isWoman && (
+            <button type="button" className="fl-empty-cta" onClick={enableNotif}>
+              도착하면 알림 받기
+            </button>
+          )}
         </div>
       )}
 
       <div className="fl-bottles">
         {bottles.map(({ d, s }) => {
           const pos = bottlePos(d.id);
+          const showTimer = !!(d.accepted_at && !d.reply_body && d.expires_at);
+          const cd = showTimer ? formatCountdown(d.expires_at!) : null;
           return (
             <button
               key={d.id}
-              className={"fl-bottle" + (isGlow(s) ? " glow" : "")}
+              className={"fl-bottle" + (isGlow(s) || showTimer ? " glow" : "")}
               style={{ left: pos.left, top: pos.top, animationDelay: `${-(d.id % 5) * 0.8}s` }}
               onClick={() => tapBottle(d, s)}
-              aria-label="플로티"
+              aria-label={cd ? `플로티 · 남은 ${cd}` : "플로티"}
             >
               <BottleGlyph state="drift" className="w-full h-auto" />
+              {cd && <span className="fl-bottle-timer">{cd}</span>}
             </button>
           );
         })}

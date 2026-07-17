@@ -15,7 +15,6 @@ import {
   SMOKE_CHIPS,
   DRINK_CHIPS,
   TATTOO_CHIPS,
-  WEEKEND_CHIPS,
   VIBE_CHIPS,
   PACE_CHIPS,
   PROFILE_REGIONS,
@@ -23,10 +22,12 @@ import {
   I1_QUESTION,
   I2_QUESTION,
   parseHeightCm,
+  s4ChipOptions,
 } from "@/lib/interview-chips";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
-  head: () => ({ meta: [{ title: "시작하기 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("시작하기") }] }),
   component: OnboardingPage,
 });
 
@@ -65,7 +66,7 @@ function OnboardingPage() {
   const [tattoo, setTattoo] = useState("");
   const [height, setHeight] = useState("");
   const [answers, setAnswers] = useState<string[]>(["", "", ""]);
-  const [weekend, setWeekend] = useState("");
+  const [loveView, setLoveView] = useState("");
   const [vibes, setVibes] = useState<string[]>([]);
   const [pace, setPace] = useState("");
   const [intro, setIntro] = useState("");
@@ -103,7 +104,7 @@ function OnboardingPage() {
     if (step === "facts")
       return !!jobChip && !!smoke && !!drink && !!tattoo && parseHeightCm(height) != null;
     if (step[0] === "q") return answers[+step[1]].trim().length >= 2;
-    if (step === "s4") return !!weekend;
+    if (step === "s4") return !!loveView;
     if (step === "bridge") return true;
     if (step === "i1") return vibes.length >= 1 && vibes.length <= 2;
     if (step === "i2") return !!pace;
@@ -132,9 +133,19 @@ function OnboardingPage() {
     if (!valid()) return;
     if (step === "i2") {
       setI(STEPS.indexOf("gen"));
-      const selfAnswers = [...answers, weekend];
+      const selfAnswers = [...answers, loveView];
       const ideal = { vibes, pace };
-      const draft = await generateProfileDraft(selfAnswers, ideal).catch(() => ({
+      const draft = await generateProfileDraft(selfAnswers, ideal, {
+        displayName: name.trim(),
+        gender,
+        birthYear: +year,
+        region,
+        heightCm: parseHeightCm(height),
+        jobChip,
+        smoke,
+        drink,
+        tattoo,
+      }).catch(() => ({
         intro: "",
         idealLine: "",
         tags: [] as string[],
@@ -192,7 +203,7 @@ function OnboardingPage() {
         smoke,
         drink,
         tattoo,
-        selfAnswers: [...answers, weekend],
+        selfAnswers: [...answers, loveView],
         ideal: { vibes, pace },
         intro,
         idealLine,
@@ -333,7 +344,7 @@ function OnboardingPage() {
         {step[0] === "q" && step.length === 2 && (
           <>
             <h2>{PROFILE_QUESTIONS[+step[1]].q}</h2>
-            <p className="desc">편하게 적어 주세요. 이 답을 바탕으로 AI가 소개를 정리해요.</p>
+            <p className="desc">짧게 적어도 괜찮아요. 다른 답·기본 정보랑 이어서 AI가 풀어 줘요.</p>
             <textarea
               className="fl-in"
               maxLength={120}
@@ -349,8 +360,15 @@ function OnboardingPage() {
             <h2>{S4_QUESTION}</h2>
             <p className="desc">가까운 느낌 하나만 골라 주세요.</p>
             <div className="fl-chipgrid">
-              {WEEKEND_CHIPS.map((c) => (
-                <button key={c} type="button" className={"fl-selchip" + (weekend === c ? " on" : "")} onClick={() => setWeekend(c)}>{c}</button>
+              {s4ChipOptions(loveView).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={"fl-selchip" + (loveView === c ? " on" : "")}
+                  onClick={() => setLoveView(c)}
+                >
+                  {c}
+                </button>
               ))}
             </div>
           </>

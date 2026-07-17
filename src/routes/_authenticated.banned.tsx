@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSafetyProfile } from "@/lib/safety";
 import { supabase } from "@/integrations/supabase/client";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/banned")({
-  head: () => ({ meta: [{ title: "이용 제한 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("이용 제한") }] }),
   component: BannedPage,
 });
 

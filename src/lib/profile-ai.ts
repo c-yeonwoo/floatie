@@ -5,17 +5,39 @@ import { formatIntroSections, type IntroSection } from "@/lib/intro-story";
 
 /** S1–S3 free-text questions (S4 is a chip — see interview-chips). */
 export const PROFILE_QUESTIONS: { q: string; ph: string }[] = [
-  { q: "가장 마음이 편해지는 순간은?", ph: "예: 밤에 파도 소리 틀어놓고 멍 때릴 때" },
-  { q: "요즘 빠져 있는 건 뭐예요?", ph: "예: 주말 클라이밍, 필름 카메라" },
-  { q: "어떤 대화를 좋아해요?", ph: "예: 침묵도 어색하지 않은, 결이 맞는 대화" },
+  {
+    q: "요즘 빠져 있는 건 뭐예요?",
+    ph: "예: 테니스, 주말 클라이밍 · 짧게 적어도 AI가 이어서 풀어 줘요",
+  },
+  {
+    q: "쉬는 날은 보통 어떻게 보내요?",
+    ph: "예: 오전에 운동하고 카페에서 쉬어요",
+  },
+  {
+    q: "주변에서 자주 듣는 말은요?",
+    ph: "예: 책임감 있다, 편하게 대해준다, 웃기다",
+  },
 ];
 
 export type ProfileDraft = { intro: string; idealLine: string; tags: string[] };
 
 export type IdealInput = { vibes: string[]; pace: string };
 
+/** Extra profile facts for richer AI expansion (short answers OK). */
+export type ProfileGenFacts = {
+  displayName?: string | null;
+  gender?: string | null;
+  birthYear?: number | null;
+  region?: string | null;
+  heightCm?: number | null;
+  jobChip?: string | null;
+  smoke?: string | null;
+  drink?: string | null;
+  tattoo?: string | null;
+};
+
 const TAG_WORDS: [string, string][] = [
-  ["바다", "#바다"], ["파도", "#바다"], ["책", "#독서"], ["독서", "#독서"],
+  ["테니스", "#테니스"], ["바다", "#바다"], ["파도", "#바다"], ["책", "#독서"], ["독서", "#독서"],
   ["영화", "#영화"], ["러닝", "#러닝"], ["달리", "#러닝"], ["등산", "#등산"],
   ["클라이밍", "#클라이밍"], ["음악", "#음악"], ["노래", "#음악"], ["커피", "#커피"],
   ["카페", "#카페"], ["여행", "#여행"], ["요리", "#요리"], ["사진", "#필름사진"],
@@ -27,18 +49,34 @@ function templateDraft(answers: string[], ideal?: IdealInput): ProfileDraft {
   const clip = (s: string) => s.trim().replace(/[.。!?~\s]+$/, "");
   const [a0, a1, a2, a3] = answers.map(clip);
   const sections: IntroSection[] = [];
-  if (a0) sections.push({ heading: "마음이 편해질 때", body: `${a0}, 그때 가장 마음이 편해지는 사람이에요.` });
-  if (a1) sections.push({ heading: "요즘의 나", body: `요즘은 ${a1}에 마음이 가 있어요.` });
+  if (a0) {
+    sections.push({
+      heading: "요즘의 나",
+      body: `요즘은 ${a0}에 마음이 가 있어요. 관심 가는 게 생기면 조금씩 깊게 파보는 편이에요.`,
+    });
+  }
+  if (a1) {
+    sections.push({
+      heading: "쉬는 날",
+      body: `쉬는 날엔 ${a1}. 크게 떠들기보다 그런 리듬이 편해요.`,
+    });
+  }
   if (a2 || a3) {
-    const bits = [a2 && `${a2}, 그런 대화를 좋아해요`, a3 && `주말엔 ${a3} 쪽이에요`].filter(Boolean);
-    sections.push({ heading: "함께할 때", body: bits.join(". ") + "." });
+    const bits = [
+      a2 && `주변에서는 ${a2}는 이야기를 자주 들어요`,
+      a3 && `연애에선 ${a3} 쪽에 가까워요`,
+    ].filter(Boolean);
+    sections.push({
+      heading: "이런 사람",
+      body: `${bits.join(". ")}. 서로 리듬이 맞을 때 더 편하게 다가가요.`,
+    });
   }
   const intro = formatIntroSections(sections);
 
   const text = answers.join(" ");
   const found: string[] = [];
   for (const [w, t] of TAG_WORDS) if (text.includes(w) && !found.includes(t)) found.push(t);
-  for (const d of ["#잔잔함", "#대화", "#여운"]) if (found.length < 3 && !found.includes(d)) found.push(d);
+  for (const d of ["#일상", "#담백", "#여유"]) if (found.length < 3 && !found.includes(d)) found.push(d);
 
   let idealLine = "";
   if (ideal?.vibes?.length || ideal?.pace) {
@@ -56,10 +94,11 @@ function templateDraft(answers: string[], ideal?: IdealInput): ProfileDraft {
 export async function generateProfileDraft(
   answers: string[],
   ideal?: IdealInput,
+  facts?: ProfileGenFacts | null,
 ): Promise<ProfileDraft> {
   try {
     const { data, error } = await supabase.functions.invoke("generate-profile", {
-      body: { answers, ideal: ideal ?? null },
+      body: { answers, ideal: ideal ?? null, profile: facts ?? null },
     });
     if (!error && data && Array.isArray(data.tags)) {
       let intro = "";
@@ -153,7 +192,6 @@ export async function saveOnboarding(uid: string, d: OnboardingData): Promise<vo
     .eq("id", uid);
   if (error) throw error;
   try {
-    // supabase.rpc() is Thenable but has no .catch — use try/await
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).rpc("touch_last_active");
   } catch {

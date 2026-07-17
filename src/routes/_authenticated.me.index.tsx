@@ -4,12 +4,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
-import { ageBand } from "@/lib/mission";
 import { fetchSafetyProfile, deleteAccount } from "@/lib/safety";
-import { profileMetaLine } from "@/lib/interview-chips";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/me/")({
-  head: () => ({ meta: [{ title: "나 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("나") }] }),
   component: MePage,
 });
 
@@ -22,9 +21,7 @@ function MePage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profile } = await (supabase as any)
         .from("profiles")
-        .select(
-          "display_name, bio, avatar_url, birth_year, region, gender, photos, height_cm, job_chip, smoke, drink, tattoo, ai_intro, ai_ideal_line",
-        )
+        .select("display_name, avatar_url, photos")
         .eq("id", uid)
         .maybeSingle();
       return { profile };
@@ -57,14 +54,6 @@ function MePage() {
 
   const p = data?.profile;
   const photo = p?.photos?.[0] ?? p?.avatar_url;
-  const intro = p?.ai_intro ?? p?.bio;
-  const meta = profileMetaLine({
-    height_cm: p?.height_cm,
-    job_chip: p?.job_chip,
-    smoke: p?.smoke,
-    drink: p?.drink,
-    tattoo: p?.tattoo,
-  });
 
   return (
     <main className="fl-me">
@@ -79,24 +68,13 @@ function MePage() {
       <div className="fl-me-body">
         {isLoading && <p className="fl-me-hint">불러오는 중…</p>}
 
-        <section className="fl-me-card">
+        <section className="fl-me-id-row">
           {photo ? (
-            <StorageImg src={photo} alt="" className="fl-me-avatar" />
+            <StorageImg src={photo} alt="" className="fl-me-id-av" />
           ) : (
-            <div className="fl-me-avatar empty" />
+            <div className="fl-me-id-av empty" />
           )}
-          <h2 className="fl-me-name">{p?.display_name ?? "…"}</h2>
-          <p className="fl-me-meta">
-            {[ageBand(p?.birth_year), p?.region, meta].filter(Boolean).join(" · ") ||
-              "프로필을 채워 주세요"}
-          </p>
-          {intro && <p className="fl-me-intro">{intro}</p>}
-          {p?.ai_ideal_line && (
-            <p className="fl-me-ideal">이런 사람에게 끌려요 · {p.ai_ideal_line}</p>
-          )}
-          <p className="fl-me-hint center">
-            열리기 전에는 거의 보이지 않아요. 서로 좋다고 하면 그때 공유돼요.
-          </p>
+          <span className="fl-me-id-name">{p?.display_name ?? "…"}</span>
         </section>
 
         <nav className="fl-me-nav">

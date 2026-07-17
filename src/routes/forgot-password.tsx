@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/forgot-password")({
-  head: () => ({ meta: [{ title: "비밀번호 찾기 — 플로티" }] }),
+  head: () => ({ meta: [{ title: pageTitle("비밀번호 찾기") }] }),
   component: ForgotPasswordPage,
 });
 

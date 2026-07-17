@@ -72,7 +72,7 @@ Supabase 대시보드 → Authentication → URL Configuration:
 - [ ] `server.url` → Cloudflare 도메인으로 교체 (현재 `sumgyeol.lovable.app`)
 - [ ] `appId` `app.gyeol.client` → `app.floatie.app` 등으로 변경 (스토어 등록 전, 변경 시 재등록 불가하니 신중)
 - [ ] 앱 아이콘 / 스플래시 (Floatie 디자인)
-- [ ] **인앱 회원 탈퇴** 구현 — Apple 5.1.1(v) 필수, 현재 미구현
+- [x] **인앱 회원 탈퇴** — `/me` `deleteAccount` (Apple 5.1.1(v))
 - [ ] 푸시(FCM/APNs) — 스토어 필수는 아니나 루프상 사실상 필요, Apple 4.2 통과에도 유리
 - [ ] 신고/차단/EULA 노출 확인 — Apple 1.2 (기능은 이미 있음)
 - [ ] 연령 등급 17+, 18+ 게이트(생년 게이트 있음)
@@ -97,7 +97,7 @@ npx cap open ios         # Xcode → Archive → App Store Connect
 **남은 것(당신 계정/키):**
 - iOS: Apple Developer → **APNs Auth Key(.p8)** → Xcode에 Push Notifications capability 추가
 - Android: Firebase 프로젝트 → **google-services.json** → `android/app/`에 추가, FCM 서버키
-- **발송 Edge Function**: `in_app_notifications` insert 시(또는 mission arrival/reply/no-response) `device_tokens` 조회 → FCM/APNs로 전송. payload에 `data.url`(예: `/delivery/123`) 넣으면 탭 시 해당 화면으로 라우팅됨.
+- **발송 Edge Function**: `dispatch-push` — `in_app_notifications` insert 트리거(pg_net 설정 시) 또는 수동 invoke. `device_tokens` → FCM (`FCM_SERVER_KEY`). payload URL은 **`/home?d=`** 또는 **`/thread/$id`** (레거시 `/delivery` 금지).
 - 플러그인 반영: `npm i` 후 `npx cap sync` (이미 `@capacitor/push-notifications` 설치됨)
 
 ## 권장 순서

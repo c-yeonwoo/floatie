@@ -58,10 +58,14 @@ export function bottlePos(id: number): { left: string; top: string } {
   return { left: `${left}%`, top: `${top}px` };
 }
 
+/** Curated light prompts — easy to answer, reveals vibe (not abstract values). */
 export const MISSION_PRESETS_FALLBACK = [
-  "지금 뭐하고 있어요?",
-  "요즘 마음이 가장 편해지는 순간은?",
-  "사람의 어떤 점에 마음이 기울어요?",
-  "혼자인 시간, 뭘 하며 채워요?",
-  "여행이면 계획파 vs 즉흥파?",
+  "지금 뭐 하고 있어요?",
+  "요즘 빠져 있는 거 하나만 알려줘요",
+  "쉬는 날이면 보통 뭐 해요?",
+  "주변에서 자주 듣는 말, 뭔가요?",
+  "오늘 기분 한 단어로?",
+  "커피 vs 차, 뭐로 살아요?",
+  "주말에 갑자기 하루가 비면?",
+  "최근에 웃겼던 일 있어요?",
 ];

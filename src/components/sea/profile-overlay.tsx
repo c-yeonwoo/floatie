@@ -20,6 +20,33 @@ function photoList(data: ProfileCardData): string[] {
   return data.photo ? [data.photo] : [];
 }
 
+const AI_TIP = "인터뷰내용을 바탕으로 AI가 요약한 내용입니다.";
+
+function AiTip() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (!on) return;
+    const close = () => setOn(false);
+    window.addEventListener("pointerdown", close);
+    return () => window.removeEventListener("pointerdown", close);
+  }, [on]);
+  return (
+    <button
+      type="button"
+      className={"fl-pp-info" + (on ? " on" : "")}
+      aria-label={AI_TIP}
+      data-tip={AI_TIP}
+      onClick={(e) => {
+        e.stopPropagation();
+        setOn((v) => !v);
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      i
+    </button>
+  );
+}
+
 /** Story-style unlock card — chapters + photos interleaved (Palette-lite). */
 export function ProfileOverlay({
   data,
@@ -68,7 +95,10 @@ export function ProfileOverlay({
           <div className="fl-pp-body">
             {chapters.length > 0 && (
               <>
-                <span className="fl-pp-ai">✨ AI가 정리한 이야기</span>
+                <div className="fl-pp-sec-head">
+                  <h5>이런 사람이에요</h5>
+                  <AiTip />
+                </div>
                 {chapters.map((ch, i) => (
                   <div key={i}>
                     <div className="fl-pp-chapter">

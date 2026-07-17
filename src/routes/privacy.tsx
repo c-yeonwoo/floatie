@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "개인정보 처리방침 — 플로티" },
+      { title: pageTitle("개인정보 처리방침") },
       { name: "description", content: "플로티(Floatie) 서비스 개인정보 처리방침." },
     ],
   }),

@@ -1,21 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 
-let started = false;
+let registered = false;
 
 /**
- * Register for push notifications on native (iOS/Android) and store the device
- * token so the server can deliver mission arrival / reply / no-response push.
- * No-op on web (Cloudflare) — guarded by Capacitor.isNativePlatform().
- * Plugins are dynamically imported so nothing loads during SSR.
- *
- * Send side (Edge Function → FCM/APNs) + credentials are set up separately.
+ * Register for push on native (iOS/Android) and store the device token.
+ * No-op on web. Safe to call multiple times (e.g. empty-sea CTA).
+ * Send side: Edge `dispatch-push` + FCM_SERVER_KEY (optional).
  */
-export async function registerPush(): Promise<void> {
-  if (typeof window === "undefined" || started) return;
+export async function registerPush(): Promise<"granted" | "denied" | "web"> {
+  if (typeof window === "undefined") return "web";
 
   const { Capacitor } = await import("@capacitor/core");
-  if (!Capacitor.isNativePlatform()) return;
-  started = true;
+  if (!Capacitor.isNativePlatform()) return "web";
 
   const { PushNotifications } = await import("@capacitor/push-notifications");
 
@@ -23,31 +19,39 @@ export async function registerPush(): Promise<void> {
   if (receive === "prompt" || receive === "prompt-with-rationale") {
     receive = (await PushNotifications.requestPermissions()).receive;
   }
-  if (receive !== "granted") return;
+  if (receive !== "granted") return "denied";
 
-  await PushNotifications.addListener("registration", async (token) => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).rpc("upsert_device_token", {
-        p_token: token.value,
-        p_platform: Capacitor.getPlatform(),
-      });
-    } catch {
-      /* token save is best-effort */
-    }
-  });
+  if (!registered) {
+    registered = true;
 
-  await PushNotifications.addListener("registrationError", () => {
-    /* ignore */
-  });
+    await PushNotifications.addListener("registration", async (token) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).rpc("upsert_device_token", {
+          p_token: token.value,
+          p_platform: Capacitor.getPlatform(),
+        });
+      } catch {
+        /* best-effort */
+      }
+    });
 
-  // Tapping a push routes to its target screen (sender sets payload.url).
-  await PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-    const url = action.notification.data?.url;
-    if (typeof url === "string" && url.startsWith("/")) {
-      window.location.href = url;
-    }
-  });
+    await PushNotifications.addListener("registrationError", () => {
+      /* ignore */
+    });
+
+    await PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+      const url = action.notification.data?.url;
+      if (typeof url === "string" && url.startsWith("/")) {
+        window.location.href = url.startsWith("/delivery/")
+          ? `/home?d=${url.split("/").pop()}`
+          : url.startsWith("/waiting/")
+            ? `/home?d=${url.split("/").pop()}`
+            : url;
+      }
+    });
+  }
 
   await PushNotifications.register();
+  return "granted";
 }
