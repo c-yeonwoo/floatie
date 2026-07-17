@@ -249,24 +249,39 @@ export type MissionThread = {
 
 export const MESSAGE_CAP_DEFAULT = 20;
 
-export async function fetchUnlockedPeer(peerId: string) {
+export type UnlockedPeer = {
+  id: string;
+  display_name: string | null;
+  handle: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  birth_year: number | null;
+  region: string | null;
+  gender: string | null;
+  height_cm: number | null;
+  photos: string[] | null;
+  ai_intro: string | null;
+  ai_tags: string[] | null;
+  intro_answers: { answers?: string[] } | null;
+};
+
+export async function fetchUnlockedPeer(peerId: string): Promise<UnlockedPeer | null> {
   const { data, error } = await db
     .from("profiles")
-    .select("id, display_name, handle, bio, avatar_url, birth_year, region, gender, height_cm")
+    .select(
+      "id, display_name, handle, bio, avatar_url, birth_year, region, gender, height_cm, photos, ai_intro, ai_tags, intro_answers",
+    )
     .eq("id", peerId)
     .maybeSingle();
   if (error) throw error;
-  return data as {
-    id: string;
-    display_name: string | null;
-    handle: string | null;
-    bio: string | null;
-    avatar_url: string | null;
-    birth_year: number | null;
-    region: string | null;
-    gender: string | null;
-    height_cm: number | null;
-  } | null;
+  return data as UnlockedPeer | null;
+}
+
+/** Pay 1 ticket → create (or fetch) the chat thread for a matched delivery. */
+export async function startMatch(deliveryId: number): Promise<number> {
+  const { data, error } = await db.rpc("start_match", { p_delivery_id: deliveryId });
+  if (error) throw error;
+  return data as number;
 }
 
 export async function fetchThreadByDelivery(deliveryId: number) {

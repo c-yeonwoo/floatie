@@ -6,13 +6,16 @@ export type InAppNotification = {
     | "mission_arrived"
     | "mission_accepted"
     | "mission_replied"
-    | "mission_no_response";
+    | "mission_no_response"
+    | "profile_opened"
+    | "matched";
   title: string;
   body: string;
   payload: {
     delivery_id?: number;
     mission_body?: string;
     can_resend?: boolean;
+    thread_id?: number;
   };
   read_at: string | null;
   created_at: string;
@@ -82,6 +85,8 @@ export function notificationHref(
   n: Pick<InAppNotification, "kind" | "payload">,
 ): string | null {
   const id = n.payload?.delivery_id;
+  // profile-open / match land back on the sea, where the floatie carries the action
+  if (n.kind === "profile_opened" || n.kind === "matched") return "/home";
   if (!id) return null;
   if (n.kind === "mission_no_response") return `/waiting/${id}`;
   return `/delivery/${id}`; // arrived / accepted / replied

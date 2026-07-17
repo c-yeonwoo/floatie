@@ -13,17 +13,21 @@ import {
   fetchPresets,
   fetchReceiverCard,
   fetchSenderCard,
+  fetchUnlockedPeer,
   recallDelivery,
   replyToDelivery,
   setReplyPhoto,
   setVerdict,
+  startMatch,
   type MissionDelivery,
   type PersonCard,
+  type UnlockedPeer,
 } from "@/lib/mission";
-import { uploadReplyPhoto } from "@/lib/profile-ai";
+import { PROFILE_QUESTIONS, uploadReplyPhoto } from "@/lib/profile-ai";
 import { SeaWaves } from "@/components/sea/waves";
 import { ParchmentNote, type NoteContent } from "@/components/sea/parchment-note";
 import { ConfirmModal, type ConfirmOpts } from "@/components/sea/confirm-modal";
+import { ProfileOverlay, type ProfileCardData } from "@/components/sea/profile-overlay";
 import { AvatarMenu } from "@/components/sea/avatar-menu";
 import { BottleGlyph } from "@/components/bottle-glyph";
 import {
@@ -51,18 +55,50 @@ const SUBTITLE: Record<FloatieState, string> = {
   done: "종료된 플로티",
 };
 
+type MeProfile = {
+  id: string;
+  gender: string;
+  display_name: string;
+  ticket_balance: number;
+  photos: string[] | null;
+  birth_year: number | null;
+  region: string | null;
+  ai_intro: string | null;
+  ai_tags: string[] | null;
+  intro_answers: { answers?: string[] } | null;
+};
+
 type NoteState =
   | null
   | { kind: "compose" }
-  | { kind: "floatie"; d: MissionDelivery; from?: PersonCard | null; act?: "like" | "recall" }
+  | { kind: "floatie"; d: MissionDelivery; from?: PersonCard | null; act?: "like" | "recall" | "profile" }
   | { kind: "read"; d: MissionDelivery }
   | { kind: "reply"; d: MissionDelivery };
+
+function qaFrom(answers: string[] | undefined): { q: string; a: string }[] {
+  if (!answers) return [];
+  return PROFILE_QUESTIONS.map((q, i) => ({ q: q.q, a: answers[i] ?? "" })).filter((x) => x.a.trim());
+}
+
+function peerCard(p: UnlockedPeer, ageOf: (y: number | null) => string): ProfileCardData {
+  return {
+    name: p.display_name ?? "상대",
+    age: ageOf(p.birth_year),
+    region: p.region ?? "",
+    photo: p.photos?.[0] ?? p.avatar_url,
+    intro: p.ai_intro ?? p.bio ?? "",
+    tags: p.ai_tags ?? [],
+    qa: qaFrom(p.intro_answers?.answers),
+  };
+}
 
 function SeaHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [note, setNote] = useState<NoteState>(null);
   const [confirm, setConfirm] = useState<ConfirmOpts | null>(null);
+  const [profile, setProfile] = useState<{ data: ProfileCardData; delivery: MissionDelivery | null } | null>(null);
+  const ageOf = (y: number | null) => (y ? ageBand(y) : "") ?? "";
 
   const { data: me } = useQuery({
     queryKey: ["sea-me"],
@@ -73,12 +109,12 @@ function SeaHome() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any)
         .from("profiles")
-        .select("id, gender, display_name, ticket_balance, photos")
+        .select(
+          "id, gender, display_name, ticket_balance, photos, birth_year, region, ai_intro, ai_tags, intro_answers",
+        )
         .eq("id", uid)
         .maybeSingle();
-      return data as
-        | { id: string; gender: string; display_name: string; ticket_balance: number; photos: string[] }
-        | null;
+      return data as MeProfile | null;
     },
   });
 
@@ -142,15 +178,50 @@ function SeaHome() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "답장을 보내지 못했어요."),
   });
 
+  const openPeer = async (d: MissionDelivery) => {
+    const peerId = isWoman ? d.receiver_id : d.sender_id;
+    const p = await fetchUnlockedPeer(peerId).catch(() => null);
+    if (!p) return toast.error("프로필을 열 수 없어요.");
+    setNote(null);
+    setProfile({ data: peerCard(p, ageOf), delivery: d });
+  };
+
   const verdict = useMutation({
-    mutationFn: (id: number) => setVerdict(id, "sender", "ok"),
-    onSuccess: () => {
-      setNote(null);
-      toast.success("마음을 전했어요", { description: "서로 좋으면 프로필이 열려요 💛" });
+    mutationFn: (d: MissionDelivery) => setVerdict(d.id, "sender", "ok"),
+    onSuccess: (_res, d) => {
+      toast.success("마음을 전했어요", { description: "프로필이 열렸어요 💛" });
       refresh();
+      openPeer(d);
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "실패했어요."),
   });
+
+  const match = useMutation({
+    mutationFn: (d: MissionDelivery) => startMatch(d.id),
+    onSuccess: (threadId) => {
+      setProfile(null);
+      toast.success("매칭됐어요! 대화방이 열렸어요", { description: "7일 · 최대 20통, 천천히 알아가요 💬" });
+      refresh();
+      navigate({ to: "/thread/$threadId", params: { threadId: String(threadId) } });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "매칭하지 못했어요."),
+  });
+
+  const openMyProfile = () => {
+    if (!me) return;
+    setProfile({
+      data: {
+        name: me.display_name,
+        age: ageOf(me.birth_year),
+        region: me.region ?? "",
+        photo: me.photos?.[0],
+        intro: me.ai_intro ?? "",
+        tags: me.ai_tags ?? [],
+        qa: qaFrom(me.intro_answers?.answers),
+      },
+      delivery: null,
+    });
+  };
 
   const recall = useMutation({
     mutationFn: (id: number) => recallDelivery(id),
@@ -180,6 +251,10 @@ function SeaHome() {
   }, [bottles, isWoman]);
 
   async function tapBottle(d: MissionDelivery, s: FloatieState) {
+    if (s === "opened" || s === "match") {
+      setNote({ kind: "floatie", d, act: "profile" });
+      return;
+    }
     if (isWoman) {
       if (s === "drift") setNote({ kind: "floatie", d, act: "recall" });
       else if (s === "replied") {
@@ -247,12 +322,14 @@ function SeaHome() {
                 setConfirm({
                   em: "💛",
                   title: "마음을 전할까요?",
-                  body: "상대에게도 알림이 가고, 서로 좋으면 프로필이 열려요.",
+                  body: "프로필을 열면 상대에게도 알림이 가고, 서로 좋으면 프로필이 공개돼요.",
                   yes: "마음 전하기",
-                  onOk: () => verdict.mutate(d.id),
+                  onOk: () => verdict.mutate(d),
                 }),
             }
-          : undefined;
+          : note.act === "profile"
+            ? { label: "상대방 프로필 보기", onClick: () => openPeer(d) }
+            : undefined;
     return {
       kind: "floatie",
       question: d.mission?.body ?? "플로티",
@@ -267,7 +344,7 @@ function SeaHome() {
   }, [note, presetBodies, canFree, send.isPending, accept.isPending, reply.isPending, verdict.isPending, recall.isPending, isWoman]);
 
   const menuItems = [
-    { key: "profile", label: "내 프로필", onClick: () => navigate({ to: "/me" }) },
+    { key: "profile", label: "내 프로필", onClick: openMyProfile },
     { key: "history", label: "플로티 이력", onClick: () => navigate({ to: "/outbox" }) },
     { key: "shop", label: "티켓 상점", onClick: () => toast("티켓 상점", { description: "곧 만나요 🎟️" }) },
     { key: "settings", label: "설정", onClick: () => navigate({ to: "/me" }) },
@@ -341,6 +418,22 @@ function SeaHome() {
 
       <ParchmentNote content={content} onClose={() => setNote(null)} />
       <ConfirmModal opts={confirm} onClose={() => setConfirm(null)} />
+      <ProfileOverlay
+        data={profile?.data ?? null}
+        cta={
+          profile?.delivery
+            ? {
+                label:
+                  (isWoman ? womanState(profile.delivery) : manState(profile.delivery)) === "match"
+                    ? "대화 이어가기"
+                    : "매칭하고 대화 시작",
+                busy: match.isPending,
+                onClick: () => match.mutate(profile.delivery!),
+              }
+            : null
+        }
+        onBack={() => setProfile(null)}
+      />
     </div>
   );
 }
