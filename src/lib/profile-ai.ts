@@ -178,3 +178,49 @@ export function qaFromIntroAnswers(
   if (!list) return [];
   return PROFILE_QUESTIONS.map((q, i) => ({ q: q.q, a: list[i] ?? "" })).filter((x) => x.a.trim());
 }
+
+export type ParsedIntroAnswers = {
+  self: [string, string, string, string];
+  ideal: IdealInput;
+};
+
+/** Normalize v1 `{answers}` or v2 `{self,ideal}` for edit UI. */
+export function parseIntroAnswers(raw: unknown): ParsedIntroAnswers {
+  const empty: ParsedIntroAnswers = {
+    self: ["", "", "", ""],
+    ideal: { vibes: [], pace: "" },
+  };
+  if (!raw || typeof raw !== "object") return empty;
+  const o = raw as {
+    version?: number;
+    self?: string[];
+    answers?: string[];
+    ideal?: { vibes?: string[]; pace?: string };
+  };
+  if (o.version === 2 || Array.isArray(o.self)) {
+    const s = o.self ?? [];
+    return {
+      self: [s[0] ?? "", s[1] ?? "", s[2] ?? "", s[3] ?? ""],
+      ideal: {
+        vibes: Array.isArray(o.ideal?.vibes) ? o.ideal!.vibes!.filter(Boolean).slice(0, 2) : [],
+        pace: typeof o.ideal?.pace === "string" ? o.ideal.pace : "",
+      },
+    };
+  }
+  const a = o.answers ?? [];
+  return {
+    self: [a[0] ?? "", a[1] ?? "", a[2] ?? "", ""],
+    ideal: { vibes: [], pace: "" },
+  };
+}
+
+/** Remaining AI regenerations today (0–2). */
+export function remainingRegenToday(
+  regenDate: string | null | undefined,
+  regenCount: number | null | undefined,
+  cap = 2,
+): number {
+  const today = new Date().toISOString().slice(0, 10);
+  if (regenDate !== today) return cap;
+  return Math.max(0, cap - (regenCount ?? 0));
+}

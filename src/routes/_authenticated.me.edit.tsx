@@ -6,15 +6,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
 import { AutoGrowTextarea } from "@/components/auto-grow-textarea";
 import { pickPhoto, validatePickedPhoto } from "@/lib/native-photo";
-import { uploadProfilePhoto } from "@/lib/profile-ai";
+import {
+  PROFILE_QUESTIONS,
+  uploadProfilePhoto,
+  generateProfileDraft,
+  regenerateIntro,
+  parseIntroAnswers,
+  remainingRegenToday,
+} from "@/lib/profile-ai";
 import {
   JOB_CHIPS,
   SMOKE_CHIPS,
+  WEEKEND_CHIPS,
+  VIBE_CHIPS,
+  PACE_CHIPS,
   PROFILE_REGIONS,
   NICK_MAX,
   INTRO_MAX,
   IDEAL_LINE_MAX,
+  S4_QUESTION,
+  I1_QUESTION,
+  I2_QUESTION,
   parseHeightCm,
+  type IntroAnswersV2,
 } from "@/lib/interview-chips";
 
 export const Route = createFileRoute("/_authenticated/me/edit")({
@@ -54,7 +68,7 @@ function EditProfilePage() {
       const { data: profile } = await (supabase as any)
         .from("profiles")
         .select(
-          "display_name, bio, avatar_url, gender, birth_year, region, height_cm, photos, job_chip, smoke, ai_intro, ai_ideal_line, ai_tags",
+          "display_name, bio, avatar_url, gender, birth_year, region, height_cm, photos, job_chip, smoke, ai_intro, ai_ideal_line, ai_tags, intro_answers, intro_regen_date, intro_regen_count",
         )
         .eq("id", uid)
         .maybeSingle();
@@ -65,14 +79,21 @@ function EditProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [intro, setIntro] = useState("");
   const [idealLine, setIdealLine] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [gender, setGender] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [region, setRegion] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [jobChip, setJobChip] = useState("");
   const [smoke, setSmoke] = useState("");
+  const [answers, setAnswers] = useState<[string, string, string]>(["", "", ""]);
+  const [weekend, setWeekend] = useState("");
+  const [vibes, setVibes] = useState<string[]>([]);
+  const [pace, setPace] = useState("");
   const [slots, setSlots] = useState<PhotoSlot[]>(emptySlots);
+  const [regenLeft, setRegenLeft] = useState(2);
   const [saving, setSaving] = useState(false);
+  const [regenBusy, setRegenBusy] = useState(false);
 
   useEffect(() => {
     const p = data?.profile;
@@ -80,17 +101,27 @@ function EditProfilePage() {
     setDisplayName(p.display_name ?? "");
     setIntro(p.ai_intro ?? p.bio ?? "");
     setIdealLine(p.ai_ideal_line ?? "");
+    setTags(Array.isArray(p.ai_tags) ? p.ai_tags : []);
     setGender(p.gender ?? "");
     setBirthYear(p.birth_year ? String(p.birth_year) : "");
     setRegion(p.region ?? "");
     setHeightCm(p.height_cm ? String(p.height_cm) : "");
     setJobChip(p.job_chip ?? "");
     setSmoke(p.smoke ?? "");
-    const paths: string[] = Array.isArray(p.photos) && p.photos.length
-      ? p.photos.slice(0, 3)
-      : p.avatar_url
-        ? [p.avatar_url]
-        : [];
+    setRegenLeft(remainingRegenToday(p.intro_regen_date, p.intro_regen_count));
+
+    const parsed = parseIntroAnswers(p.intro_answers);
+    setAnswers([parsed.self[0], parsed.self[1], parsed.self[2]]);
+    setWeekend(parsed.self[3] ?? "");
+    setVibes(parsed.ideal.vibes);
+    setPace(parsed.ideal.pace);
+
+    const paths: string[] =
+      Array.isArray(p.photos) && p.photos.length
+        ? p.photos.slice(0, 3)
+        : p.avatar_url
+          ? [p.avatar_url]
+          : [];
     setSlots(
       [0, 1, 2].map((i) => ({
         path: paths[i] ?? null,
@@ -124,11 +155,66 @@ function EditProfilePage() {
     });
   };
 
+  const setAnswer = (idx: 0 | 1 | 2, v: string) =>
+    setAnswers((a) => {
+      const next: [string, string, string] = [...a];
+      next[idx] = v;
+      return next;
+    });
+
+  const toggleVibe = (v: string) => {
+    setVibes((prev) => {
+      if (prev.includes(v)) return prev.filter((x) => x !== v);
+      if (prev.length >= 2) return prev;
+      return [...prev, v];
+    });
+  };
+
+  const interviewOk = () =>
+    answers.every((a) => a.trim().length >= 2) &&
+    !!weekend &&
+    vibes.length >= 1 &&
+    vibes.length <= 2 &&
+    !!pace;
+
+  const onRegen = async () => {
+    if (!interviewOk()) {
+      return toast.error("인터뷰 답변을 먼저 채워 주세요.");
+    }
+    if (regenLeft <= 0) {
+      return toast.error("오늘은 AI 정리를 다 썼어요. 내일 다시 시도해 주세요.");
+    }
+    setRegenBusy(true);
+    try {
+      const draft = await generateProfileDraft([...answers, weekend], { vibes, pace });
+      const left = await regenerateIntro(draft.intro, draft.tags, draft.idealLine);
+      setIntro(draft.intro);
+      setIdealLine(draft.idealLine);
+      setTags(draft.tags);
+      setRegenLeft(left);
+      toast.success(`소개를 다시 정리했어요. 오늘 ${left}회 남았어요.`);
+      qc.invalidateQueries({ queryKey: ["my-profile-edit"] });
+      qc.invalidateQueries({ queryKey: ["sea-me"] });
+      qc.invalidateQueries({ queryKey: ["my-profile"] });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/daily regenerate|limit/i.test(msg)) {
+        setRegenLeft(0);
+        toast.error("오늘은 AI 정리를 다 썼어요. 내일 다시 시도해 주세요.");
+      } else {
+        toast.error(msg || "다시 시도해 주세요.");
+      }
+    } finally {
+      setRegenBusy(false);
+    }
+  };
+
   const onSave = async () => {
     if (!displayName.trim()) return toast.error("닉네임을 입력해 주세요.");
     if (displayName.length > NICK_MAX) return toast.error(`닉네임은 ${NICK_MAX}자 이하로 입력해 주세요.`);
     if (intro.trim().length < 2) return toast.error("소개를 적어 주세요.");
     if (intro.length > INTRO_MAX) return toast.error(`소개는 ${INTRO_MAX}자 이하로 입력해 주세요.`);
+    if (idealLine.trim().length < 2) return toast.error("끌리는 사람 소개를 적어 주세요.");
     if (idealLine.length > IDEAL_LINE_MAX) return toast.error("끌리는 사람 소개가 너무 길어요.");
     const year = Number(birthYear);
     if (!year || year < 1940 || year > 2008) return toast.error("출생 연도를 확인해 주세요.");
@@ -138,6 +224,7 @@ function EditProfilePage() {
     if (!jobChip) return toast.error("하는 일을 골라 주세요.");
     if (!smoke) return toast.error("흡연을 골라 주세요.");
     if (filledCount < 3) return toast.error("프로필 사진 3장이 필요해요.");
+    if (!interviewOk()) return toast.error("인터뷰 답변을 모두 채워 주세요.");
     if (!data?.uid) return;
 
     setSaving(true);
@@ -150,6 +237,13 @@ function EditProfilePage() {
         else throw new Error("사진이 비어 있어요.");
       }
 
+      const intro_answers: IntroAnswersV2 = {
+        version: 2,
+        self: [...answers, weekend],
+        ideal: { vibes, pace },
+        facts: { job_chip: jobChip, smoke },
+      };
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("profiles")
@@ -158,6 +252,8 @@ function EditProfilePage() {
           bio: intro.trim() || null,
           ai_intro: intro.trim() || null,
           ai_ideal_line: idealLine.trim() || null,
+          ai_tags: tags,
+          intro_answers,
           photos: paths,
           avatar_url: paths[0] ?? null,
           birth_year: year,
@@ -187,7 +283,7 @@ function EditProfilePage() {
       <header className="fl-me-top">
         <Link to="/me" className="fl-me-link">← 취소</Link>
         <h1 className="fl-me-title">프로필 수정</h1>
-        <button type="button" className="fl-me-link strong" onClick={onSave} disabled={saving || isLoading}>
+        <button type="button" className="fl-me-link strong" onClick={onSave} disabled={saving || isLoading || regenBusy}>
           {saving ? "저장 중…" : "저장"}
         </button>
       </header>
@@ -283,6 +379,79 @@ function EditProfilePage() {
           placeholder="170"
         />
 
+        <span className="fl-onb-sec" style={{ marginTop: 22 }}>나에 대해</span>
+
+        {PROFILE_QUESTIONS.map((q, i) => (
+          <div key={q.q}>
+            <h5 className="fl-onb-label">{q.q}</h5>
+            <AutoGrowTextarea
+              className="fl-in fl-in-grow"
+              maxLength={120}
+              value={answers[i as 0 | 1 | 2]}
+              onChange={(e) => setAnswer(i as 0 | 1 | 2, e.target.value)}
+              placeholder={q.ph}
+            />
+          </div>
+        ))}
+
+        <h5 className="fl-onb-label">{S4_QUESTION}</h5>
+        <div className="fl-chipgrid">
+          {WEEKEND_CHIPS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={"fl-selchip" + (weekend === c ? " on" : "")}
+              onClick={() => setWeekend(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <span className="fl-onb-sec" style={{ marginTop: 22 }}>끌리는 사람</span>
+
+        <h5 className="fl-onb-label">{I1_QUESTION}</h5>
+        <p className="fl-me-hint">최대 2개</p>
+        <div className="fl-chipgrid">
+          {VIBE_CHIPS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={"fl-selchip" + (vibes.includes(c) ? " on" : "")}
+              onClick={() => toggleVibe(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <h5 className="fl-onb-label">{I2_QUESTION}</h5>
+        <div className="fl-chipgrid">
+          {PACE_CHIPS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={"fl-selchip" + (pace === c ? " on" : "")}
+              onClick={() => setPace(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <div className="fl-me-regen-row">
+          <span className="fl-onb-sec" style={{ margin: 0 }}>AI 소개</span>
+          <button
+            type="button"
+            className="fl-regen"
+            disabled={regenBusy || regenLeft <= 0}
+            onClick={onRegen}
+          >
+            {regenBusy ? "정리 중…" : `소개 다시 만들기 · ${regenLeft}/2`}
+          </button>
+        </div>
+        <p className="fl-me-hint">인터뷰를 바꾼 뒤 누르면 AI가 소개·관심사를 다시 써요. 하루 2회.</p>
+
         <h5 className="fl-onb-label">이런 사람이에요</h5>
         <AutoGrowTextarea
           className="fl-in fl-in-grow"
@@ -302,6 +471,17 @@ function EditProfilePage() {
           placeholder="잘 맞을 것 같은 분위기를 한 줄로."
         />
         <p className="fl-me-count">{idealLine.length}/{IDEAL_LINE_MAX}</p>
+
+        <h5 className="fl-onb-label">관심사</h5>
+        <div className="fl-chipgrid">
+          {tags.map((t) => (
+            <span key={t} className="fl-etag">
+              {t}
+              <span className="rm" onClick={() => setTags((ts) => ts.filter((x) => x !== t))}>✕</span>
+            </span>
+          ))}
+          {tags.length === 0 && <p className="fl-me-hint" style={{ margin: 0 }}>AI로 다시 만들면 채워져요.</p>}
+        </div>
       </div>
     </main>
   );
