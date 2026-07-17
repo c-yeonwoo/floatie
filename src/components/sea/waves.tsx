@@ -1,62 +1,38 @@
 /**
- * Layered ocean waves — the redesign's ambient background.
- *
- * Each crest is trochoidal-ish (`sin θ − 0.24·sin 2θ`) so peaks are sharper and
- * troughs flatter, like real swell — not a flat horizontal band. Two harmonics
- * per layer give an organic crest; amplitude + opacity grow toward the bottom
- * (perspective/foreground). All harmonics are integer multiples of a base
- * period (400) so the pattern tiles seamlessly under the translateX(-50%) loop.
+ * Sea waves — the exact smooth, continuously-flowing wave the login banner uses
+ * (SeaBanner: a quadratic Q-curve with T reflections), layered down the
+ * full-screen sea. Two flow speeds give parallax; opacity + amplitude grow
+ * toward the bottom for depth. Period 200 → tiles seamlessly under the
+ * translateX(-50%) loop (animate-wave-flow / -slow, defined in styles.css).
  */
 
-type Comp = [k: number, amp: number, ph: number];
-type Layer = { top: string; h: number; comps: Comp[]; op: number; dur: number };
+type Layer = { top: string; h: number; b: number; a: number; op: number; slow: boolean };
 
 const LAYERS: Layer[] = [
-  { top: "10%", h: 160, comps: [[2, 10, 0.0], [5, 4, 1.1]], op: 0.05, dur: 30 },
-  { top: "23%", h: 180, comps: [[3, 13, 1.2], [6, 4.5, 2.0]], op: 0.07, dur: 26 },
-  { top: "37%", h: 205, comps: [[2, 16, 2.1], [5, 6.5, 0.4]], op: 0.09, dur: 22 },
-  { top: "51%", h: 230, comps: [[3, 19, 0.7], [7, 6.5, 3.0]], op: 0.115, dur: 18 },
-  { top: "65%", h: 260, comps: [[2, 25, 2.6], [4, 10, 1.5]], op: 0.14, dur: 15 },
-  { top: "79%", h: 300, comps: [[3, 31, 1.9], [6, 11, 0.9]], op: 0.17, dur: 12 },
+  { top: "12%", h: 640, b: 26, a: 12, op: 0.06, slow: true },
+  { top: "24%", h: 560, b: 28, a: 14, op: 0.08, slow: false },
+  { top: "37%", h: 470, b: 30, a: 16, op: 0.1, slow: true },
+  { top: "50%", h: 380, b: 32, a: 18, op: 0.12, slow: false },
+  { top: "64%", h: 290, b: 34, a: 21, op: 0.15, slow: true },
+  { top: "78%", h: 210, b: 40, a: 25, op: 0.18, slow: false },
 ];
 
-function bandPath(comps: Comp[], h: number): string {
-  const totalAmp = comps.reduce((s, c) => s + c[1], 0);
-  const baseY = totalAmp * 1.28 + 6;
-  const step = 6;
-  const yy = (x: number) => {
-    const t = (6.28318 * x) / 400;
-    let y = baseY;
-    for (const [k, amp, ph] of comps) {
-      const th = k * t + ph;
-      y += amp * (Math.sin(th) - 0.24 * Math.sin(2 * th));
-    }
-    return y.toFixed(1);
-  };
-  let d = `M0 ${yy(0)}`;
-  for (let x = step; x <= 800; x += step) d += ` L${x} ${yy(x)}`;
-  return `${d} L800 ${h} L0 ${h} Z`;
+// smooth quadratic wave (login-banner shape): baseline b, crest up by a, period 200
+function wavePath(b: number, a: number, h: number): string {
+  return `M0 ${b} Q100 ${b - a} 200 ${b} T400 ${b} T600 ${b} T800 ${b} V${h} H0Z`;
 }
-
-// paths are deterministic → compute once at module load
-const PATHS = LAYERS.map((w) => ({ ...w, d: bandPath(w.comps, w.h) }));
 
 export function SeaWaves() {
   return (
     <div className="fl-sea" aria-hidden>
-      {PATHS.map((w, i) => (
+      {LAYERS.map((w, i) => (
         <div
           key={i}
-          className="fl-wave"
-          style={{
-            top: w.top,
-            height: w.h,
-            animation: `fl-flow ${w.dur}s linear infinite`,
-            animationDelay: `${-i * 2.4}s`,
-          }}
+          className={"fl-wave " + (w.slow ? "animate-wave-flow-slow" : "animate-wave-flow")}
+          style={{ top: w.top, height: w.h, animationDelay: `${-i * 1.5}s` }}
         >
           <svg viewBox={`0 0 800 ${w.h}`} preserveAspectRatio="none">
-            <path d={w.d} fill="#ffffff" opacity={w.op} />
+            <path d={wavePath(w.b, w.a, w.h)} fill="#ffffff" opacity={w.op} />
           </svg>
         </div>
       ))}
