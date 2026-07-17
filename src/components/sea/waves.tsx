@@ -1,38 +1,51 @@
 /**
- * Sea waves — the exact smooth, continuously-flowing wave the login banner uses
- * (SeaBanner: a quadratic Q-curve with T reflections), layered down the
- * full-screen sea. Two flow speeds give parallax; opacity + amplitude grow
- * toward the bottom for depth. Period 200 → tiles seamlessly under the
- * translateX(-50%) loop (animate-wave-flow / -slow, defined in styles.css).
+ * Sea receding to the horizon. Each BAND is two offset sub-waves (the login
+ * banner's doubling: different baseline + flow speed) so crests read as an
+ * organic doubled line, never a straight boundary. Perspective: near the top
+ * (far) waves are small / dense / faint; toward the bottom (near) big / wide /
+ * opaque. Full-height layers all fill to the bottom, so overlaps build depth.
+ * Smooth quadratic Q-curve, period ∈ {100,200,400} (÷400) → seamless flow.
  */
 
-type Layer = { top: string; h: number; b: number; a: number; op: number; slow: boolean };
+type Band = { b: number; a: number; P: number; op: number };
 
-const LAYERS: Layer[] = [
-  { top: "12%", h: 640, b: 26, a: 12, op: 0.06, slow: true },
-  { top: "24%", h: 560, b: 28, a: 14, op: 0.08, slow: false },
-  { top: "37%", h: 470, b: 30, a: 16, op: 0.1, slow: true },
-  { top: "50%", h: 380, b: 32, a: 18, op: 0.12, slow: false },
-  { top: "64%", h: 290, b: 34, a: 21, op: 0.15, slow: true },
-  { top: "78%", h: 210, b: 40, a: 25, op: 0.18, slow: false },
+// waterline b (of an 800-tall viewBox), amplitude a, full-cycle period P, opacity
+const BANDS: Band[] = [
+  { b: 70, a: 5, P: 100, op: 0.045 },
+  { b: 120, a: 6, P: 100, op: 0.05 },
+  { b: 180, a: 7, P: 200, op: 0.055 },
+  { b: 250, a: 9, P: 200, op: 0.065 },
+  { b: 330, a: 11, P: 200, op: 0.075 },
+  { b: 420, a: 14, P: 400, op: 0.09 },
+  { b: 520, a: 18, P: 400, op: 0.105 },
+  { b: 630, a: 23, P: 400, op: 0.125 },
+  { b: 740, a: 28, P: 400, op: 0.15 },
 ];
 
-// smooth quadratic wave (login-banner shape): baseline b, crest up by a, period 200
-function wavePath(b: number, a: number, h: number): string {
-  return `M0 ${b} Q100 ${b - a} 200 ${b} T400 ${b} T600 ${b} T800 ${b} V${h} H0Z`;
+function wave(b: number, a: number, P: number): string {
+  const half = P / 2;
+  let d = `M0 ${b} Q${half / 2} ${b - a} ${half} ${b}`;
+  for (let x = half * 2; x <= 800; x += half) d += ` T${x} ${b}`;
+  return d + " V800 H0Z";
 }
+
+type Sub = { d: string; op: number; slow: boolean; delay: number };
+const SUBS: Sub[] = BANDS.flatMap((bd, i) => [
+  { d: wave(bd.b, bd.a, bd.P), op: +(bd.op * 0.62).toFixed(3), slow: true, delay: -i * 1.3 },
+  { d: wave(bd.b + 9, bd.a * 0.82, bd.P), op: bd.op, slow: false, delay: -i * 1.3 - 3 },
+]);
 
 export function SeaWaves() {
   return (
     <div className="fl-sea" aria-hidden>
-      {LAYERS.map((w, i) => (
+      {SUBS.map((s, i) => (
         <div
           key={i}
-          className={"fl-wave " + (w.slow ? "animate-wave-flow-slow" : "animate-wave-flow")}
-          style={{ top: w.top, height: w.h, animationDelay: `${-i * 1.5}s` }}
+          className={"fl-wave " + (s.slow ? "animate-wave-flow-slow" : "animate-wave-flow")}
+          style={{ top: 0, height: "100%", animationDelay: `${s.delay}s` }}
         >
-          <svg viewBox={`0 0 800 ${w.h}`} preserveAspectRatio="none">
-            <path d={wavePath(w.b, w.a, w.h)} fill="#ffffff" opacity={w.op} />
+          <svg viewBox="0 0 800 800" preserveAspectRatio="none">
+            <path d={s.d} fill="#ffffff" opacity={s.op} />
           </svg>
         </div>
       ))}
