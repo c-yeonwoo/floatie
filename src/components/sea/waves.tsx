@@ -1,31 +1,37 @@
 /**
- * Soft rolling sea waves — the redesign's ambient background.
- * Period-400 harmonic crests (1st/2nd/3rd) so the line undulates irregularly
- * and still tiles seamlessly under the horizontal translateX(-50%) loop.
+ * Layered ocean waves — the redesign's ambient background.
+ *
+ * Each crest is trochoidal-ish (`sin θ − 0.24·sin 2θ`) so peaks are sharper and
+ * troughs flatter, like real swell — not a flat horizontal band. Two harmonics
+ * per layer give an organic crest; amplitude + opacity grow toward the bottom
+ * (perspective/foreground). All harmonics are integer multiples of a base
+ * period (400) so the pattern tiles seamlessly under the translateX(-50%) loop.
  */
 
-type Layer = { top: string; h: number; k: number; amp: number; op: number; dur: number; ph: number };
+type Comp = [k: number, amp: number, ph: number];
+type Layer = { top: string; h: number; comps: Comp[]; op: number; dur: number };
 
 const LAYERS: Layer[] = [
-  { top: "20%", h: 130, k: 1, amp: 12, op: 0.05, dur: 26, ph: 0 },
-  { top: "38%", h: 140, k: 2, amp: 14, op: 0.07, dur: 22, ph: 1.2 },
-  { top: "55%", h: 160, k: 1, amp: 18, op: 0.09, dur: 18, ph: 2.1 },
-  { top: "70%", h: 180, k: 2, amp: 22, op: 0.12, dur: 15, ph: 0.7 },
-  { top: "82%", h: 200, k: 1, amp: 26, op: 0.16, dur: 12, ph: 2.6 },
+  { top: "10%", h: 160, comps: [[2, 10, 0.0], [5, 4, 1.1]], op: 0.05, dur: 30 },
+  { top: "23%", h: 180, comps: [[3, 13, 1.2], [6, 4.5, 2.0]], op: 0.07, dur: 26 },
+  { top: "37%", h: 205, comps: [[2, 16, 2.1], [5, 6.5, 0.4]], op: 0.09, dur: 22 },
+  { top: "51%", h: 230, comps: [[3, 19, 0.7], [7, 6.5, 3.0]], op: 0.115, dur: 18 },
+  { top: "65%", h: 260, comps: [[2, 25, 2.6], [4, 10, 1.5]], op: 0.14, dur: 15 },
+  { top: "79%", h: 300, comps: [[3, 31, 1.9], [6, 11, 0.9]], op: 0.17, dur: 12 },
 ];
 
-function bandPath(k: number, amp: number, h: number, ph: number): string {
-  const baseY = amp * 1.1 + 6;
-  const step = 8;
+function bandPath(comps: Comp[], h: number): string {
+  const totalAmp = comps.reduce((s, c) => s + c[1], 0);
+  const baseY = totalAmp * 1.28 + 6;
+  const step = 6;
   const yy = (x: number) => {
     const t = (6.28318 * x) / 400;
-    return (
-      baseY +
-      amp *
-        (0.52 * Math.sin(k * t + ph) +
-          0.32 * Math.sin(2 * k * t + ph * 1.6 + 0.9) +
-          0.19 * Math.sin(3 * k * t + ph * 0.7 + 2.3))
-    ).toFixed(1);
+    let y = baseY;
+    for (const [k, amp, ph] of comps) {
+      const th = k * t + ph;
+      y += amp * (Math.sin(th) - 0.24 * Math.sin(2 * th));
+    }
+    return y.toFixed(1);
   };
   let d = `M0 ${yy(0)}`;
   for (let x = step; x <= 800; x += step) d += ` L${x} ${yy(x)}`;
@@ -33,7 +39,7 @@ function bandPath(k: number, amp: number, h: number, ph: number): string {
 }
 
 // paths are deterministic → compute once at module load
-const PATHS = LAYERS.map((w) => ({ ...w, d: bandPath(w.k, w.amp, w.h, w.ph) }));
+const PATHS = LAYERS.map((w) => ({ ...w, d: bandPath(w.comps, w.h) }));
 
 export function SeaWaves() {
   return (
