@@ -39,7 +39,7 @@ Repo **Settings → Secrets and variables → Actions** 에 등록:
 
 | Secret | 값 |
 |--------|-----|
-| `CLOUDFLARE_API_TOKEN` | CF → My Profile → API Tokens → **Edit Cloudflare Workers** |
+| `CLOUDFLARE_API_TOKEN` | CF → [API Tokens](https://dash.cloudflare.com/profile/api-tokens) → Create Token → **Custom**: Account · **Cloudflare Pages** · **Edit** (+ Workers Scripts Edit 권장). Account 리소스는 이 계정만. |
 | `CLOUDFLARE_ACCOUNT_ID` | `86723a5c873a8660fb654694ccf68d93` |
 | `VITE_SUPABASE_URL` | `.env` 와 동일 |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | `.env` 와 동일 |
