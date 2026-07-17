@@ -1,5 +1,12 @@
 /** Profile interview v2 chip catalogues (code fallback; app_config seed for admin later). */
 
+export const PROFILE_REGIONS = ["서울", "경기", "인천", "부산", "대구", "대전", "광주", "기타"] as const;
+export const NICK_MAX = 12;
+export const INTRO_MAX = 220;
+export const IDEAL_LINE_MAX = 160;
+export const HEIGHT_MIN = 120;
+export const HEIGHT_MAX = 230;
+
 export const JOB_CHIPS = ["직장인", "학생", "프리랜서", "창업", "기타"] as const;
 export const SMOKE_CHIPS = ["안 함", "가끔", "함", "비공개"] as const;
 export const WEEKEND_CHIPS = [
@@ -43,4 +50,21 @@ export type IntroAnswersV2 = {
 export function smokeLabel(smoke: string | null | undefined): string | null {
   if (!smoke || smoke === "비공개") return null;
   return smoke;
+}
+
+export function parseHeightCm(raw: string): number | null {
+  if (!/^\d{3}$/.test(raw.trim())) return null;
+  const n = +raw.trim();
+  if (n < HEIGHT_MIN || n > HEIGHT_MAX) return null;
+  return n;
+}
+
+export function profileMetaLine(p: {
+  height_cm?: number | null;
+  job_chip?: string | null;
+  smoke?: string | null;
+}): string {
+  return [p.height_cm ? `${p.height_cm}cm` : null, p.job_chip || null, smokeLabel(p.smoke)]
+    .filter(Boolean)
+    .join(" · ");
 }

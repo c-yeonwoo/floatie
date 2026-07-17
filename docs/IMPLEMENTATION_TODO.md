@@ -19,8 +19,9 @@
 - [x] PO 확정: I1·I2 필수 · 흡연 포함 · 칩 고정(+어드민 후속) · 카드는 AI 요약
 - [x] I1·I2 + `ai_ideal_line` + unlock 「이런 사람에게 끌려요」
 - [x] S4 주말 에너지 · AI 7:3 · facts(직업·흡연·키선택)
-- [ ] 원격 마이그레이션 `20260717200000` + Edge `generate-profile` 배포
-- [ ] (후) soft prompt / unlock 직전 보강 · 칩 어드민 UI
+- [x] 원격 마이그레이션 `20260717200000` + Edge `generate-profile` 배포
+- [x] `/me`·`/me/edit` Sea 정합 (사진3 · 키필수 · intro/ideal · 홈 복귀)
+- [ ] (후) soft prompt · 인터뷰 재편집/AI 재생성 · 칩 어드민 UI
 
 ## P1 — 매칭 · 티켓 (운영)
 

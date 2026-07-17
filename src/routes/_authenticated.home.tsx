@@ -28,7 +28,7 @@ import {
   type UnlockedPeer,
 } from "@/lib/mission";
 import { qaFromIntroAnswers, uploadReplyPhoto } from "@/lib/profile-ai";
-import { smokeLabel } from "@/lib/interview-chips";
+import { profileMetaLine } from "@/lib/interview-chips";
 import { SeaWaves } from "@/components/sea/waves";
 import { ParchmentNote, type NoteContent } from "@/components/sea/parchment-note";
 import { ConfirmModal, type ConfirmOpts } from "@/components/sea/confirm-modal";
@@ -93,26 +93,13 @@ type NoteState =
   | { kind: "read"; d: MissionDelivery }
   | { kind: "reply"; d: MissionDelivery };
 
-function profileMeta(p: {
-  height_cm?: number | null;
-  job_chip?: string | null;
-  smoke?: string | null;
-}): string {
-  return [
-    p.height_cm ? `${p.height_cm}cm` : null,
-    p.job_chip || null,
-    smokeLabel(p.smoke),
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
 function peerCard(p: UnlockedPeer, ageOf: (y: number | null) => string): ProfileCardData {
   return {
     name: p.display_name ?? "상대",
     age: ageOf(p.birth_year),
     region: p.region ?? "",
-    meta: profileMeta(p),
+    meta: profileMetaLine(p),
+    photos: p.photos ?? undefined,
     photo: p.photos?.[0] ?? p.avatar_url,
     intro: p.ai_intro ?? p.bio ?? "",
     idealLine: p.ai_ideal_line ?? "",
@@ -286,7 +273,8 @@ function SeaHome() {
         name: me.display_name,
         age: ageOf(me.birth_year),
         region: me.region ?? "",
-        meta: profileMeta(me),
+        meta: profileMetaLine(me),
+        photos: me.photos ?? undefined,
         photo: me.photos?.[0],
         intro: me.ai_intro ?? "",
         idealLine: me.ai_ideal_line ?? "",

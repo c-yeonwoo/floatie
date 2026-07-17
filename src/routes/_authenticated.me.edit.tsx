@@ -1,10 +1,21 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { stripExifAndCompress } from "@/lib/image-utils";
+import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
+import { AutoGrowTextarea } from "@/components/auto-grow-textarea";
+import { pickPhoto, validatePickedPhoto } from "@/lib/native-photo";
+import { uploadProfilePhoto } from "@/lib/profile-ai";
+import {
+  JOB_CHIPS,
+  SMOKE_CHIPS,
+  PROFILE_REGIONS,
+  NICK_MAX,
+  INTRO_MAX,
+  IDEAL_LINE_MAX,
+  parseHeightCm,
+} from "@/lib/interview-chips";
 
 export const Route = createFileRoute("/_authenticated/me/edit")({
   head: () => ({ meta: [{ title: "프로필 수정 — 플로티" }] }),
@@ -16,91 +27,127 @@ const GENDER_LABEL: Record<string, string> = {
   male: "남자",
 };
 
+type PhotoSlot = {
+  path: string | null;
+  file: File | null;
+  preview: string | null;
+};
+
+function emptySlots(): PhotoSlot[] {
+  return [
+    { path: null, file: null, preview: null },
+    { path: null, file: null, preview: null },
+    { path: null, file: null, preview: null },
+  ];
+}
+
 function EditProfilePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const { data: profile, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["my-profile-edit"],
     queryFn: async () => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user!.id;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
+      const { data: profile } = await (supabase as any)
         .from("profiles")
         .select(
-          "display_name, handle, bio, avatar_url, gender, birth_year, region, height_cm",
+          "display_name, bio, avatar_url, gender, birth_year, region, height_cm, photos, job_chip, smoke, ai_intro, ai_ideal_line, ai_tags",
         )
         .eq("id", uid)
         .maybeSingle();
-      return { uid, profile: data };
+      return { uid, profile };
     },
   });
 
   const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
-  const [gender, setGender] = useState<string>("");
+  const [intro, setIntro] = useState("");
+  const [idealLine, setIdealLine] = useState("");
+  const [gender, setGender] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [region, setRegion] = useState("");
   const [heightCm, setHeightCm] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [jobChip, setJobChip] = useState("");
+  const [smoke, setSmoke] = useState("");
+  const [slots, setSlots] = useState<PhotoSlot[]>(emptySlots);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (profile?.profile) {
-      const p = profile.profile;
-      setDisplayName(p.display_name ?? "");
-      setBio(p.bio ?? "");
-      setGender(p.gender ?? "");
-      setBirthYear(p.birth_year ? String(p.birth_year) : "");
-      setRegion(p.region ?? "");
-      setHeightCm(p.height_cm ? String(p.height_cm) : "");
-      setAvatarUrl(p.avatar_url ?? null);
-    }
-  }, [profile]);
+    const p = data?.profile;
+    if (!p) return;
+    setDisplayName(p.display_name ?? "");
+    setIntro(p.ai_intro ?? p.bio ?? "");
+    setIdealLine(p.ai_ideal_line ?? "");
+    setGender(p.gender ?? "");
+    setBirthYear(p.birth_year ? String(p.birth_year) : "");
+    setRegion(p.region ?? "");
+    setHeightCm(p.height_cm ? String(p.height_cm) : "");
+    setJobChip(p.job_chip ?? "");
+    setSmoke(p.smoke ?? "");
+    const paths: string[] = Array.isArray(p.photos) && p.photos.length
+      ? p.photos.slice(0, 3)
+      : p.avatar_url
+        ? [p.avatar_url]
+        : [];
+    setSlots(
+      [0, 1, 2].map((i) => ({
+        path: paths[i] ?? null,
+        file: null,
+        preview: paths[i] ?? null,
+      })),
+    );
+  }, [data]);
 
-  const onPickAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
+  const filledCount = slots.filter((s) => s.path || s.file).length;
+
+  const setSlot = async (idx: number) => {
+    const f = await pickPhoto();
     if (!f) return;
-    if (f.size > 5 * 1024 * 1024) {
-      toast.error("5MB 이하만 가능해요");
-      return;
-    }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
-      toast.error("jpg, png, webp만 가능해요");
-      return;
-    }
-    setAvatarFile(f);
-    setAvatarUrl(URL.createObjectURL(f));
-    e.target.value = "";
+    const err = validatePickedPhoto(f);
+    if (err) return toast.error(err);
+    setSlots((prev) => {
+      const next = [...prev];
+      if (next[idx].preview?.startsWith("blob:")) URL.revokeObjectURL(next[idx].preview!);
+      next[idx] = { path: null, file: f, preview: URL.createObjectURL(f) };
+      return next;
+    });
+  };
+
+  const clearSlot = (idx: number) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      if (next[idx].preview?.startsWith("blob:")) URL.revokeObjectURL(next[idx].preview!);
+      next[idx] = { path: null, file: null, preview: null };
+      return next;
+    });
   };
 
   const onSave = async () => {
     if (!displayName.trim()) return toast.error("닉네임을 입력해 주세요.");
-    if (displayName.length > 40) return toast.error("닉네임은 40자 이하로 입력해 주세요.");
-    if (bio.length > 160) return toast.error("한줄소개는 160자 이하로 입력해 주세요.");
+    if (displayName.length > NICK_MAX) return toast.error(`닉네임은 ${NICK_MAX}자 이하로 입력해 주세요.`);
+    if (intro.trim().length < 2) return toast.error("소개를 적어 주세요.");
+    if (intro.length > INTRO_MAX) return toast.error(`소개는 ${INTRO_MAX}자 이하로 입력해 주세요.`);
+    if (idealLine.length > IDEAL_LINE_MAX) return toast.error("끌리는 사람 소개가 너무 길어요.");
     const year = Number(birthYear);
-    if (!year || year < 1920 || year > 2008) {
-      return toast.error("출생 연도를 확인해 주세요.");
-    }
-    const height = heightCm.trim() ? Number(heightCm) : null;
-    if (height != null && (height < 120 || height > 230)) {
-      return toast.error("키는 120~230cm로 입력해 주세요.");
-    }
-    if (!profile?.uid) return;
+    if (!year || year < 1940 || year > 2008) return toast.error("출생 연도를 확인해 주세요.");
+    if (!region) return toast.error("지역을 골라 주세요.");
+    const height = parseHeightCm(heightCm);
+    if (height == null) return toast.error("키를 입력해 주세요.");
+    if (!jobChip) return toast.error("하는 일을 골라 주세요.");
+    if (!smoke) return toast.error("흡연을 골라 주세요.");
+    if (filledCount < 3) return toast.error("프로필 사진 3장이 필요해요.");
+    if (!data?.uid) return;
 
     setSaving(true);
     try {
-      let nextAvatarUrl = profile.profile?.avatar_url ?? null;
-      if (avatarFile) {
-        const cleaned = await stripExifAndCompress(avatarFile);
-        const path = `${profile.uid}/avatar-${Date.now()}.jpg`;
-        const { error: upErr } = await supabase.storage
-          .from("answers")
-          .upload(path, cleaned, { upsert: true, contentType: cleaned.type });
-        if (upErr) throw upErr;
-        nextAvatarUrl = path;
+      const paths: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        const s = slots[i];
+        if (s.file) paths.push(await uploadProfilePhoto(data.uid, s.file, i));
+        else if (s.path) paths.push(s.path);
+        else throw new Error("사진이 비어 있어요.");
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,21 +155,25 @@ function EditProfilePage() {
         .from("profiles")
         .update({
           display_name: displayName.trim(),
-          bio: bio.trim() || null,
-          // Sea unlock card reads ai_intro — keep in sync with the editable intro
-          ai_intro: bio.trim() || null,
-          avatar_url: nextAvatarUrl,
+          bio: intro.trim() || null,
+          ai_intro: intro.trim() || null,
+          ai_ideal_line: idealLine.trim() || null,
+          photos: paths,
+          avatar_url: paths[0] ?? null,
           birth_year: year,
-          region: region.trim() || null,
+          region,
           height_cm: height,
+          job_chip: jobChip,
+          smoke,
         })
-        .eq("id", profile.uid);
+        .eq("id", data.uid);
       if (error) throw error;
 
       toast.success("프로필을 저장했어요.");
       qc.invalidateQueries({ queryKey: ["my-profile"] });
       qc.invalidateQueries({ queryKey: ["my-profile-edit"] });
       qc.invalidateQueries({ queryKey: ["my-mission-profile"] });
+      qc.invalidateQueries({ queryKey: ["sea-me"] });
       navigate({ to: "/me" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "저장에 실패했어요.");
@@ -132,126 +183,126 @@ function EditProfilePage() {
   };
 
   return (
-    <main className="min-h-screen pb-20">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md px-6 py-5 border-b border-border flex items-center justify-between">
-        <Link to="/me" className="text-sm text-muted-foreground">
-          ← 취소
-        </Link>
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          프로필 수정
-        </span>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving || isLoading}
-          className="text-sm font-medium disabled:opacity-40"
-        >
-          {saving ? "저장 중..." : "저장"}
+    <main className="fl-me">
+      <header className="fl-me-top">
+        <Link to="/me" className="fl-me-link">← 취소</Link>
+        <h1 className="fl-me-title">프로필 수정</h1>
+        <button type="button" className="fl-me-link strong" onClick={onSave} disabled={saving || isLoading}>
+          {saving ? "저장 중…" : "저장"}
         </button>
       </header>
 
-      <section className="px-6 py-8 flex flex-col items-center">
-        <label className="cursor-pointer group">
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={onPickAvatar}
-            className="hidden"
-          />
-          <div className="size-28 rounded-full bg-surface border border-border overflow-hidden grid place-items-center">
-            {avatarUrl ? (
-              <StorageImg src={avatarUrl} alt="" className="w-full h-full object-cover" />
+      <div className="fl-me-body">
+        <h5 className="fl-onb-label first">프로필 사진 3장</h5>
+        <p className="fl-me-hint">첫 장이 대표예요. 열리기 전에는 상대에게 안 보여요.</p>
+        <div className="fl-photos3">
+          {[0, 1, 2].map((k) => {
+            const s = slots[k];
+            return s.preview ? (
+              <div key={k} className="fl-pslot filled">
+                {k === 0 && <span className="main">대표</span>}
+                <StorageImg src={s.preview} alt="" />
+                <div className="x" onClick={() => clearSlot(k)}>✕</div>
+              </div>
             ) : (
-              <span className="text-2xl text-muted-foreground">＋</span>
-            )}
-          </div>
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground mt-3 text-center">
-            사진 변경 · 열린 뒤 공유
-          </p>
-        </label>
-      </section>
+              <div key={k} className="fl-pslot" onClick={() => setSlot(k)}>＋</div>
+            );
+          })}
+        </div>
 
-      <section className="px-6 space-y-6">
-        <Field label="닉네임" hint={`${displayName.length}/40`}>
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            maxLength={40}
-            className="w-full bg-transparent border-b border-border py-2 text-base focus:outline-none focus:border-foreground"
-          />
-        </Field>
+        <h5 className="fl-onb-label">닉네임</h5>
+        <input
+          className="fl-in"
+          maxLength={NICK_MAX}
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
 
-        <Field label="성별">
-          <p className="py-2 text-base">
-            {GENDER_LABEL[gender] ?? "—"}
-            <span className="ml-2 text-[11px] text-muted-foreground">
-              (가입 후 변경 불가 · {gender === "female" ? "보내기" : "답장"} 역할)
-            </span>
-          </p>
-        </Field>
+        <h5 className="fl-onb-label">성별</h5>
+        <p className="fl-me-readonly">{GENDER_LABEL[gender] ?? "—"}</p>
 
-        <Field label="출생 연도">
-          <input
-            type="number"
-            value={birthYear}
-            onChange={(e) => setBirthYear(e.target.value)}
-            placeholder="1998"
-            className="w-full bg-transparent border-b border-border py-2 text-base focus:outline-none focus:border-foreground"
-          />
-        </Field>
+        <h5 className="fl-onb-label">출생 연도</h5>
+        <input
+          className="fl-in"
+          inputMode="numeric"
+          maxLength={4}
+          value={birthYear}
+          onChange={(e) => setBirthYear(e.target.value.replace(/[^0-9]/g, ""))}
+          placeholder="1998"
+        />
 
-        <Field label="지역 (시)">
-          <input
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            placeholder="서울"
-            className="w-full bg-transparent border-b border-border py-2 text-base focus:outline-none focus:border-foreground"
-          />
-        </Field>
+        <h5 className="fl-onb-label">지역</h5>
+        <div className="fl-chipgrid">
+          {PROFILE_REGIONS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              className={"fl-selchip" + (region === r ? " on" : "")}
+              onClick={() => setRegion(r)}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
 
-        <Field label="키 cm (선택)">
-          <input
-            type="number"
-            value={heightCm}
-            onChange={(e) => setHeightCm(e.target.value)}
-            placeholder="175"
-            className="w-full bg-transparent border-b border-border py-2 text-base focus:outline-none focus:border-foreground"
-          />
-        </Field>
+        <h5 className="fl-onb-label">하는 일</h5>
+        <div className="fl-chipgrid">
+          {JOB_CHIPS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={"fl-selchip" + (jobChip === c ? " on" : "")}
+              onClick={() => setJobChip(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
 
-        <Field label="한줄소개" hint={`${bio.length}/160`}>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            maxLength={160}
-            rows={3}
-            className="w-full bg-transparent border-b border-border py-2 text-base focus:outline-none focus:border-foreground resize-none"
-            placeholder="열린 뒤 상대에게 보여요."
-          />
-        </Field>
-      </section>
-    </main>
-  );
-}
+        <h5 className="fl-onb-label">흡연</h5>
+        <div className="fl-chipgrid">
+          {SMOKE_CHIPS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={"fl-selchip" + (smoke === c ? " on" : "")}
+              onClick={() => setSmoke(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
 
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between mb-1">
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          {label}
-        </span>
-        {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
+        <h5 className="fl-onb-label">키</h5>
+        <input
+          className="fl-in"
+          inputMode="numeric"
+          maxLength={3}
+          value={heightCm}
+          onChange={(e) => setHeightCm(e.target.value.replace(/[^0-9]/g, ""))}
+          placeholder="170"
+        />
+
+        <h5 className="fl-onb-label">이런 사람이에요</h5>
+        <AutoGrowTextarea
+          className="fl-in fl-in-grow"
+          maxLength={INTRO_MAX}
+          value={intro}
+          onChange={(e) => setIntro(e.target.value)}
+          placeholder="열린 뒤 상대에게 보여요."
+        />
+        <p className="fl-me-count">{intro.length}/{INTRO_MAX}</p>
+
+        <h5 className="fl-onb-label">이런 사람에게 끌려요</h5>
+        <AutoGrowTextarea
+          className="fl-in fl-in-grow"
+          maxLength={IDEAL_LINE_MAX}
+          value={idealLine}
+          onChange={(e) => setIdealLine(e.target.value)}
+          placeholder="잘 맞을 것 같은 분위기를 한 줄로."
+        />
+        <p className="fl-me-count">{idealLine.length}/{IDEAL_LINE_MAX}</p>
       </div>
-      {children}
-    </div>
+    </main>
   );
 }

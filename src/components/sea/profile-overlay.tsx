@@ -7,12 +7,20 @@ export type ProfileCardData = {
   region: string;
   /** Extra meta under name: height · job · smoke (already filtered) */
   meta?: string;
+  /** Prefer photos[]; photo kept as legacy single fallback */
+  photos?: (string | null | undefined)[];
   photo?: string | null;
   intro: string;
   idealLine?: string;
   tags: string[];
   qa: { q: string; a: string }[];
 };
+
+function photoList(data: ProfileCardData): string[] {
+  const fromArr = (data.photos ?? []).filter((p): p is string => !!p);
+  if (fromArr.length) return fromArr;
+  return data.photo ? [data.photo] : [];
+}
 
 /** Aqua profile card — deliberately NOT the parchment note. Slides in from right. */
 export function ProfileOverlay({
@@ -26,9 +34,12 @@ export function ProfileOverlay({
 }) {
   const [shown, setShown] = useState<ProfileCardData | null>(data);
   const [on, setOn] = useState(false);
+  const [photoIdx, setPhotoIdx] = useState(0);
+
   useEffect(() => {
     if (data) {
       setShown(data);
+      setPhotoIdx(0);
       const r = requestAnimationFrame(() => setOn(true));
       return () => cancelAnimationFrame(r);
     }
@@ -37,14 +48,46 @@ export function ProfileOverlay({
     return () => clearTimeout(t);
   }, [data]);
 
+  const photos = shown ? photoList(shown) : [];
+  const hero = photos[photoIdx] ?? photos[0] ?? null;
+
   return (
     <div className={"fl-ppage" + (on ? " on" : "")}>
       <button className="fl-pp-back" onClick={onBack} aria-label="뒤로">←</button>
       {shown && (
         <>
           <div className="fl-pp-hero">
-            {shown.photo ? <StorageImg src={shown.photo} alt="" /> : null}
+            {hero ? <StorageImg src={hero} alt="" /> : null}
             <div className="grad" />
+            {photos.length > 1 && (
+              <div className="fl-pp-dots" role="tablist" aria-label="사진">
+                {photos.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={"dot" + (i === photoIdx ? " on" : "")}
+                    aria-label={`${i + 1}번째 사진`}
+                    onClick={() => setPhotoIdx(i)}
+                  />
+                ))}
+              </div>
+            )}
+            {photos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="fl-pp-tap left"
+                  aria-label="이전 사진"
+                  onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)}
+                />
+                <button
+                  type="button"
+                  className="fl-pp-tap right"
+                  aria-label="다음 사진"
+                  onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)}
+                />
+              </>
+            )}
             <div className="nm">
               <b>{shown.age ? `${shown.name} · ${shown.age}` : shown.name}</b>
               {(shown.region || shown.meta) && (

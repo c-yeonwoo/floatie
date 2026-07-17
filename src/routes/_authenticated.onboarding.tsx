@@ -15,9 +15,11 @@ import {
   WEEKEND_CHIPS,
   VIBE_CHIPS,
   PACE_CHIPS,
+  PROFILE_REGIONS,
   S4_QUESTION,
   I1_QUESTION,
   I2_QUESTION,
+  parseHeightCm,
 } from "@/lib/interview-chips";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
@@ -43,7 +45,6 @@ const STEPS = [
 ] as const;
 type Step = (typeof STEPS)[number];
 const INPUT_STEPS = STEPS.filter((s) => s !== "gen" && s !== "review").length;
-const REGIONS = ["서울", "경기", "인천", "부산", "대구", "대전", "광주", "기타"];
 
 type Photo = { file: File; url: string };
 
@@ -88,15 +89,12 @@ function OnboardingPage() {
 
   useEffect(() => () => photosRef.current.forEach((p) => URL.revokeObjectURL(p.url)), []);
 
-  const heightOk =
-    !height.trim() || (/^\d{3}$/.test(height) && +height >= 120 && +height <= 230);
-
   const valid = (): boolean => {
     if (step === "name") return name.trim().length >= 1;
     if (step === "basic") return /^\d{4}$/.test(year) && +year >= 1940 && +year <= 2008 && !!gender;
     if (step === "region") return !!region;
     if (step === "photo") return photos.length >= 3;
-    if (step === "facts") return !!jobChip && !!smoke && heightOk;
+    if (step === "facts") return !!jobChip && !!smoke && parseHeightCm(height) != null;
     if (step[0] === "q") return answers[+step[1]].trim().length >= 2;
     if (step === "s4") return !!weekend;
     if (step === "bridge") return true;
@@ -168,7 +166,8 @@ function OnboardingPage() {
       const uid = data.user!.id;
       const paths: string[] = [];
       for (let k = 0; k < photos.length; k++) paths.push(await uploadProfilePhoto(uid, photos[k].file, k));
-      const heightCm = height.trim() ? +height : null;
+      const heightCm = parseHeightCm(height);
+      if (heightCm == null) throw new Error("키를 입력해 주세요.");
       await saveOnboarding(uid, {
         displayName: name,
         gender: gender as "female" | "male",
@@ -245,7 +244,7 @@ function OnboardingPage() {
             <h2>어디에 살고 있어요?</h2>
             <p className="desc">가까운 지역의 인연을 우선 보여드려요.</p>
             <div className="fl-chipgrid">
-              {REGIONS.map((r) => (
+              {PROFILE_REGIONS.map((r) => (
                 <button key={r} className={"fl-selchip" + (region === r ? " on" : "")} onClick={() => setRegion(r)}>{r}</button>
               ))}
             </div>
@@ -278,7 +277,7 @@ function OnboardingPage() {
         {step === "facts" && (
           <>
             <h2>조금만 더 알려주세요</h2>
-            <p className="desc">프로필에 짧게 보여요. 키는 비워도 괜찮아요.</p>
+            <p className="desc">프로필에 짧게 보여요.</p>
             <h5 className="fl-onb-label">하는 일</h5>
             <div className="fl-chipgrid" style={{ marginBottom: 18 }}>
               {JOB_CHIPS.map((c) => (
@@ -291,12 +290,12 @@ function OnboardingPage() {
                 <button key={c} type="button" className={"fl-selchip" + (smoke === c ? " on" : "")} onClick={() => setSmoke(c)}>{c}</button>
               ))}
             </div>
-            <h5 className="fl-onb-label">키 (선택)</h5>
+            <h5 className="fl-onb-label">키</h5>
             <input
               className="fl-in"
               inputMode="numeric"
               maxLength={3}
-              placeholder="cm (예: 170)"
+              placeholder="170"
               value={height}
               onChange={(e) => setHeight(e.target.value.replace(/[^0-9]/g, ""))}
             />

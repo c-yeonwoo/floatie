@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
 import { ageBand } from "@/lib/mission";
 import { fetchSafetyProfile, deleteAccount } from "@/lib/safety";
+import { profileMetaLine } from "@/lib/interview-chips";
 
 export const Route = createFileRoute("/_authenticated/me/")({
   head: () => ({ meta: [{ title: "나 — 플로티" }] }),
@@ -21,7 +22,9 @@ function MePage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profile } = await (supabase as any)
         .from("profiles")
-        .select("display_name, handle, bio, avatar_url, birth_year, region, gender")
+        .select(
+          "display_name, bio, avatar_url, birth_year, region, gender, photos, height_cm, job_chip, smoke, ai_intro, ai_ideal_line",
+        )
         .eq("id", uid)
         .maybeSingle();
       return { profile };
@@ -53,125 +56,82 @@ function MePage() {
   };
 
   const p = data?.profile;
+  const photo = p?.photos?.[0] ?? p?.avatar_url;
+  const intro = p?.ai_intro ?? p?.bio;
+  const meta = profileMetaLine({
+    height_cm: p?.height_cm,
+    job_chip: p?.job_chip,
+    smoke: p?.smoke,
+  });
 
   return (
-    <main className="px-5 py-8">
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="font-serif text-3xl">나</h1>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="text-[15px] text-muted-foreground hover:text-foreground"
-        >
+    <main className="fl-me">
+      <header className="fl-me-top">
+        <Link to="/home" className="fl-me-link">← 바다</Link>
+        <h1 className="fl-me-title">나</h1>
+        <button type="button" onClick={onLogout} className="fl-me-link">
           로그아웃
         </button>
       </header>
 
-      {isLoading && <p className="text-sm text-muted-foreground">불러오는 중…</p>}
+      <div className="fl-me-body">
+        {isLoading && <p className="fl-me-hint">불러오는 중…</p>}
 
-      <section className="text-center flex flex-col items-center mb-10">
-        {p?.avatar_url ? (
-          <StorageImg
-            src={p.avatar_url}
-            alt=""
-            className="size-16 rounded-full object-cover border border-border mb-3"
-          />
-        ) : (
-          <div className="size-16 rounded-full bg-surface border border-border mb-3" />
-        )}
-        <h2 className="font-serif text-2xl">{p?.display_name ?? "…"}</h2>
-        {p?.bio && (
-          <p className="text-[13px] text-muted-foreground mt-2 max-w-sm">{p.bio}</p>
-        )}
-        <p className="text-xs text-muted-foreground mt-3">
-          {[ageBand(p?.birth_year), p?.region].filter(Boolean).join(" · ") ||
-            "프로필을 채워 주세요"}
-        </p>
-        <p className="text-[12px] text-muted-foreground mt-2 max-w-xs leading-relaxed">
-          열리기 전에는 거의 보이지 않아요. 서로 좋다고 하면 그때 공유돼요.
-        </p>
-      </section>
+        <section className="fl-me-card">
+          {photo ? (
+            <StorageImg src={photo} alt="" className="fl-me-avatar" />
+          ) : (
+            <div className="fl-me-avatar empty" />
+          )}
+          <h2 className="fl-me-name">{p?.display_name ?? "…"}</h2>
+          <p className="fl-me-meta">
+            {[ageBand(p?.birth_year), p?.region, meta].filter(Boolean).join(" · ") ||
+              "프로필을 채워 주세요"}
+          </p>
+          {intro && <p className="fl-me-intro">{intro}</p>}
+          {p?.ai_ideal_line && (
+            <p className="fl-me-ideal">이런 사람에게 끌려요 · {p.ai_ideal_line}</p>
+          )}
+          <p className="fl-me-hint center">
+            열리기 전에는 거의 보이지 않아요. 서로 좋다고 하면 그때 공유돼요.
+          </p>
+        </section>
 
-      <nav className="space-y-2">
-        <Link
-          to="/me/edit"
-          className="block rounded-2xl bg-secondary px-4 py-3.5 text-[15px]"
-        >
-          프로필 수정
-        </Link>
-        <Link
-          to="/verify"
-          className="block rounded-2xl bg-secondary px-4 py-3.5 text-[15px]"
-        >
-          본인인증
-          <span className="ml-2 text-xs text-muted-foreground">
-            {safety?.identity_verified_at ? "완료" : "필요"}
-          </span>
-        </Link>
-        <Link
-          to="/me/blocked"
-          className="block rounded-2xl bg-secondary px-4 py-3.5 text-[15px]"
-        >
-          차단 목록
-        </Link>
-        {safety?.is_admin && (
-          <Link
-            to="/admin/reports"
-            className="block rounded-2xl bg-secondary px-4 py-3.5 text-[15px]"
-          >
-            관리자 · 신고 검토
+        <nav className="fl-me-nav">
+          <Link to="/me/edit" className="fl-me-nav-item">프로필 수정</Link>
+          <Link to="/verify" className="fl-me-nav-item">
+            본인인증
+            <span>{safety?.identity_verified_at ? "완료" : "필요"}</span>
           </Link>
-        )}
-        <Link
-          to="/terms"
-          className="block rounded-2xl bg-secondary px-4 py-3.5 text-[15px] text-muted-foreground"
-        >
-          이용약관
-        </Link>
-        <Link
-          to="/privacy"
-          className="block rounded-2xl bg-secondary px-4 py-3.5 text-[15px] text-muted-foreground"
-        >
-          개인정보 처리방침
-        </Link>
-      </nav>
+          <Link to="/me/blocked" className="fl-me-nav-item">차단 목록</Link>
+          {safety?.is_admin && (
+            <Link to="/admin/reports" className="fl-me-nav-item">관리자 · 신고 검토</Link>
+          )}
+          <Link to="/terms" className="fl-me-nav-item muted">이용약관</Link>
+          <Link to="/privacy" className="fl-me-nav-item muted">개인정보 처리방침</Link>
+        </nav>
 
-      <section className="mt-10 pt-6 border-t border-border">
-        {!confirming ? (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className="text-[13px] text-muted-foreground hover:text-destructive transition-colors"
-          >
-            회원 탈퇴
-          </button>
-        ) : (
-          <div className="rounded-2xl bg-secondary p-4">
-            <p className="text-sm font-semibold">정말 탈퇴할까요?</p>
-            <p className="mt-1 text-[13px] text-muted-foreground leading-relaxed">
-              계정과 모든 미션·대화·프로필이 영구 삭제되고, 되돌릴 수 없어요.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={onDelete}
-                className="flex-1 rounded-full bg-destructive text-destructive-foreground py-2.5 text-sm font-semibold disabled:opacity-50"
-              >
-                {deleting ? "탈퇴 중…" : "영구 탈퇴하기"}
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={() => setConfirming(false)}
-                className="flex-1 rounded-full bg-surface py-2.5 text-sm font-medium"
-              >
-                취소
-              </button>
+        <section className="fl-me-danger">
+          {!confirming ? (
+            <button type="button" onClick={() => setConfirming(true)} className="fl-me-leave">
+              회원 탈퇴
+            </button>
+          ) : (
+            <div className="fl-me-leave-box">
+              <p className="t">정말 탈퇴할까요?</p>
+              <p className="d">계정과 모든 미션·대화·프로필이 영구 삭제되고, 되돌릴 수 없어요.</p>
+              <div className="row">
+                <button type="button" disabled={deleting} onClick={onDelete} className="danger">
+                  {deleting ? "탈퇴 중…" : "영구 탈퇴하기"}
+                </button>
+                <button type="button" disabled={deleting} onClick={() => setConfirming(false)}>
+                  취소
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </section>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
