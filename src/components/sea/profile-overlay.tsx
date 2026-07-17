@@ -5,8 +5,11 @@ export type ProfileCardData = {
   name: string;
   age: string;
   region: string;
+  /** Extra meta under name: height · job · smoke (already filtered) */
+  meta?: string;
   photo?: string | null;
   intro: string;
+  idealLine?: string;
   tags: string[];
   qa: { q: string; a: string }[];
 };
@@ -44,7 +47,9 @@ export function ProfileOverlay({
             <div className="grad" />
             <div className="nm">
               <b>{shown.age ? `${shown.name} · ${shown.age}` : shown.name}</b>
-              {shown.region && <span>{shown.region}</span>}
+              {(shown.region || shown.meta) && (
+                <span>{[shown.region, shown.meta].filter(Boolean).join(" · ")}</span>
+              )}
             </div>
           </div>
           <div className="fl-pp-body">
@@ -63,6 +68,12 @@ export function ProfileOverlay({
                     <span key={t} className="fl-pp-tag">{t}</span>
                   ))}
                 </div>
+              </div>
+            )}
+            {shown.idealLine?.trim() && (
+              <div className="fl-pp-card fl-pp-ideal">
+                <h5>이런 사람에게 끌려요</h5>
+                <p>{shown.idealLine}</p>
               </div>
             )}
             {shown.qa.length > 0 && (

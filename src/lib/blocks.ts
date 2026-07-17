@@ -17,3 +17,12 @@ export function useBlockedIds() {
     staleTime: 60_000,
   });
 }
+
+/** Block a user and close any open match threads with them. */
+export async function blockUser(blockedId: string): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).rpc("block_user", {
+    p_blocked_id: blockedId,
+  });
+  if (error) throw error;
+}

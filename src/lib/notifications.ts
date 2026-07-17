@@ -21,6 +21,10 @@ export type InAppNotification = {
   created_at: string;
 };
 
+export type NotificationNav =
+  | { to: "/home"; search?: { d: number } }
+  | { to: "/thread/$threadId"; params: { threadId: string } };
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
@@ -80,14 +84,35 @@ export async function markAllNotificationsRead() {
   if (error) throw error;
 }
 
-/** Screen a notification should open when tapped. */
+/** Where a notification should navigate in the Sea-first app. */
+export function notificationTarget(
+  n: Pick<InAppNotification, "kind" | "payload">,
+): NotificationNav | null {
+  const id = n.payload?.delivery_id;
+  const threadId = n.payload?.thread_id;
+  if (n.kind === "matched" && threadId) {
+    return { to: "/thread/$threadId", params: { threadId: String(threadId) } };
+  }
+  if (
+    n.kind === "profile_opened" ||
+    n.kind === "mission_arrived" ||
+    n.kind === "mission_accepted" ||
+    n.kind === "mission_replied" ||
+    n.kind === "mission_no_response" ||
+    n.kind === "matched"
+  ) {
+    return id ? { to: "/home", search: { d: id } } : { to: "/home" };
+  }
+  return null;
+}
+
+/** @deprecated use notificationTarget */
 export function notificationHref(
   n: Pick<InAppNotification, "kind" | "payload">,
 ): string | null {
-  const id = n.payload?.delivery_id;
-  // profile-open / match land back on the sea, where the floatie carries the action
-  if (n.kind === "profile_opened" || n.kind === "matched") return "/home";
-  if (!id) return null;
-  if (n.kind === "mission_no_response") return `/waiting/${id}`;
-  return `/delivery/${id}`; // arrived / accepted / replied
+  const t = notificationTarget(n);
+  if (!t) return null;
+  if (t.to === "/thread/$threadId") return `/thread/${t.params.threadId}`;
+  if (t.search?.d) return `/home?d=${t.search.d}`;
+  return "/home";
 }

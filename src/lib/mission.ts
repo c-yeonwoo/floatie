@@ -235,11 +235,49 @@ export async function setVerdict(
   if (error) throw error;
 }
 
+/** Man declines before opening — no trust penalty (14d pair cooldown via trigger). */
+export async function declineDelivery(id: number) {
+  const { error } = await db.rpc("decline_delivery", { p_delivery_id: id });
+  if (error) throw error;
+}
+
+/** Man forfeits after accept without reply — 24h receive ban + expire. */
+export async function forfeitDelivery(id: number) {
+  const { error } = await db.rpc("forfeit_delivery", { p_delivery_id: id });
+  if (error) throw error;
+}
+
+export function mapMissionError(err: unknown, fallback: string): string {
+  const msg =
+    (err as { message?: string })?.message ||
+    (err instanceof Error ? err.message : "") ||
+    "";
+  if (msg.includes("only female")) return "미션은 여성 회원만 보낼 수 있어요.";
+  if (msg.includes("no eligible recipient"))
+    return "지금 받을 수 있는 사람이 없어요. 조건을 낮추거나 잠시 뒤 다시 시도해 주세요.";
+  if (msg.includes("ticket required") || msg.includes("daily send cap"))
+    return "오늘 무료 발송을 썼어요. 티켓이 필요해요.";
+  if (msg.includes("already opened") || msg.includes("cannot decline"))
+    return "이미 연 플로티는 패스할 수 없어요.";
+  if (msg.includes("cannot forfeit") || msg.includes("not accepted"))
+    return "지금은 포기할 수 없어요.";
+  if (msg.includes("blocked")) return "차단된 상대와는 대화할 수 없어요.";
+  if (msg.includes("message cap") || msg.includes("thread closed"))
+    return "대화 기간이 끝났어요. (7일)";
+  if (msg.includes("gender locked")) return "성별은 가입 후 바꿀 수 없어요.";
+  if (msg.includes("expired")) return "시간이 지나 만료됐어요.";
+  if (msg.includes("accept required")) return "먼저 수락해 주세요.";
+  if (!msg || /rpc|postgres|PGRST|JWT/i.test(msg)) return fallback;
+  // Prefer Korean fallbacks over raw English RPC strings
+  if (/^[a-z_ ]+$/i.test(msg.trim())) return fallback;
+  return msg;
+}
+
 export type MissionThread = {
   id: number;
   delivery_id: number;
   expires_at: string;
-  message_cap: number;
+  message_cap: number | null;
   closed_at: string | null;
   sender_contact: string | null;
   receiver_contact: string | null;
@@ -247,7 +285,8 @@ export type MissionThread = {
   receiver_id?: string;
 };
 
-export const MESSAGE_CAP_DEFAULT = 20;
+/** null / unset = unlimited messages (7-day window only). */
+export const MESSAGE_CAP_DEFAULT: number | null = null;
 
 export type UnlockedPeer = {
   id: string;
@@ -259,17 +298,20 @@ export type UnlockedPeer = {
   region: string | null;
   gender: string | null;
   height_cm: number | null;
+  job_chip: string | null;
+  smoke: string | null;
   photos: string[] | null;
   ai_intro: string | null;
+  ai_ideal_line: string | null;
   ai_tags: string[] | null;
-  intro_answers: { answers?: string[] } | null;
+  intro_answers: { version?: number; self?: string[]; answers?: string[] } | null;
 };
 
 export async function fetchUnlockedPeer(peerId: string): Promise<UnlockedPeer | null> {
   const { data, error } = await db
     .from("profiles")
     .select(
-      "id, display_name, handle, bio, avatar_url, birth_year, region, gender, height_cm, photos, ai_intro, ai_tags, intro_answers",
+      "id, display_name, handle, bio, avatar_url, birth_year, region, gender, height_cm, job_chip, smoke, photos, ai_intro, ai_ideal_line, ai_tags, intro_answers",
     )
     .eq("id", peerId)
     .maybeSingle();

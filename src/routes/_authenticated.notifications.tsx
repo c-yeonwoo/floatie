@@ -4,7 +4,7 @@ import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-  notificationHref,
+  notificationTarget,
   type InAppNotification,
 } from "@/lib/notifications";
 import { EmptyState } from "@/components/empty-state";
@@ -40,8 +40,13 @@ function NotificationsPage() {
     if (!n.read_at) {
       markNotificationRead(n.id).catch(() => {});
     }
-    const href = notificationHref(n);
-    if (href) navigate({ to: href });
+    const target = notificationTarget(n);
+    if (!target) return;
+    if (target.to === "/thread/$threadId") {
+      navigate({ to: target.to, params: target.params });
+    } else {
+      navigate({ to: "/home", search: target.search ?? {} });
+    }
   };
 
   const onReadAll = async () => {

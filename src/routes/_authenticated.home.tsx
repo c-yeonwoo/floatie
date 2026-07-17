@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,12 +8,16 @@ import {
   ageBand,
   countSendsToday,
   createAndDeliverMission,
+  declineDelivery,
   fetchInbox,
   fetchOutbox,
   fetchPresets,
   fetchReceiverCard,
   fetchSenderCard,
   fetchUnlockedPeer,
+  forfeitDelivery,
+  formatCountdown,
+  mapMissionError,
   recallDelivery,
   replyToDelivery,
   setReplyPhoto,
@@ -23,7 +27,8 @@ import {
   type PersonCard,
   type UnlockedPeer,
 } from "@/lib/mission";
-import { PROFILE_QUESTIONS, uploadReplyPhoto } from "@/lib/profile-ai";
+import { qaFromIntroAnswers, uploadReplyPhoto } from "@/lib/profile-ai";
+import { smokeLabel } from "@/lib/interview-chips";
 import { SeaWaves } from "@/components/sea/waves";
 import { ParchmentNote, type NoteContent } from "@/components/sea/parchment-note";
 import { ConfirmModal, type ConfirmOpts } from "@/components/sea/confirm-modal";
@@ -31,6 +36,7 @@ import { ProfileOverlay, type ProfileCardData } from "@/components/sea/profile-o
 import { SubPageOverlay } from "@/components/sea/sub-page";
 import { AvatarMenu } from "@/components/sea/avatar-menu";
 import { BottleGlyph } from "@/components/bottle-glyph";
+import { ReportDialog } from "@/components/report-dialog";
 import {
   bottlePos,
   isGlow,
@@ -41,8 +47,14 @@ import {
   type FloatieState,
 } from "@/lib/sea";
 
+type HomeSearch = { d?: number };
+
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({ meta: [{ title: "플로티" }] }),
+  validateSearch: (raw: Record<string, unknown>): HomeSearch => {
+    const n = raw.d != null ? Number(raw.d) : NaN;
+    return Number.isFinite(n) ? { d: n } : {};
+  },
   component: SeaHome,
 });
 
@@ -65,9 +77,13 @@ type MeProfile = {
   photos: string[] | null;
   birth_year: number | null;
   region: string | null;
+  height_cm: number | null;
+  job_chip: string | null;
+  smoke: string | null;
   ai_intro: string | null;
+  ai_ideal_line: string | null;
   ai_tags: string[] | null;
-  intro_answers: { answers?: string[] } | null;
+  intro_answers: { version?: number; self?: string[]; answers?: string[] } | null;
 };
 
 type NoteState =
@@ -77,9 +93,18 @@ type NoteState =
   | { kind: "read"; d: MissionDelivery }
   | { kind: "reply"; d: MissionDelivery };
 
-function qaFrom(answers: string[] | undefined): { q: string; a: string }[] {
-  if (!answers) return [];
-  return PROFILE_QUESTIONS.map((q, i) => ({ q: q.q, a: answers[i] ?? "" })).filter((x) => x.a.trim());
+function profileMeta(p: {
+  height_cm?: number | null;
+  job_chip?: string | null;
+  smoke?: string | null;
+}): string {
+  return [
+    p.height_cm ? `${p.height_cm}cm` : null,
+    p.job_chip || null,
+    smokeLabel(p.smoke),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function peerCard(p: UnlockedPeer, ageOf: (y: number | null) => string): ProfileCardData {
@@ -87,21 +112,31 @@ function peerCard(p: UnlockedPeer, ageOf: (y: number | null) => string): Profile
     name: p.display_name ?? "상대",
     age: ageOf(p.birth_year),
     region: p.region ?? "",
+    meta: profileMeta(p),
     photo: p.photos?.[0] ?? p.avatar_url,
     intro: p.ai_intro ?? p.bio ?? "",
+    idealLine: p.ai_ideal_line ?? "",
     tags: p.ai_tags ?? [],
-    qa: qaFrom(p.intro_answers?.answers),
+    qa: qaFromIntroAnswers(p.intro_answers),
   };
 }
 
 function SeaHome() {
   const navigate = useNavigate();
+  const { d: deepLinkId } = Route.useSearch();
   const qc = useQueryClient();
   const [note, setNote] = useState<NoteState>(null);
   const [confirm, setConfirm] = useState<ConfirmOpts | null>(null);
   const [profile, setProfile] = useState<{ data: ProfileCardData; delivery: MissionDelivery | null } | null>(null);
   const [page, setPage] = useState<null | "history" | "shop">(null);
+  const [report, setReport] = useState<{ deliveryId: number; userId: string } | null>(null);
+  const [, setTick] = useState(0);
   const ageOf = (y: number | null) => (y ? ageBand(y) : "") ?? "";
+
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const { data: me } = useQuery({
     queryKey: ["sea-me"],
@@ -113,7 +148,7 @@ function SeaHome() {
       const { data } = await (supabase as any)
         .from("profiles")
         .select(
-          "id, gender, display_name, ticket_balance, photos, birth_year, region, ai_intro, ai_tags, intro_answers",
+          "id, gender, display_name, ticket_balance, photos, birth_year, region, height_cm, job_chip, smoke, ai_intro, ai_ideal_line, ai_tags, intro_answers",
         )
         .eq("id", uid)
         .maybeSingle();
@@ -144,16 +179,19 @@ function SeaHome() {
   }, [presetRows]);
 
   const refresh = () => qc.invalidateQueries();
+  const peerIdOf = (d: MissionDelivery) => (isWoman ? d.receiver_id : d.sender_id);
+  const openReport = (d: MissionDelivery) =>
+    setReport({ deliveryId: d.id, userId: peerIdOf(d) });
 
   const send = useMutation({
-    mutationFn: ({ body, photoAnswer }: { body: string; photoAnswer: boolean }) =>
-      createAndDeliverMission({ kind: "question", body, useTicket: !canFree, photoAnswer }),
+    mutationFn: ({ body, askPhoto }: { body: string; askPhoto: boolean }) =>
+      createAndDeliverMission({ kind: "question", body, useTicket: !canFree, photoAnswer: askPhoto }),
     onSuccess: () => {
       setNote(null);
-      toast.success("플로티를 바다 위로 띄웠어요", { description: "어떤 멋진 분께 닿을지 행운을 빌어요 🍀" });
+      toast.success("플로티를 바다 위로 띄웠어요", { description: "어떤 분께 닿을지 기다려 볼까요?" });
       refresh();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "티켓이 필요해요."),
+    onError: (e) => toast.error(mapMissionError(e, "보내지 못했어요.")),
   });
 
   const accept = useMutation({
@@ -162,7 +200,7 @@ function SeaHome() {
       return d;
     },
     onSuccess: (d) => setNote({ kind: "reply", d }),
-    onError: (e) => toast.error(e instanceof Error ? e.message : "열지 못했어요."),
+    onError: (e) => toast.error(mapMissionError(e, "열지 못했어요.")),
   });
 
   const reply = useMutation({
@@ -175,14 +213,16 @@ function SeaHome() {
     },
     onSuccess: () => {
       setNote(null);
-      toast.success("답장을 병에 담아 보냈어요", { description: "상대가 좋다고 하면 프로필이 열려요 💌" });
+      toast.success("답장을 병에 담아 보냈어요", {
+        description: "답장했다는 건 관심이 있다는 신호예요. 상대가 마음에 들면 프로필이 열려요.",
+      });
       refresh();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "답장을 보내지 못했어요."),
+    onError: (e) => toast.error(mapMissionError(e, "답장을 보내지 못했어요.")),
   });
 
   const openPeer = async (d: MissionDelivery) => {
-    const peerId = isWoman ? d.receiver_id : d.sender_id;
+    const peerId = peerIdOf(d);
     const p = await fetchUnlockedPeer(peerId).catch(() => null);
     if (!p) return toast.error("프로필을 열 수 없어요.");
     setNote(null);
@@ -190,24 +230,53 @@ function SeaHome() {
   };
 
   const verdict = useMutation({
-    mutationFn: (d: MissionDelivery) => setVerdict(d.id, "sender", "ok"),
-    onSuccess: (_res, d) => {
-      toast.success("마음을 전했어요", { description: "프로필이 열렸어요 💛" });
-      refresh();
-      openPeer(d);
+    mutationFn: ({ d, v }: { d: MissionDelivery; v: "ok" | "pass" }) =>
+      setVerdict(d.id, "sender", v),
+    onSuccess: (_res, { d, v }) => {
+      if (v === "ok") {
+        toast.success("마음을 전했어요", { description: "내 프로필이 상대에게 열렸어요." });
+        refresh();
+        openPeer(d);
+      } else {
+        toast("패스했어요", { description: "같은 분과는 잠시 다시 만나지 않아요." });
+        setNote(null);
+        refresh();
+      }
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "실패했어요."),
+    onError: (e) => toast.error(mapMissionError(e, "실패했어요.")),
+  });
+
+  const decline = useMutation({
+    mutationFn: (d: MissionDelivery) => declineDelivery(d.id),
+    onSuccess: () => {
+      toast("패스했어요", { description: "페널티는 없어요. 같은 분과는 잠시 다시 만나지 않아요." });
+      setNote(null);
+      refresh();
+    },
+    onError: (e) => toast.error(mapMissionError(e, "패스하지 못했어요.")),
+  });
+
+  const forfeit = useMutation({
+    mutationFn: (d: MissionDelivery) => forfeitDelivery(d.id),
+    onSuccess: () => {
+      setNote(null);
+      toast("답장을 포기했어요", { description: "하루 동안 새 플로티를 받지 못해요." });
+      refresh();
+    },
+    onError: (e) => toast.error(mapMissionError(e, "포기하지 못했어요.")),
   });
 
   const match = useMutation({
     mutationFn: (d: MissionDelivery) => startMatch(d.id),
     onSuccess: (threadId) => {
       setProfile(null);
-      toast.success("매칭됐어요! 대화방이 열렸어요", { description: "7일 · 최대 20통, 천천히 알아가요 💬" });
+      toast.success("매칭됐어요! 대화방이 열렸어요", {
+        description: "7일 안에 연락처를 나눠 보세요. 메시지는 무제한이에요.",
+      });
       refresh();
       navigate({ to: "/thread/$threadId", params: { threadId: String(threadId) } });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "매칭하지 못했어요."),
+    onError: (e) => toast.error(mapMissionError(e, "매칭하지 못했어요.")),
   });
 
   const openMyProfile = () => {
@@ -217,10 +286,12 @@ function SeaHome() {
         name: me.display_name,
         age: ageOf(me.birth_year),
         region: me.region ?? "",
+        meta: profileMeta(me),
         photo: me.photos?.[0],
         intro: me.ai_intro ?? "",
+        idealLine: me.ai_ideal_line ?? "",
         tags: me.ai_tags ?? [],
-        qa: qaFrom(me.intro_answers?.answers),
+        qa: qaFromIntroAnswers(me.intro_answers),
       },
       delivery: null,
     });
@@ -233,7 +304,7 @@ function SeaHome() {
       toast("플로티를 회수했어요", { description: "다시 새로 띄울 수 있어요" });
       refresh();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "회수하지 못했어요."),
+    onError: (e) => toast.error(mapMissionError(e, "회수하지 못했어요.")),
   });
 
   const all = useMemo(
@@ -241,6 +312,16 @@ function SeaHome() {
     [floaties, isWoman],
   );
   const bottles = useMemo(() => all.filter((x) => x.s !== "done" && x.s !== "expired"), [all]);
+
+  useEffect(() => {
+    if (!deepLinkId || !floaties.length) return;
+    const hit = floaties.find((x) => x.id === deepLinkId);
+    if (!hit) return;
+    const s = isWoman ? womanState(hit) : manState(hit);
+    void tapBottle(hit, s);
+    navigate({ to: "/home", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkId, floaties.length, isWoman]);
 
   const mood = useMemo(() => {
     if (isWoman) {
@@ -266,20 +347,32 @@ function SeaHome() {
       } else setNote({ kind: "floatie", d });
       return;
     }
-    // man
+    // man — resume in-progress reply, or pre-open: age/region → open | pass
     if (s === "arrived") {
+      if (d.accepted_at && !d.reply_body) {
+        setNote({ kind: "reply", d });
+        return;
+      }
       const from = await fetchSenderCard(d.id).catch(() => null);
       const name = from?.display_name ?? "누군가";
-      const meta = [from?.birth_year ? ageBand(from.birth_year) : "", from?.region].filter(Boolean).join(" · ");
+      const meta = [from?.birth_year ? ageBand(from.birth_year) : "", from?.region]
+        .filter(Boolean)
+        .join(" · ");
       setConfirm({
         em: "✨",
         title: `‘${name}’님이 띄운 플로티를 발견했어요`,
-        body: `${meta ? meta + " · " : ""}열어서 질문을 확인해볼까요?`,
+        body: `${meta ? meta + " · " : ""}열어보면 질문이 보여요. 열기 전 패스는 페널티가 없어요.`,
         yes: "열어보기",
+        no: "패스",
         onOk: () => setNote({ kind: "read", d }),
+        onNo: () => decline.mutate(d),
       });
-    } else {
+    } else if (s === "answered") {
       setNote({ kind: "floatie", d });
+    } else {
+      // accepted but not yet replied — resume reply sheet
+      if (d.accepted_at && !d.reply_body) setNote({ kind: "reply", d });
+      else setNote({ kind: "floatie", d });
     }
   }
 
@@ -291,7 +384,7 @@ function SeaHome() {
         presets: presetBodies,
         canFree,
         sending: send.isPending,
-        onSend: (body, photoAnswer) => send.mutate({ body, photoAnswer }),
+        onSend: (body, askPhoto) => send.mutate({ body, askPhoto }),
       };
     if (note.kind === "read")
       return {
@@ -299,19 +392,18 @@ function SeaHome() {
         question: note.d.mission?.body ?? "플로티",
         busy: accept.isPending,
         onAccept: () => accept.mutate(note.d),
+        onReport: () => openReport(note.d),
       };
     if (note.kind === "reply")
       return {
         kind: "reply",
-        requirePhoto: !!note.d.mission?.photo_answer,
-        busy: reply.isPending,
+        preferPhoto: !!note.d.mission?.photo_answer,
+        countdown: note.d.expires_at ? formatCountdown(note.d.expires_at) : null,
+        busy: reply.isPending || forfeit.isPending,
         onSubmit: (body, photo) => reply.mutate({ d: note.d, body, photo }),
-        onGiveUp: () => {
-          setNote(null);
-          toast("답장을 포기했어요", { description: "하루 동안 새 플로티를 만날 수 없어요 🕐" });
-        },
+        onGiveUp: () => forfeit.mutate(note.d),
+        onReport: () => openReport(note.d),
       };
-    // floatie (read-only or with an action)
     const d = note.d;
     const s = isWoman ? womanState(d) : manState(d);
     const act =
@@ -325,14 +417,29 @@ function SeaHome() {
                 setConfirm({
                   em: "💛",
                   title: "마음을 전할까요?",
-                  body: "프로필을 열면 상대에게도 알림이 가고, 서로 좋으면 프로필이 공개돼요.",
+                  body: "답장까지 온 관심에 응답하면, 내 프로필이 상대에게 열려요. 대화는 이후 티켓으로 시작할 수 있어요.",
                   yes: "마음 전하기",
-                  onOk: () => verdict.mutate(d),
+                  onOk: () => verdict.mutate({ d, v: "ok" }),
                 }),
             }
           : note.act === "profile"
             ? { label: "상대방 프로필 보기", onClick: () => openPeer(d) }
             : undefined;
+    const secondary =
+      note.act === "like"
+        ? {
+            label: "패스",
+            busy: verdict.isPending,
+            onClick: () =>
+              setConfirm({
+                em: "👋",
+                title: "패스할까요?",
+                body: "같은 분과는 잠시 다시 만나지 않아요.",
+                yes: "패스",
+                onOk: () => verdict.mutate({ d, v: "pass" }),
+              }),
+          }
+        : undefined;
     return {
       kind: "floatie",
       question: d.mission?.body ?? "플로티",
@@ -340,11 +447,27 @@ function SeaHome() {
       reply: d.reply_body,
       replyPhoto: d.reply_photo,
       from: note.from ?? undefined,
-      hint: s === "replied" ? "답장이 마음에 들면, 서로의 프로필이 열려요 💛" : undefined,
+      hint:
+        s === "replied"
+          ? "답장했다는 건 관심이 있다는 신호예요. 마음에 들면 프로필을 열어 주세요."
+          : undefined,
       action: act,
+      secondary,
+      onReport: () => openReport(d),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [note, presetBodies, canFree, send.isPending, accept.isPending, reply.isPending, verdict.isPending, recall.isPending, isWoman]);
+  }, [
+    note,
+    presetBodies,
+    canFree,
+    send.isPending,
+    accept.isPending,
+    reply.isPending,
+    verdict.isPending,
+    recall.isPending,
+    forfeit.isPending,
+    isWoman,
+  ]);
 
   const menuItems = [
     { key: "profile", label: "내 프로필", onClick: openMyProfile },
@@ -421,6 +544,15 @@ function SeaHome() {
 
       <ParchmentNote content={content} onClose={() => setNote(null)} />
       <ConfirmModal opts={confirm} onClose={() => setConfirm(null)} />
+      <ReportDialog
+        open={!!report}
+        onClose={() => setReport(null)}
+        target={
+          report
+            ? { type: "delivery", deliveryId: report.deliveryId, userId: report.userId }
+            : { type: "user", userId: "" }
+        }
+      />
       <ProfileOverlay
         data={profile?.data ?? null}
         cta={
@@ -469,9 +601,9 @@ function SeaHome() {
 
       <SubPageOverlay open={page === "shop"} title="티켓 상점" onBack={() => setPage(null)}>
         {[
-          { n: 1, price: "₩1,900", sub: "플로티를 더 띄우거나 매칭에 사용" },
-          { n: 5, price: "₩7,900", sub: "가장 인기 · 장당 1,580원" },
-          { n: 12, price: "₩15,900", sub: "가장 알뜰 · 장당 1,325원" },
+          { n: 1, price: "₩4,900", sub: "매칭 1회 · 가격 미정(안)" },
+          { n: 3, price: "₩12,900", sub: "장당 약 4,300원 · 미정" },
+          { n: 6, price: "₩23,900", sub: "장당 약 4,000원 · 미정" },
         ].map((t) => (
           <div key={t.n} className="fl-tk">
             <div className="big">{t.n}</div>
@@ -479,15 +611,20 @@ function SeaHome() {
               <b>티켓 {t.n}장</b>
               <span>{t.sub}</span>
             </div>
-            <button className="buy" onClick={() => toast("티켓 구매", { description: "실제 앱에선 결제로 이어져요 🎟️" })}>
+            <button
+              className="buy"
+              onClick={() =>
+                toast("티켓 구매", { description: "베타에선 결제가 없어요. 오픈 때 IAP로 연결돼요." })
+              }
+            >
               {t.price}
             </button>
           </div>
         ))}
         <p className="fl-page-note">
-          지금 보유 티켓 {me?.ticket_balance ?? 0}장.
+          지금 보유 티켓 {me?.ticket_balance ?? 0}장 · 베타 기본 10장.
           <br />
-          무료로는 하루 하나의 플로티만 띄울 수 있어요.
+          매칭 1회 = 티켓 1장. 무료 발송은 하루 1회.
         </p>
       </SubPageOverlay>
     </div>

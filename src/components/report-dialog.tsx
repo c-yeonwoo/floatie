@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { blockUser } from "@/lib/blocks";
 
 export type ReportTarget =
   | { type: "user"; userId: string }
@@ -28,6 +29,7 @@ export function ReportDialog({
 }) {
   const [reason, setReason] = useState(REASONS[0]);
   const [detail, setDetail] = useState("");
+  const [alsoBlock, setAlsoBlock] = useState(true);
 
   const submit = useMutation({
     mutationFn: async () => {
@@ -43,6 +45,10 @@ export function ReportDialog({
         detail: detail.trim() || null,
         status: "pending",
       };
+      const blockId =
+        target.type === "user"
+          ? target.userId
+          : target.userId;
       if (target.type === "user") payload.target_user_id = target.userId;
       if (target.type === "delivery") {
         payload.target_delivery_id = target.deliveryId;
@@ -56,9 +62,17 @@ export function ReportDialog({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from("reports").insert(payload);
       if (error) throw error;
+
+      if (alsoBlock && blockId) {
+        await blockUser(blockId);
+      }
     },
     onSuccess: () => {
-      toast.success("신고가 접수됐어요. 관리자가 검토한 뒤 조치해요.");
+      toast.success(
+        alsoBlock
+          ? "신고를 접수하고 상대를 차단했어요."
+          : "신고가 접수됐어요. 관리자가 검토한 뒤 조치해요.",
+      );
       setDetail("");
       onClose();
     },
@@ -101,8 +115,17 @@ export function ReportDialog({
           onChange={(e) => setDetail(e.target.value.slice(0, 500))}
           rows={3}
           placeholder="자세한 내용 (선택)"
-          className="w-full bg-transparent border border-border rounded-lg p-3 text-[13px] outline-none focus:border-foreground/40 resize-none mb-4"
+          className="w-full bg-transparent border border-border rounded-lg p-3 text-[13px] outline-none focus:border-foreground/40 resize-none mb-3"
         />
+        <label className="flex items-center gap-2 text-[13px] mb-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={alsoBlock}
+            onChange={(e) => setAlsoBlock(e.target.checked)}
+            className="accent-foreground"
+          />
+          동시에 차단하기 (대화·재매칭 불가)
+        </label>
         <div className="flex gap-2 justify-end">
           <button type="button" onClick={onClose} className="text-[12px] text-muted-foreground px-3 py-2">
             취소

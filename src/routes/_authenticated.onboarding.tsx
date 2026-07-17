@@ -9,15 +9,40 @@ import {
   uploadProfilePhoto,
   saveOnboarding,
 } from "@/lib/profile-ai";
+import {
+  JOB_CHIPS,
+  SMOKE_CHIPS,
+  WEEKEND_CHIPS,
+  VIBE_CHIPS,
+  PACE_CHIPS,
+  S4_QUESTION,
+  I1_QUESTION,
+  I2_QUESTION,
+} from "@/lib/interview-chips";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({ meta: [{ title: "시작하기 — 플로티" }] }),
   component: OnboardingPage,
 });
 
-const STEPS = ["name", "basic", "region", "photo", "q0", "q1", "q2", "gen", "review"] as const;
+const STEPS = [
+  "name",
+  "basic",
+  "region",
+  "photo",
+  "facts",
+  "q0",
+  "q1",
+  "q2",
+  "s4",
+  "bridge",
+  "i1",
+  "i2",
+  "gen",
+  "review",
+] as const;
 type Step = (typeof STEPS)[number];
-const INPUT_STEPS = 7; // name..q2
+const INPUT_STEPS = STEPS.filter((s) => s !== "gen" && s !== "review").length;
 const REGIONS = ["서울", "경기", "인천", "부산", "대구", "대전", "광주", "기타"];
 
 type Photo = { file: File; url: string };
@@ -30,8 +55,15 @@ function OnboardingPage() {
   const [gender, setGender] = useState<"female" | "male" | "">("");
   const [region, setRegion] = useState("");
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [jobChip, setJobChip] = useState("");
+  const [smoke, setSmoke] = useState("");
+  const [height, setHeight] = useState("");
   const [answers, setAnswers] = useState<string[]>(["", "", ""]);
+  const [weekend, setWeekend] = useState("");
+  const [vibes, setVibes] = useState<string[]>([]);
+  const [pace, setPace] = useState("");
   const [intro, setIntro] = useState("");
+  const [idealLine, setIdealLine] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const photosRef = useRef<Photo[]>([]);
@@ -54,16 +86,23 @@ function OnboardingPage() {
     })();
   }, [navigate]);
 
-  // revoke object URLs on unmount
   useEffect(() => () => photosRef.current.forEach((p) => URL.revokeObjectURL(p.url)), []);
+
+  const heightOk =
+    !height.trim() || (/^\d{3}$/.test(height) && +height >= 120 && +height <= 230);
 
   const valid = (): boolean => {
     if (step === "name") return name.trim().length >= 1;
     if (step === "basic") return /^\d{4}$/.test(year) && +year >= 1940 && +year <= 2008 && !!gender;
     if (step === "region") return !!region;
     if (step === "photo") return photos.length >= 3;
+    if (step === "facts") return !!jobChip && !!smoke && heightOk;
     if (step[0] === "q") return answers[+step[1]].trim().length >= 2;
-    if (step === "review") return intro.trim().length >= 2;
+    if (step === "s4") return !!weekend;
+    if (step === "bridge") return true;
+    if (step === "i1") return vibes.length >= 1 && vibes.length <= 2;
+    if (step === "i2") return !!pace;
+    if (step === "review") return intro.trim().length >= 2 && idealLine.trim().length >= 2;
     return true;
   };
 
@@ -76,13 +115,27 @@ function OnboardingPage() {
     setI(n);
   };
 
+  const toggleVibe = (v: string) => {
+    setVibes((prev) => {
+      if (prev.includes(v)) return prev.filter((x) => x !== v);
+      if (prev.length >= 2) return prev;
+      return [...prev, v];
+    });
+  };
+
   const next = async () => {
     if (!valid()) return;
-    if (step === "q2") {
+    if (step === "i2") {
       setI(STEPS.indexOf("gen"));
-      const draft = await generateProfileDraft(answers).catch(() => ({ intro: "", tags: [] }));
-      // small delay so the "AI 정리 중" state is felt
+      const selfAnswers = [...answers, weekend];
+      const ideal = { vibes, pace };
+      const draft = await generateProfileDraft(selfAnswers, ideal).catch(() => ({
+        intro: "",
+        idealLine: "",
+        tags: [] as string[],
+      }));
       setIntro(draft.intro);
+      setIdealLine(draft.idealLine);
       setTags(draft.tags);
       setTimeout(() => setI(STEPS.indexOf("review")), 900);
       return;
@@ -115,14 +168,20 @@ function OnboardingPage() {
       const uid = data.user!.id;
       const paths: string[] = [];
       for (let k = 0; k < photos.length; k++) paths.push(await uploadProfilePhoto(uid, photos[k].file, k));
+      const heightCm = height.trim() ? +height : null;
       await saveOnboarding(uid, {
         displayName: name,
         gender: gender as "female" | "male",
         birthYear: +year,
         region: region || null,
         photos: paths,
-        answers,
+        heightCm,
+        jobChip,
+        smoke,
+        selfAnswers: [...answers, weekend],
+        ideal: { vibes, pace },
         intro,
+        idealLine,
         tags,
       });
       toast.success("프로필이 완성됐어요 🎉");
@@ -133,6 +192,13 @@ function OnboardingPage() {
     }
   };
 
+  const sectionHint =
+    step === "s4" || step.startsWith("q")
+      ? "나에 대해"
+      : step === "bridge" || step === "i1" || step === "i2"
+        ? "끌리는 사람"
+        : null;
+
   return (
     <div className="fl-onb">
       <div className="fl-onb-top">
@@ -140,10 +206,12 @@ function OnboardingPage() {
         <div className="fl-prog">
           <i style={{ width: `${progress}%` }} />
         </div>
-        <div className="fl-onb-step">{step === "gen" || step === "review" ? "" : `${i + 1}/${INPUT_STEPS}`}</div>
+        <div className="fl-onb-step">{step === "gen" || step === "review" ? "" : `${Math.min(i + 1, INPUT_STEPS)}/${INPUT_STEPS}`}</div>
       </div>
 
       <div className={"fl-onb-body" + (step === "review" || step === "gen" ? "" : " center")}>
+        {sectionHint && <span className="fl-onb-sec">{sectionHint}</span>}
+
         {step === "name" && (
           <>
             <h2>어떻게 불러드릴까요?</h2>
@@ -187,7 +255,9 @@ function OnboardingPage() {
         {step === "photo" && (
           <>
             <h2>프로필 사진 3장을 올려요</h2>
-            <p className="desc">서로 좋다고 하기 전엔 비공개예요. 첫 장이 대표 사진이 돼요.</p>
+            <p className="desc">
+              열기 전에는 상대에게 사진이 안 보여요. 답장이 오면 상대(여)에게 사진이 보일 수 있어요. 첫 장이 대표예요.
+            </p>
             <div className="fl-photos3">
               {[0, 1, 2].map((k) => {
                 const p = photos[k];
@@ -205,7 +275,35 @@ function OnboardingPage() {
           </>
         )}
 
-        {step[0] === "q" && step !== "gen" && (
+        {step === "facts" && (
+          <>
+            <h2>조금만 더 알려주세요</h2>
+            <p className="desc">프로필에 짧게 보여요. 키는 비워도 괜찮아요.</p>
+            <h5 className="fl-onb-label">하는 일</h5>
+            <div className="fl-chipgrid" style={{ marginBottom: 18 }}>
+              {JOB_CHIPS.map((c) => (
+                <button key={c} type="button" className={"fl-selchip" + (jobChip === c ? " on" : "")} onClick={() => setJobChip(c)}>{c}</button>
+              ))}
+            </div>
+            <h5 className="fl-onb-label">흡연</h5>
+            <div className="fl-chipgrid" style={{ marginBottom: 18 }}>
+              {SMOKE_CHIPS.map((c) => (
+                <button key={c} type="button" className={"fl-selchip" + (smoke === c ? " on" : "")} onClick={() => setSmoke(c)}>{c}</button>
+              ))}
+            </div>
+            <h5 className="fl-onb-label">키 (선택)</h5>
+            <input
+              className="fl-in"
+              inputMode="numeric"
+              maxLength={3}
+              placeholder="cm (예: 170)"
+              value={height}
+              onChange={(e) => setHeight(e.target.value.replace(/[^0-9]/g, ""))}
+            />
+          </>
+        )}
+
+        {step[0] === "q" && step.length === 2 && (
           <>
             <h2>{PROFILE_QUESTIONS[+step[1]].q}</h2>
             <p className="desc">편하게 적어 주세요. 이 답을 바탕으로 AI가 소개를 정리해요.</p>
@@ -219,11 +317,56 @@ function OnboardingPage() {
           </>
         )}
 
+        {step === "s4" && (
+          <>
+            <h2>{S4_QUESTION}</h2>
+            <p className="desc">가까운 느낌 하나만 골라 주세요.</p>
+            <div className="fl-chipgrid">
+              {WEEKEND_CHIPS.map((c) => (
+                <button key={c} type="button" className={"fl-selchip" + (weekend === c ? " on" : "")} onClick={() => setWeekend(c)}>{c}</button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {step === "bridge" && (
+          <>
+            <h2>어떤 사람에게 마음이 기울어요?</h2>
+            <p className="desc">
+              매칭 조건이 아니에요. 프로필에 살짝 남겨, 서로 읽는 맛만 더할게요.
+            </p>
+          </>
+        )}
+
+        {step === "i1" && (
+          <>
+            <h2>{I1_QUESTION}</h2>
+            <p className="desc">최대 2개까지 골라 주세요.</p>
+            <div className="fl-chipgrid">
+              {VIBE_CHIPS.map((c) => (
+                <button key={c} type="button" className={"fl-selchip" + (vibes.includes(c) ? " on" : "")} onClick={() => toggleVibe(c)}>{c}</button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {step === "i2" && (
+          <>
+            <h2>{I2_QUESTION}</h2>
+            <p className="desc">하나만 골라 주세요.</p>
+            <div className="fl-chipgrid">
+              {PACE_CHIPS.map((c) => (
+                <button key={c} type="button" className={"fl-selchip" + (pace === c ? " on" : "")} onClick={() => setPace(c)}>{c}</button>
+              ))}
+            </div>
+          </>
+        )}
+
         {step === "gen" && (
           <div className="fl-gen">
             <div className="spin" />
             <b>AI가 소개를 정리하고 있어요</b>
-            <span>답변을 바탕으로 프로필 초안을 만드는 중…</span>
+            <span>나와 끌리는 사람을 바탕으로 초안을 만드는 중…</span>
           </div>
         )}
 
@@ -234,6 +377,10 @@ function OnboardingPage() {
             <div className="fl-rev-card">
               <h5>이런 사람이에요</h5>
               <textarea maxLength={220} value={intro} onChange={(e) => setIntro(e.target.value)} />
+            </div>
+            <div className="fl-rev-card">
+              <h5>이런 사람에게 끌려요</h5>
+              <textarea maxLength={160} value={idealLine} onChange={(e) => setIdealLine(e.target.value)} />
             </div>
             <div className="fl-rev-card">
               <h5>관심사</h5>
@@ -257,9 +404,11 @@ function OnboardingPage() {
               ? "저장하는 중…"
               : step === "review"
                 ? "이대로 시작하기"
-                : step === "q2"
+                : step === "i2"
                   ? "소개 만들기"
-                  : "다음"}
+                  : step === "bridge"
+                    ? "골라볼게요"
+                    : "다음"}
           </button>
         </div>
       )}

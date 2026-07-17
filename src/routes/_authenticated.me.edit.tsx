@@ -11,11 +11,10 @@ export const Route = createFileRoute("/_authenticated/me/edit")({
   component: EditProfilePage,
 });
 
-const GENDERS = [
-  { value: "female", label: "여성" },
-  { value: "male", label: "남성" },
-  { value: "other", label: "기타" },
-] as const;
+const GENDER_LABEL: Record<string, string> = {
+  female: "여자",
+  male: "남자",
+};
 
 function EditProfilePage() {
   const navigate = useNavigate();
@@ -81,9 +80,6 @@ function EditProfilePage() {
     if (!displayName.trim()) return toast.error("닉네임을 입력해 주세요.");
     if (displayName.length > 40) return toast.error("닉네임은 40자 이하로 입력해 주세요.");
     if (bio.length > 160) return toast.error("한줄소개는 160자 이하로 입력해 주세요.");
-    if (!gender || !["female", "male", "other"].includes(gender)) {
-      return toast.error("성별을 선택해 주세요.");
-    }
     const year = Number(birthYear);
     if (!year || year < 1920 || year > 2008) {
       return toast.error("출생 연도를 확인해 주세요.");
@@ -113,8 +109,9 @@ function EditProfilePage() {
         .update({
           display_name: displayName.trim(),
           bio: bio.trim() || null,
+          // Sea unlock card reads ai_intro — keep in sync with the editable intro
+          ai_intro: bio.trim() || null,
           avatar_url: nextAvatarUrl,
-          gender,
           birth_year: year,
           region: region.trim() || null,
           height_cm: height,
@@ -185,25 +182,11 @@ function EditProfilePage() {
         </Field>
 
         <Field label="성별">
-          <div className="flex flex-wrap gap-2 mt-1">
-            {GENDERS.map((g) => (
-              <button
-                key={g.value}
-                type="button"
-                onClick={() => setGender(g.value)}
-                className={
-                  "px-4 py-2 rounded-full text-xs border transition-colors " +
-                  (gender === g.value
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border text-muted-foreground")
-                }
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-2">
-            여성=보내기 · 남성=수행(답장)
+          <p className="py-2 text-base">
+            {GENDER_LABEL[gender] ?? "—"}
+            <span className="ml-2 text-[11px] text-muted-foreground">
+              (가입 후 변경 불가 · {gender === "female" ? "보내기" : "답장"} 역할)
+            </span>
           </p>
         </Field>
 

@@ -4,6 +4,13 @@ import { IdentityCard, type PersonLite } from "./identity-card";
 import { StorageImg } from "@/components/storage-img";
 import { pickPhoto, validatePickedPhoto } from "@/lib/native-photo";
 
+type NoteAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "warn" | "locked";
+  busy?: boolean;
+};
+
 /** What the parchment currently shows. `null` = closed. */
 export type NoteContent =
   | {
@@ -11,7 +18,7 @@ export type NoteContent =
       presets: string[];
       canFree: boolean;
       sending?: boolean;
-      onSend: (body: string, photoAnswer: boolean) => void;
+      onSend: (body: string, askPhoto: boolean) => void;
     }
   | {
       kind: "floatie";
@@ -21,15 +28,26 @@ export type NoteContent =
       replyPhoto?: string | null;
       from?: PersonLite | null;
       hint?: string;
-      action?: { label: string; onClick: () => void; variant?: "warn" | "locked"; busy?: boolean };
+      action?: NoteAction;
+      secondary?: NoteAction;
+      onReport?: () => void;
     }
-  | { kind: "read"; question: string; onAccept: () => void; busy?: boolean }
+  | {
+      kind: "read";
+      question: string;
+      onAccept: () => void;
+      busy?: boolean;
+      onReport?: () => void;
+    }
   | {
       kind: "reply";
-      requirePhoto: boolean;
+      /** Soft ask — never blocks send without a photo. */
+      preferPhoto?: boolean;
+      countdown?: string | null;
       onSubmit: (body: string, photo: File | null) => void;
       onGiveUp: () => void;
       busy?: boolean;
+      onReport?: () => void;
     };
 
 export function ParchmentNote({ content, onClose }: { content: NoteContent | null; onClose: () => void }) {
@@ -61,9 +79,18 @@ export function ParchmentNote({ content, onClose }: { content: NoteContent | nul
   );
 }
 
+function ReportLink({ onReport }: { onReport?: () => void }) {
+  if (!onReport) return null;
+  return (
+    <button type="button" className="fl-note-link" onClick={onReport} style={{ marginTop: 10 }}>
+      신고하기
+    </button>
+  );
+}
+
 function ComposeBody({ c }: { c: Extract<NoteContent, { kind: "compose" }> }) {
   const [body, setBody] = useState("");
-  const [photoAnswer, setPhotoAnswer] = useState(false);
+  const [askPhoto, setAskPhoto] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     const t = setTimeout(() => taRef.current?.focus(), 320);
@@ -93,19 +120,19 @@ function ComposeBody({ c }: { c: Extract<NoteContent, { kind: "compose" }> }) {
         )}
         <div className="fl-photo-row">
           <div className="t">
-            <b>사진 답변으로 받기</b>
-            <span>상대가 사진으로 답하게 해요 (선택)</span>
+            <b>사진으로 답해주면 좋겠어요</b>
+            <span>강제는 아니에요. 부탁 한마디만 전해요.</span>
           </div>
           <button
-            className={"fl-sw" + (photoAnswer ? " on" : "")}
-            onClick={() => setPhotoAnswer((v) => !v)}
-            aria-pressed={photoAnswer}
+            className={"fl-sw" + (askPhoto ? " on" : "")}
+            onClick={() => setAskPhoto((v) => !v)}
+            aria-pressed={askPhoto}
           />
         </div>
       </div>
       <div className="fl-note-foot">
         <span className="fl-cnt">{body.length}/60</span>
-        <button className="fl-done" disabled={!ok} onClick={() => c.onSend(body.trim(), photoAnswer)}>
+        <button className="fl-done" disabled={!ok} onClick={() => c.onSend(body.trim(), askPhoto)}>
           {c.sending ? "담는 중…" : c.canFree ? "병에 담기" : "티켓으로 담기"}
         </button>
       </div>
@@ -128,21 +155,37 @@ function FloatieBody({ c, onClose }: { c: Extract<NoteContent, { kind: "floatie"
           </div>
         )}
         {c.hint && <div className="fl-note-hint">{c.hint}</div>}
+        <ReportLink onReport={c.onReport} />
       </div>
       <div className="fl-note-foot">
+        {c.secondary ? (
+          <button
+            className="fl-giveup"
+            disabled={c.secondary.busy}
+            onClick={c.secondary.onClick}
+          >
+            {c.secondary.busy ? "처리 중…" : c.secondary.label}
+          </button>
+        ) : c.action ? (
+          <button className="fl-giveup" onClick={onClose}>
+            닫기
+          </button>
+        ) : null}
         {c.action ? (
-          <>
-            <button className="fl-giveup" onClick={onClose}>닫기</button>
-            <button
-              className={"fl-done" + (c.action.variant === "warn" ? " warn" : c.action.variant === "locked" ? " locked" : "")}
-              disabled={c.action.busy}
-              onClick={c.action.onClick}
-            >
-              {c.action.busy ? "처리 중…" : c.action.label}
-            </button>
-          </>
+          <button
+            className={
+              "fl-done" +
+              (c.action.variant === "warn" ? " warn" : c.action.variant === "locked" ? " locked" : "")
+            }
+            disabled={c.action.busy}
+            onClick={c.action.onClick}
+          >
+            {c.action.busy ? "처리 중…" : c.action.label}
+          </button>
         ) : (
-          <button className="fl-done" onClick={onClose}>닫기</button>
+          <button className="fl-done" onClick={onClose}>
+            닫기
+          </button>
         )}
       </div>
     </>
@@ -154,12 +197,13 @@ function ReadBody({ c }: { c: Extract<NoteContent, { kind: "read" }> }) {
     <>
       <div className="fl-note-inner">
         <h3>도착한 플로티</h3>
-        <p className="sub">읽고 답장할지 정해요.</p>
+        <p className="sub">수락하면 12시간 안에 답장해 주세요. 답이 없으면 하루 동안 새 플로티를 받지 못해요.</p>
         <div className="fl-note-read">{c.question}</div>
+        <ReportLink onReport={c.onReport} />
       </div>
       <div className="fl-note-foot">
         <button className="fl-done" disabled={c.busy} onClick={c.onAccept}>
-          {c.busy ? "여는 중…" : "수락하기"}
+          {c.busy ? "여는 중…" : "수락하고 답장하기"}
         </button>
       </div>
     </>
@@ -170,7 +214,12 @@ function ReplyBody({ c }: { c: Extract<NoteContent, { kind: "reply" }> }) {
   const [body, setBody] = useState("");
   const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
   const [armed, setArmed] = useState(false);
-  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo.url); }, [photo]);
+  useEffect(
+    () => () => {
+      if (photo) URL.revokeObjectURL(photo.url);
+    },
+    [photo],
+  );
 
   const pick = async () => {
     const f = await pickPhoto();
@@ -179,43 +228,72 @@ function ReplyBody({ c }: { c: Extract<NoteContent, { kind: "reply" }> }) {
     if (err) return toast.error(err);
     setPhoto({ file: f, url: URL.createObjectURL(f) });
   };
-  const ok = body.trim().length >= 2 && (!c.requirePhoto || !!photo) && !c.busy;
+  const ok = body.trim().length >= 2 && !c.busy;
 
   return (
     <>
       <div className="fl-note-inner">
         <h3>답장 쓰기</h3>
-        <p className="sub">{c.requirePhoto ? "사진과 함께 답장을 담아 보내요." : "쪽지에 적어 병에 담아 보내요."}</p>
-        <textarea maxLength={200} placeholder="편하게 답해도 좋아요…" value={body} onChange={(e) => setBody(e.target.value)} />
+        <p className="sub">
+          {c.countdown
+            ? `남은 시간 ${c.countdown} · 포기하면 하루 동안 새 플로티를 받지 못해요.`
+            : "쪽지에 적어 병에 담아 보내요."}
+        </p>
+        {c.preferPhoto && (
+          <div className="fl-note-hint">상대가 사진으로 답해주면 좋겠다고 부탁했어요. 강제는 아니에요.</div>
+        )}
+        <textarea
+          maxLength={200}
+          placeholder="편하게 답해도 좋아요…"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
         <div className="fl-upl">
           <div className="fl-upl-lab">
-            📷 사진 답변 <span className={c.requirePhoto ? "fl-req" : "fl-opt"}>{c.requirePhoto ? "필수" : "선택"}</span>
+            사진 첨부 <span className="fl-opt">선택</span>
           </div>
           <div className={"fl-drop" + (photo ? " filled" : "")} onClick={pick}>
             {photo ? (
               <>
                 <img src={photo.url} alt="" />
-                <div className="x" onClick={(e) => { e.stopPropagation(); setPhoto(null); }}>✕</div>
+                <div
+                  className="x"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPhoto(null);
+                  }}
+                >
+                  ✕
+                </div>
               </>
             ) : (
               <span>눌러서 사진 추가</span>
             )}
           </div>
         </div>
+        <ReportLink onReport={c.onReport} />
       </div>
       <div className="fl-note-foot">
         <button
           className="fl-giveup"
           style={armed ? { color: "#c0392b" } : undefined}
           onClick={() => {
-            if (!armed) { setArmed(true); setTimeout(() => setArmed(false), 3500); return; }
+            if (!armed) {
+              setArmed(true);
+              setTimeout(() => setArmed(false), 3500);
+              return;
+            }
             c.onGiveUp();
           }}
         >
           {armed ? "정말 포기?" : "포기"}
         </button>
         <span className="fl-cnt">{body.length}/200</span>
-        <button className="fl-done" disabled={!ok} onClick={() => c.onSubmit(body.trim(), photo?.file ?? null)}>
+        <button
+          className="fl-done"
+          disabled={!ok}
+          onClick={() => c.onSubmit(body.trim(), photo?.file ?? null)}
+        >
           {c.busy ? "담는 중…" : "답장 담기"}
         </button>
       </div>

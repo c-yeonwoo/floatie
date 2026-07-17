@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   fetchUnreadNotifications,
   markNotificationRead,
+  notificationTarget,
   type InAppNotification,
 } from "@/lib/notifications";
 
@@ -45,52 +46,32 @@ function showNotificationToast(
   navigate: ReturnType<typeof useNavigate>,
   onDismiss: () => void,
 ) {
-  const deliveryId = n.payload.delivery_id;
+  const target = notificationTarget(n);
+  const actionLabel =
+    n.kind === "mission_no_response"
+      ? "다시 보내기"
+      : n.kind === "matched"
+        ? "대화"
+        : "열기";
 
-  if (n.kind === "mission_arrived" && deliveryId) {
-    toast(n.title, {
-      description: n.body,
-      duration: 8000,
-      action: {
-        label: "열기",
-        onClick: () => {
-          onDismiss();
-          navigate({ to: "/delivery/$deliveryId", params: { deliveryId: String(deliveryId) } });
-        },
-      },
-    });
+  if (!target) {
+    toast(n.title, { description: n.body, duration: 6000, onDismiss });
     return;
   }
 
-  if (n.kind === "mission_no_response" && deliveryId) {
-    toast(n.title, {
-      description: n.body,
-      duration: 12_000,
-      action: {
-        label: "다시 보내기",
-        onClick: () => {
-          onDismiss();
-          navigate({ to: "/waiting/$deliveryId", params: { deliveryId: String(deliveryId) } });
-        },
+  toast(n.title, {
+    description: n.body,
+    duration: n.kind === "mission_no_response" ? 12_000 : 8000,
+    action: {
+      label: actionLabel,
+      onClick: () => {
+        onDismiss();
+        if (target.to === "/thread/$threadId") {
+          navigate({ to: target.to, params: target.params });
+        } else {
+          navigate({ to: "/home", search: target.search ?? {} });
+        }
       },
-    });
-    return;
-  }
-
-  if (n.kind === "mission_replied" && deliveryId) {
-    toast(n.title, {
-      description: n.body,
-      duration: 8000,
-      action: {
-        label: "보기",
-        onClick: () => {
-          onDismiss();
-          navigate({ to: "/delivery/$deliveryId", params: { deliveryId: String(deliveryId) } });
-        },
-      },
-    });
-    return;
-  }
-
-  toast(n.title, { description: n.body, duration: 6000, onDismiss });
+    },
+  });
 }

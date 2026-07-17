@@ -5,6 +5,8 @@ export type ConfirmOpts = {
   yes?: string;
   no?: string;
   onOk: () => void;
+  /** If set, the secondary button runs this instead of only closing. */
+  onNo?: () => void;
 };
 
 /** Centered confirm dialog (sits above the note). Controlled by parent state. */
@@ -22,7 +24,14 @@ export function ConfirmModal({ opts, onClose }: { opts: ConfirmOpts | null; onCl
           <h4>{opts.title}</h4>
           {opts.body && <p>{opts.body}</p>}
           <div className="fl-cf-row">
-            <button className="no" onClick={onClose}>
+            <button
+              className="no"
+              onClick={() => {
+                const fn = opts.onNo;
+                onClose();
+                fn?.();
+              }}
+            >
               {opts.no ?? "닫기"}
             </button>
             <button

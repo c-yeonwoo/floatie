@@ -313,7 +313,7 @@ function DeliveryPage() {
           )}
           {thread && (
             <div className="mt-5 flex items-center justify-between gap-3">
-              <span className="text-[11px] text-muted-foreground">최대 20통 · 7일</span>
+              <span className="text-[11px] text-muted-foreground">메시지 무제한 · 7일</span>
               <Link
                 to="/thread/$threadId"
                 params={{ threadId: String(thread.id) }}

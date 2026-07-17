@@ -1,14 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 import { stripExifAndCompress } from "@/lib/image-utils";
+import type { IntroAnswersV2 } from "@/lib/interview-chips";
 
-/** The 3 interview questions whose answers feed the AI intro. */
+/** S1–S3 free-text questions (S4 is a chip — see interview-chips). */
 export const PROFILE_QUESTIONS: { q: string; ph: string }[] = [
   { q: "가장 마음이 편해지는 순간은?", ph: "예: 밤에 파도 소리 틀어놓고 멍 때릴 때" },
   { q: "요즘 빠져 있는 건 뭐예요?", ph: "예: 주말 클라이밍, 필름 카메라" },
   { q: "어떤 대화를 좋아해요?", ph: "예: 침묵도 어색하지 않은, 결이 맞는 대화" },
 ];
 
-export type ProfileDraft = { intro: string; tags: string[] };
+export type ProfileDraft = { intro: string; idealLine: string; tags: string[] };
+
+export type IdealInput = { vibes: string[]; pace: string };
 
 const TAG_WORDS: [string, string][] = [
   ["바다", "#바다"], ["파도", "#바다"], ["책", "#독서"], ["독서", "#독서"],
@@ -19,42 +22,60 @@ const TAG_WORDS: [string, string][] = [
   ["산책", "#산책"], ["운동", "#운동"],
 ];
 
-/** Deterministic fallback used when the AI edge function is unavailable. */
-function templateDraft(answers: string[]): ProfileDraft {
+function templateDraft(answers: string[], ideal?: IdealInput): ProfileDraft {
   const clip = (s: string) => s.trim().replace(/[.。!?~\s]+$/, "");
-  const [a0, a1, a2] = answers.map(clip);
+  const [a0, a1, a2, a3] = answers.map(clip);
   const parts: string[] = [];
   if (a0) parts.push(`${a0}, 그때 가장 마음이 편해지는 사람이에요`);
   if (a1) parts.push(`요즘은 ${a1}에 마음이 가 있어요`);
   if (a2) parts.push(`${a2}, 그런 대화를 좋아해요`);
+  if (a3) parts.push(`주말엔 ${a3} 쪽이에요`);
   const intro = parts.length ? parts.join(". ") + "." : "";
+
   const text = answers.join(" ");
   const found: string[] = [];
   for (const [w, t] of TAG_WORDS) if (text.includes(w) && !found.includes(t)) found.push(t);
   for (const d of ["#잔잔함", "#대화", "#여운"]) if (found.length < 3 && !found.includes(d)) found.push(d);
-  return { intro, tags: found.slice(0, 6) };
+
+  let idealLine = "";
+  if (ideal?.vibes?.length || ideal?.pace) {
+    const vibe = (ideal.vibes ?? []).slice(0, 2).join("·");
+    const pace = ideal.pace?.trim();
+    if (vibe && pace) idealLine = `${vibe} 분위기랑, ${pace} 리듬이 잘 맞을 것 같아요.`;
+    else if (vibe) idealLine = `${vibe} 분위기랑 잘 맞을 것 같아요.`;
+    else if (pace) idealLine = `${pace} 리듬이랑 잘 맞을 것 같아요.`;
+  }
+
+  return { intro, idealLine, tags: found.slice(0, 6) };
 }
 
-/**
- * Generate an AI profile draft from the interview answers.
- * Tries the `generate-profile` Edge Function (Claude); falls back to a
- * deterministic local template so onboarding always works.
- */
-export async function generateProfileDraft(answers: string[]): Promise<ProfileDraft> {
+/** Generate intro + ideal line + tags. Falls back to local template. */
+export async function generateProfileDraft(
+  answers: string[],
+  ideal?: IdealInput,
+): Promise<ProfileDraft> {
   try {
     const { data, error } = await supabase.functions.invoke("generate-profile", {
-      body: { answers },
+      body: { answers, ideal: ideal ?? null },
     });
-    if (!error && data && typeof data.intro === "string" && Array.isArray(data.tags)) {
-      return { intro: data.intro, tags: data.tags.slice(0, 6) };
+    if (
+      !error &&
+      data &&
+      typeof data.intro === "string" &&
+      Array.isArray(data.tags)
+    ) {
+      return {
+        intro: data.intro,
+        idealLine: typeof data.ideal_line === "string" ? data.ideal_line : "",
+        tags: data.tags.slice(0, 6),
+      };
     }
   } catch {
-    /* fall through to template */
+    /* fall through */
   }
-  return templateDraft(answers);
+  return templateDraft(answers, ideal);
 }
 
-/** Strip EXIF, compress, upload to the shared `answers` bucket; return its path. */
 export async function uploadProfilePhoto(uid: string, file: File, i: number): Promise<string> {
   const cleaned = await stripExifAndCompress(file);
   const path = `${uid}/photo-${i}-${Date.now()}.jpg`;
@@ -70,13 +91,27 @@ export type OnboardingData = {
   gender: "female" | "male";
   birthYear: number;
   region: string | null;
-  photos: string[]; // storage paths
-  answers: string[];
+  photos: string[];
+  heightCm: number | null;
+  jobChip: string;
+  smoke: string;
+  selfAnswers: string[]; // s1–s3 text + s4 chip
+  ideal: IdealInput;
   intro: string;
+  idealLine: string;
   tags: string[];
 };
 
-/** Persist the finished profile and mark onboarded. */
+export function buildIntroAnswersV2(d: OnboardingData): IntroAnswersV2 {
+  return {
+    version: 2,
+    self: d.selfAnswers,
+    ideal: d.ideal,
+    facts: { job_chip: d.jobChip, smoke: d.smoke },
+  };
+}
+
+/** Persist finished profile and mark onboarded. */
 export async function saveOnboarding(uid: string, d: OnboardingData): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -86,32 +121,40 @@ export async function saveOnboarding(uid: string, d: OnboardingData): Promise<vo
       gender: d.gender,
       birth_year: d.birthYear,
       region: d.region,
+      height_cm: d.heightCm,
+      job_chip: d.jobChip,
+      smoke: d.smoke,
       photos: d.photos,
       avatar_url: d.photos[0] ?? null,
-      intro_answers: { answers: d.answers },
+      intro_answers: buildIntroAnswersV2(d),
       ai_intro: d.intro,
+      ai_ideal_line: d.idealLine || null,
       ai_tags: d.tags,
-      bio: d.intro, // keep bio in sync for legacy unlock views
+      bio: d.intro,
       onboarded: true,
-      last_active_at: new Date().toISOString(),
     })
     .eq("id", uid);
   if (error) throw error;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).rpc("touch_last_active").catch(() => {});
 }
 
-/** Save a re-generated intro/tags under the server-enforced 2/day cap.
- *  Returns regenerations remaining today. */
-export async function regenerateIntro(intro: string, tags: string[]): Promise<number> {
+/** Save re-generated intro/tags/ideal under 2/day cap. */
+export async function regenerateIntro(
+  intro: string,
+  tags: string[],
+  idealLine?: string | null,
+): Promise<number> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc("regenerate_intro", {
     p_intro: intro,
     p_tags: tags,
+    p_ideal_line: idealLine ?? null,
   });
   if (error) throw error;
   return typeof data === "number" ? data : 0;
 }
 
-/** Upload a man's reply photo to the `answers` bucket; return its path. */
 export async function uploadReplyPhoto(uid: string, deliveryId: number, file: File): Promise<string> {
   const cleaned = await stripExifAndCompress(file);
   const path = `${uid}/reply-${deliveryId}-${Date.now()}.jpg`;
@@ -120,4 +163,13 @@ export async function uploadReplyPhoto(uid: string, deliveryId: number, file: Fi
     .upload(path, cleaned, { upsert: true, contentType: cleaned.type });
   if (error) throw error;
   return path;
+}
+
+/** Q&A rows for unlock card (S1–S3 only; S4 is lifestyle chip). */
+export function qaFromIntroAnswers(
+  introAnswers: { version?: number; self?: string[]; answers?: string[] } | null | undefined,
+): { q: string; a: string }[] {
+  const list = introAnswers?.self ?? introAnswers?.answers;
+  if (!list) return [];
+  return PROFILE_QUESTIONS.map((q, i) => ({ q: q.q, a: list[i] ?? "" })).filter((x) => x.a.trim());
 }

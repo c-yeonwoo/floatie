@@ -4,10 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  MESSAGE_CAP_DEFAULT,
   fetchMessages,
   fetchThread,
   formatCountdown,
+  mapMissionError,
   msUntil,
   offerThreadContact,
   sendMessage,
@@ -51,11 +51,8 @@ function ThreadPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const cap = thread?.message_cap ?? MESSAGE_CAP_DEFAULT;
-  const count = messages.length;
   const timeClosed = thread ? msUntil(thread.expires_at) <= 0 : false;
-  const closed = !!thread?.closed_at || timeClosed || count >= cap;
-  const remaining = Math.max(0, cap - count);
+  const closed = !!thread?.closed_at || timeClosed;
 
   const role = useMemo(() => {
     if (!thread || !uid) return null;
@@ -84,12 +81,7 @@ function ThreadPage() {
       qc.invalidateQueries({ queryKey: ["mission-thread-detail", id] });
     },
     onError: (e) => {
-      const msg = e instanceof Error ? e.message : "전송 실패";
-      if (msg.includes("message cap") || msg.includes("thread closed")) {
-        toast.error("대화가 종료됐어요. (20통 또는 7일)");
-      } else {
-        toast.error(msg);
-      }
+      toast.error(mapMissionError(e, "메시지를 보내지 못했어요."));
       qc.invalidateQueries({ queryKey: ["mission-thread-detail", id] });
     },
   });
@@ -110,15 +102,15 @@ function ThreadPage() {
   return (
     <main className="flex flex-col h-[calc(var(--app-vh)-var(--safe-top))]">
       <header className="px-5 py-4 flex items-center gap-3">
-        <button type="button" onClick={() => navigate({ to: "/outbox" })} className="text-sm">
+        <button type="button" onClick={() => navigate({ to: "/home" })} className="text-sm">
           ←
         </button>
         <div className="min-w-0 flex-1">
           <h1 className="font-serif text-lg">대화</h1>
           <p className="text-[11px] text-muted-foreground tabular-nums">
             {closed
-              ? "종료됨"
-              : `${remaining}/${cap} · ${thread ? formatCountdown(thread.expires_at) : ""}`}
+              ? "7일 대화가 끝났어요"
+              : `남은 시간 ${thread ? formatCountdown(thread.expires_at) : ""} · 메시지 무제한`}
           </p>
         </div>
         {peerId && (
@@ -134,14 +126,16 @@ function ThreadPage() {
 
       {closed && (
         <div className="px-5 py-2 bg-secondary text-xs text-muted-foreground text-center">
-          이 대화는 여기까지예요. 좋은 흐름이었어요.
+          7일이 지났어요. 연락처를 나눴다면 밖에서 이어서, 아니라면 여기까지예요.
+          <br />
+          (추후 티켓으로 연장 가능 예정)
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
         {messages.length === 0 && (
           <p className="text-sm text-muted-foreground text-center mt-10">
-            첫 인사를 보내 보세요. 최대 {cap}통 · 7일.
+            7일 안에 약속·연락처를 나눠 보세요. 메시지는 무제한이에요.
           </p>
         )}
         {messages.map((m: { id: number; sender_id: string; body: string }) => {

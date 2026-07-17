@@ -12,16 +12,20 @@ export type FloatieState =
 
 /** State of one of MY sent floaties (woman / sender). */
 export function womanState(d: MissionDelivery): FloatieState {
+  // start_match sets status=closed while unlocked_at stays set
+  if (d.unlocked_at && d.status === "closed") return "match";
   if (d.unlocked_at) return "opened";
-  if (d.reply_body && d.sender_verdict === "pending" && d.status !== "closed") return "replied";
-  if (d.status === "expired") return "expired";
   if (d.status === "closed") return "done";
+  if (d.reply_body && d.sender_verdict === "pending") return "replied";
+  if (d.status === "expired") return "expired";
   return "drift";
 }
 
 /** State of a floatie I RECEIVED (man / receiver). */
 export function manState(d: MissionDelivery): FloatieState {
+  if (d.unlocked_at && d.status === "closed") return "match";
   if (d.unlocked_at) return "opened";
+  if (d.status === "closed") return "done";
   if (d.reply_body) return "answered";
   if (d.status === "expired") return "expired";
   return "arrived";
