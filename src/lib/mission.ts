@@ -15,6 +15,7 @@ export type MissionDelivery = {
   receiver_id: string;
   status: string;
   reply_body: string | null;
+  reply_photo: string | null;
   replied_at: string | null;
   sender_verdict: "pending" | "ok" | "pass";
   receiver_verdict: "pending" | "ok" | "pass";
@@ -22,7 +23,14 @@ export type MissionDelivery = {
   accepted_at: string | null;
   expires_at: string | null;
   created_at: string;
-  mission?: { body: string; kind: string; chips: string[] };
+  mission?: { body: string; kind: string; chips: string[]; photo_answer?: boolean };
+};
+
+export type PersonCard = {
+  display_name: string | null;
+  birth_year: number | null;
+  region: string | null;
+  photo?: string | null;
 };
 
 export type MyMissionProfile = {
@@ -94,6 +102,7 @@ export async function createAndDeliverMission(input: {
   chips?: string[];
   useTicket?: boolean;
   filter?: IdealFilter | null;
+  photoAnswer?: boolean;
 }): Promise<{ missionId: number; deliveryId: number }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
@@ -112,6 +121,7 @@ export async function createAndDeliverMission(input: {
       kind: input.kind,
       body: input.body.trim(),
       chips: input.chips ?? [],
+      photo_answer: !!input.photoAnswer,
     })
     .select("id")
     .single();
@@ -145,7 +155,7 @@ export async function fetchInbox(userId: string): Promise<MissionDelivery[]> {
     const { data, error } = await db
       .from("mission_deliveries")
       .select(
-        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips)",
+        "id, mission_id, sender_id, receiver_id, status, reply_body, reply_photo, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips, photo_answer)",
       )
       .eq("receiver_id", userId)
       .in("status", ["delivered", "replied"])
@@ -160,7 +170,7 @@ export async function fetchOutbox(userId: string): Promise<MissionDelivery[]> {
     const { data, error } = await db
       .from("mission_deliveries")
       .select(
-        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips)",
+        "id, mission_id, sender_id, receiver_id, status, reply_body, reply_photo, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips, photo_answer)",
       )
       .eq("sender_id", userId)
       .order("created_at", { ascending: false })
@@ -175,7 +185,7 @@ export async function fetchDelivery(id: number): Promise<MissionDelivery | null>
     const { data, error } = await db
       .from("mission_deliveries")
       .select(
-        "id, mission_id, sender_id, receiver_id, status, reply_body, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips)",
+        "id, mission_id, sender_id, receiver_id, status, reply_body, reply_photo, replied_at, sender_verdict, receiver_verdict, unlocked_at, accepted_at, expires_at, created_at, mission:missions(body, kind, chips, photo_answer)",
       )
       .eq("id", id)
       .maybeSingle();
@@ -239,24 +249,39 @@ export type MissionThread = {
 
 export const MESSAGE_CAP_DEFAULT = 20;
 
-export async function fetchUnlockedPeer(peerId: string) {
+export type UnlockedPeer = {
+  id: string;
+  display_name: string | null;
+  handle: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  birth_year: number | null;
+  region: string | null;
+  gender: string | null;
+  height_cm: number | null;
+  photos: string[] | null;
+  ai_intro: string | null;
+  ai_tags: string[] | null;
+  intro_answers: { answers?: string[] } | null;
+};
+
+export async function fetchUnlockedPeer(peerId: string): Promise<UnlockedPeer | null> {
   const { data, error } = await db
     .from("profiles")
-    .select("id, display_name, handle, bio, avatar_url, birth_year, region, gender, height_cm")
+    .select(
+      "id, display_name, handle, bio, avatar_url, birth_year, region, gender, height_cm, photos, ai_intro, ai_tags, intro_answers",
+    )
     .eq("id", peerId)
     .maybeSingle();
   if (error) throw error;
-  return data as {
-    id: string;
-    display_name: string | null;
-    handle: string | null;
-    bio: string | null;
-    avatar_url: string | null;
-    birth_year: number | null;
-    region: string | null;
-    gender: string | null;
-    height_cm: number | null;
-  } | null;
+  return data as UnlockedPeer | null;
+}
+
+/** Pay 1 ticket → create (or fetch) the chat thread for a matched delivery. */
+export async function startMatch(deliveryId: number): Promise<number> {
+  const { data, error } = await db.rpc("start_match", { p_delivery_id: deliveryId });
+  if (error) throw error;
+  return data as number;
 }
 
 export async function fetchThreadByDelivery(deliveryId: number) {
@@ -365,3 +390,31 @@ export const HEIGHT_OPTIONS = [
   { label: "175–184", value: "175-184" },
   { label: "185+", value: "185-230" },
 ] as const;
+
+// ---- sea redesign RPCs ----
+
+/** Woman pulls back a still-drifting floatie (no reply/accept yet). */
+export async function recallDelivery(id: number): Promise<void> {
+  const { error } = await db.rpc("recall_delivery", { p_delivery_id: id });
+  if (error) throw error;
+}
+
+/** Man's view of the sender before opening — nick/age/region only (no photo). */
+export async function fetchSenderCard(id: number): Promise<PersonCard | null> {
+  const { data, error } = await db.rpc("sender_card", { p_delivery_id: id });
+  if (error) throw error;
+  return (data as PersonCard) ?? null;
+}
+
+/** Woman's view of the replier — nick/age/region + first photo thumbnail. */
+export async function fetchReceiverCard(id: number): Promise<PersonCard | null> {
+  const { data, error } = await db.rpc("receiver_card", { p_delivery_id: id });
+  if (error) throw error;
+  return (data as PersonCard) ?? null;
+}
+
+/** Attach a photo (storage path) to an already-sent reply. */
+export async function setReplyPhoto(id: number, path: string): Promise<void> {
+  const { error } = await db.rpc("set_reply_photo", { p_delivery_id: id, p_photo: path });
+  if (error) throw error;
+}
