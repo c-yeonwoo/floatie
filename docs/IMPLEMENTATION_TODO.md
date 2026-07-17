@@ -21,7 +21,8 @@
 - [x] S4 주말 에너지 · AI 7:3 · facts(직업·흡연·키선택)
 - [x] 원격 마이그레이션 `20260717200000` + Edge `generate-profile` 배포
 - [x] `/me`·`/me/edit` Sea 정합 (사진3 · 키필수 · intro/ideal · 홈 복귀)
-- [ ] (후) soft prompt · 인터뷰 재편집/AI 재생성 · 칩 어드민 UI
+- [x] `/me/edit` 인터뷰 재편집 (S1–S4 · I1–I2) + AI 재생성(2/일)
+- [ ] (후) soft prompt · 칩 어드민 UI
 
 ## P1 — 매칭 · 티켓 (운영)
 
