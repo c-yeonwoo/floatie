@@ -38,10 +38,14 @@
 - onboarding 스텝퍼 재작성, 사진 3장 업로드(answers 버킷)
 - lib/profile-ai.ts + Edge Function generate-profile(Claude Haiku, 템플릿 폴백)
 
-### Stage 4 — 여자 바다 홈 + 탭바 제거
-- `_authenticated.tsx` 탭바 제거
-- `home.tsx` → SeaScene(내 플로티 병) + FAB + mood + 아바타 메뉴
-- 상태: ⬜ (다음)
+### Stage 4 — 여자 바다 홈 + 탭바 제거 — ✅ (bdfcc76)
+- 탭바 제거(full-bleed home/onboarding), 바다 홈(병+mood+FAB+아바타메뉴), ParchmentNote(compose/floatie)+AvatarMenu, lib/sea.ts
+- FAB→createAndDeliverMission 연결. 아바타 메뉴 항목은 임시로 기존 라우트(/me,/outbox)로 (Stage 7/8에서 교체)
+
+### Stage 5 — 쪽지 흐름 (compose/read/reply) — ⬜ (다음)
+- 남자: 발견 시트→읽기(쪽지)→수락→답장(사진 옵션). recall RPC(회수) 마이그레이션
+- 여자: 답장 확인 쪽지→마음에 들어요(verdict)
+- ParchmentNote에 read/reply 모드 추가
 
 ### Stage 5 — 쪽지 흐름 (compose/read/reply)
 - ParchmentNote 실제 RPC 연결 (mission.ts): 띄우기/읽기/수락/답장/사진답변/포기(패널티)
