@@ -53,7 +53,11 @@ export type IdealFilter =
 const db = supabase as any;
 
 export async function touchLastActive() {
-  await db.rpc("touch_last_active");
+  try {
+    await db.rpc("touch_last_active");
+  } catch {
+    /* best-effort — never block navigation */
+  }
 }
 
 export async function expireStaleDeliveries() {

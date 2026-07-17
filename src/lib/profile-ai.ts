@@ -135,8 +135,13 @@ export async function saveOnboarding(uid: string, d: OnboardingData): Promise<vo
     })
     .eq("id", uid);
   if (error) throw error;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).rpc("touch_last_active").catch(() => {});
+  try {
+    // supabase.rpc() is Thenable but has no .catch — use try/await
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).rpc("touch_last_active");
+  } catch {
+    /* best-effort */
+  }
 }
 
 /** Save re-generated intro/tags/ideal under 2/day cap. */
