@@ -55,14 +55,22 @@ export type NoteContent =
 export function ParchmentNote({ content, onClose }: { content: NoteContent | null; onClose: () => void }) {
   const [shown, setShown] = useState<NoteContent | null>(content);
   const [up, setUp] = useState(false);
+  /** iOS: FAB tap's touchend can land on the newly shown scrim — arm dismiss after open. */
+  const [scrimArmed, setScrimArmed] = useState(false);
 
   useEffect(() => {
     if (content) {
       setShown(content);
+      setScrimArmed(false);
       const r = requestAnimationFrame(() => setUp(true));
-      return () => cancelAnimationFrame(r);
+      const arm = window.setTimeout(() => setScrimArmed(true), 450);
+      return () => {
+        cancelAnimationFrame(r);
+        clearTimeout(arm);
+      };
     }
     setUp(false);
+    setScrimArmed(false);
     const t = setTimeout(() => setShown(null), 460);
     return () => clearTimeout(t);
   }, [content]);
@@ -71,7 +79,10 @@ export function ParchmentNote({ content, onClose }: { content: NoteContent | nul
 
   return (
     <>
-      <div className={"fl-scrim note-scrim" + (content ? " on" : "")} onClick={onClose} />
+      <div
+        className={"fl-scrim note-scrim" + (content ? " on" : "") + (scrimArmed ? " armed" : "")}
+        onClick={scrimArmed ? onClose : undefined}
+      />
       <div className={"fl-note" + (up ? " up" : "") + (tall ? " tall" : "")}>
         <div className="fl-grip" />
         {shown?.kind === "compose" && <ComposeBody c={shown} />}
@@ -100,8 +111,23 @@ function ComposeBody({ c }: { c: Extract<NoteContent, { kind: "compose" }> }) {
     if (c.draft) setBody(c.draft.slice(0, 60));
   }, [c.draft]);
   useEffect(() => {
-    const t = setTimeout(() => taRef.current?.focus(), 320);
-    return () => clearTimeout(t);
+    let cancelled = false;
+    let focusTimer: number | undefined;
+    void (async () => {
+      // Native WebView: autofocus opens the keyboard and resizes the sea (looks like a reload).
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (Capacitor.isNativePlatform()) return;
+      } catch {
+        /* web */
+      }
+      if (cancelled) return;
+      focusTimer = window.setTimeout(() => taRef.current?.focus(), 320);
+    })();
+    return () => {
+      cancelled = true;
+      if (focusTimer != null) clearTimeout(focusTimer);
+    };
   }, []);
   const ok = body.trim().length >= 2 && !c.sending;
   return (

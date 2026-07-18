@@ -78,7 +78,11 @@ export function ProfileOverlay({
 
   return (
     <div className={"fl-ppage" + (on ? " on" : "")}>
-      <button className="fl-pp-back" onClick={onBack} aria-label="뒤로">←</button>
+      <header className="fl-pp-top">
+        <button type="button" className="fl-pp-back" onClick={onBack} aria-label="뒤로">
+          ←
+        </button>
+      </header>
       {shown && (
         <>
           <div className="fl-pp-hero">
@@ -102,7 +106,9 @@ export function ProfileOverlay({
                 {chapters.map((ch, i) => (
                   <div key={i}>
                     <div className="fl-pp-chapter">
-                      {ch.heading && <h4>{ch.heading}</h4>}
+                      {ch.heading && ch.heading !== "이런 사람이에요" && (
+                        <h4>{ch.heading}</h4>
+                      )}
                       <p>{ch.body}</p>
                     </div>
                     {restPhotos[i] && (
