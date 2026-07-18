@@ -69,8 +69,8 @@ Supabase 대시보드 → Authentication → URL Configuration:
 현재 `capacitor.config.ts`는 **원격 URL 웹뷰**(`server.url`)로 동작 — SSR이라 로컬 번들이 셸만 됨.
 
 ### 배포 전 체크리스트
-- [ ] `server.url` → Cloudflare 도메인으로 교체 (현재 `sumgyeol.lovable.app`)
-- [ ] `appId` `app.gyeol.client` → `app.floatie.app` 등으로 변경 (스토어 등록 전, 변경 시 재등록 불가하니 신중)
+- [x] `server.url` → `https://floatie.pages.dev`
+- [x] `appId` → `app.floatie.app` (스토어 등록 전 최종 확인)
 - [ ] 앱 아이콘 / 스플래시 (Floatie 디자인)
 - [x] **인앱 회원 탈퇴** — `/me` `deleteAccount` (Apple 5.1.1(v))
 - [ ] 푸시(FCM/APNs) — 스토어 필수는 아니나 루프상 사실상 필요, Apple 4.2 통과에도 유리
@@ -101,6 +101,14 @@ npx cap open ios         # Xcode → Archive → App Store Connect
 - 플러그인 반영: `npm i` 후 `npx cap sync` (이미 `@capacitor/push-notifications` 설치됨)
 
 ## 권장 순서
-1. **Cloudflare 웹 배포** (§1) → `.pages.dev`에서 실기기 테스트
-2. 웹 안정화 후 **App Store 관문**(§2: 회원탈퇴·appId·아이콘·푸시·4.2 대응)
-3. 스토어 제출
+1. **Cloudflare 웹 배포** (§1) → `.pages.dev`에서 실기기 테스트  
+2. **MVP Go/No-Go** — [`MVP_DEPLOY.md`](./MVP_DEPLOY.md)  
+3. 웹 안정화 후 **App Store 관문**(§2: 아이콘·푸시·4.2 대응)  
+4. 스토어 제출
+
+### Edge: expire-stale
+```bash
+supabase functions deploy expire-stale --project-ref psrlbanwvmnhacgyrgvl
+# Dashboard → Edge Functions → expire-stale → Add cron: */15 * * * *
+# 또는 CRON_SECRET 시크릿 + 외부 cron POST
+```
