@@ -136,12 +136,12 @@ function LoginPage() {
 
   return (
     <main className="fixed inset-0 h-[100dvh] overflow-hidden overscroll-none bg-background flex flex-col">
-      <SeaBanner className="h-44 shrink-0" />
+      <SeaBanner className="h-60 shrink-0 sm:h-64" />
       <div className="flex-1 min-h-0 overflow-y-auto px-6">
-        <div className="mx-auto w-full max-w-sm pt-7 pb-8">
-          <div className="mb-7 text-center">
-            <h1 className="font-serif text-4xl tracking-tight text-foreground">플로티</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+        <div className="mx-auto w-full max-w-sm pt-6 pb-8">
+          <div className="mb-6 text-center">
+            <h1 className="font-serif text-6xl text-foreground">플로티</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
               가벼운 질문 하나로 시작해요. 마음이 오면, 그때 열려요.
             </p>
           </div>

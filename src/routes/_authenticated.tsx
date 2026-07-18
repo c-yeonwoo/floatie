@@ -8,8 +8,11 @@ import { NotificationToasts } from "@/components/notification-toasts";
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     if (typeof window === "undefined") return;
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/login" });
+    // getSession = local/cache (fast). getUser always hits Auth network and
+    // makes cold boot feel stuck on the splash.
+    const { data: sess } = await supabase.auth.getSession();
+    const user = sess.session?.user;
+    if (!user) throw redirect({ to: "/login" });
 
     const path = location.pathname;
     const skipOnboard = path === "/onboarding";
@@ -21,7 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
     const { data: prof } = await (supabase as any)
       .from("profiles")
       .select("onboarded, status, identity_verified_at")
-      .eq("id", data.user.id)
+      .eq("id", user.id)
       .maybeSingle();
 
     if (!skipBanCheck && prof?.status === "banned") {

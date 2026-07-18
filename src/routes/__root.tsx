@@ -82,13 +82,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/icon-192.png", type: "image/png", sizes: "192x192" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      // Pretendard — single brand typeface. TODO(capacitor): self-host woff2 for offline.
-      { rel: "preconnect", href: "https://cdn.jsdelivr.net", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" },
-      // Jua — soft rounded display face for the wordmark + big titles.
+      // Display first — Dongle (soft round KR wordmark). Body font loads non-blocking in shell.
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Jua&display=swap" },
+      { rel: "preconnect", href: "https://cdn.jsdelivr.net", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Dongle:wght@400;700&display=swap",
+      },
       { rel: "stylesheet", href: appCss },
     ],
   }),
@@ -98,11 +99,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const PRETENDARD_CSS =
+  "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css";
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
       <head>
         <HeadContent />
+        {/* Non-blocking body font — don't stall first paint / Capacitor WebView boot */}
+        <link
+          rel="stylesheet"
+          href={PRETENDARD_CSS}
+          media="print"
+          onLoad={(e) => {
+            (e.currentTarget as HTMLLinkElement).media = "all";
+          }}
+        />
+        <noscript>
+          <link rel="stylesheet" href={PRETENDARD_CSS} />
+        </noscript>
       </head>
       <body>
         <div id="boot-splash" aria-hidden="true">
@@ -176,10 +192,23 @@ function ViewportSync() {
 function BootSplashHide() {
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const t = setTimeout(() => {
-      document.body.classList.add("app-ready");
-    }, 150);
-    return () => clearTimeout(t);
+    // Hide as soon as the first frame paints — don't wait on fonts/network.
+    let cancelled = false;
+    let raf2 = 0;
+    const hide = () => {
+      if (!cancelled) document.body.classList.add("app-ready");
+    };
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(hide);
+    });
+    // Safety: never leave splash up if rAF is throttled in background WebView
+    const t = setTimeout(hide, 80);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(t);
+    };
   }, []);
   return null;
 }

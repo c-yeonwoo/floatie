@@ -16,11 +16,11 @@ export function SeaBanner({ className }: { className?: string }) {
         style={{ background: "radial-gradient(circle,#ffe3cf,#ffb69e 72%)", filter: "blur(2px)", opacity: 0.9 }}
       />
       {/* drifting bottle — nudged down so it sits into the waves */}
-      <div className="relative flex h-full items-center justify-center translate-y-[10%]">
-        <BottleGlyph className="w-14 animate-floatie-bob" />
+      <div className="relative flex h-full items-center justify-center translate-y-[12%]">
+        <BottleGlyph className="w-[4.5rem] animate-floatie-bob sm:w-20" />
       </div>
       {/* continuously flowing waves (two parallax layers), raised to meet the bottle */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[4.5rem] overflow-hidden">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 overflow-hidden">
         <svg
           className="absolute bottom-0 left-0 h-full w-[200%] animate-wave-flow"
           viewBox="0 0 800 60"
