@@ -64,6 +64,16 @@ export async function expireStaleDeliveries() {
   await db.rpc("expire_stale_deliveries");
 }
 
+/** True if the caller has a non-expired, non-closed match thread. */
+export async function hasActiveChat(): Promise<boolean> {
+  const { data, error } = await db.rpc("has_active_chat");
+  if (error) {
+    if (/function|does not exist|PGRST/i.test(error.message ?? "")) return false;
+    throw error;
+  }
+  return !!data;
+}
+
 export async function fetchMyMissionProfile(): Promise<MyMissionProfile | null> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
@@ -257,8 +267,12 @@ export function mapMissionError(err: unknown, fallback: string): string {
     (err instanceof Error ? err.message : "") ||
     "";
   if (msg.includes("only female")) return "미션은 여성 회원만 보낼 수 있어요.";
+  if (msg.includes("chat_active_no_new_floatie"))
+    return "대화가 열려 있는 동안에는 새 플로티를 띄울 수 없어요.";
+  if (msg.includes("already_in_chat"))
+    return "이미 진행 중인 대화가 있어요. 끝난 뒤에 매칭할 수 있어요.";
   if (msg.includes("no eligible recipient"))
-    return "지금 받을 수 있는 사람이 없어요. 조건을 낮추거나 잠시 뒤 다시 시도해 주세요.";
+    return "지금 받을 수 있는 사람이 없어요. 잠시 뒤 다시 시도해 주세요.";
   if (msg.includes("ticket required") || msg.includes("daily send cap"))
     return "오늘 무료 발송을 썼어요. 티켓이 필요해요.";
   if (msg.includes("already opened") || msg.includes("cannot decline"))

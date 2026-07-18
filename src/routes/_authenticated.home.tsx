@@ -17,6 +17,7 @@ import {
   fetchUnlockedPeer,
   forfeitDelivery,
   formatCountdown,
+  hasActiveChat,
   mapMissionError,
   recallDelivery,
   replyToDelivery,
@@ -50,7 +51,7 @@ import { pageTitle } from "@/lib/brand";
 import { track } from "@/lib/analytics";
 import { registerPush } from "@/lib/push";
 
-type HomeSearch = { d?: number; me?: boolean };
+type HomeSearch = { d?: number; me?: boolean; compose?: boolean };
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({ meta: [{ title: pageTitle() }] }),
@@ -59,6 +60,7 @@ export const Route = createFileRoute("/_authenticated/home")({
     const out: HomeSearch = {};
     if (Number.isFinite(n)) out.d = n;
     if (raw.me === true || raw.me === "1" || raw.me === "true") out.me = true;
+    if (raw.compose === true || raw.compose === "1" || raw.compose === "true") out.compose = true;
     return out;
   },
   component: SeaHome,
@@ -116,9 +118,10 @@ function peerCard(p: UnlockedPeer, ageOf: (y: number | null) => string): Profile
 
 function SeaHome() {
   const navigate = useNavigate();
-  const { d: deepLinkId, me: openMeProfile } = Route.useSearch();
+  const { d: deepLinkId, me: openMeProfile, compose: openCompose } = Route.useSearch();
   const qc = useQueryClient();
   const [note, setNote] = useState<NoteState>(null);
+  const [composeDraft, setComposeDraft] = useState<string | undefined>();
   const [confirm, setConfirm] = useState<ConfirmOpts | null>(null);
   const [profile, setProfile] = useState<{ data: ProfileCardData; delivery: MissionDelivery | null } | null>(null);
   const [page, setPage] = useState<null | "history" | "shop">(null);
@@ -164,6 +167,14 @@ function SeaHome() {
     queryFn: () => countSendsToday(uid!),
   });
   const canFree = sendsToday < 1;
+
+  const { data: chatActive = false } = useQuery({
+    queryKey: ["has-active-chat", uid],
+    enabled: !!uid && isWoman,
+    queryFn: hasActiveChat,
+    refetchInterval: 60_000,
+  });
+  const sendLocked = isWoman && chatActive;
 
   const { data: presetRows = [] } = useQuery({ queryKey: ["presets"], queryFn: fetchPresets });
   const presetBodies = useMemo(() => {
@@ -279,6 +290,7 @@ function SeaHome() {
       toast.success("매칭됐어요! 대화방이 열렸어요", {
         description: "7일 안에 연락처를 나눠 보세요. 메시지는 무제한이에요.",
       });
+      void qc.invalidateQueries({ queryKey: ["has-active-chat"] });
       refresh();
       navigate({ to: "/thread/$threadId", params: { threadId: String(threadId) } });
     },
@@ -336,6 +348,25 @@ function SeaHome() {
     navigate({ to: "/home", search: {}, replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkId, floaties.length, isWoman]);
+
+  useEffect(() => {
+    if (!openCompose || !isWoman) return;
+    if (sendLocked) {
+      toast("대화 중에는 새 플로티를 띄울 수 없어요");
+      navigate({ to: "/home", search: {}, replace: true });
+      return;
+    }
+    let draft: string | undefined;
+    try {
+      draft = sessionStorage.getItem("floatie_compose_draft") ?? undefined;
+      sessionStorage.removeItem("floatie_compose_draft");
+    } catch {
+      /* ignore */
+    }
+    setComposeDraft(draft);
+    setNote({ kind: "compose" });
+    navigate({ to: "/home", search: {}, replace: true });
+  }, [openCompose, isWoman, sendLocked, navigate]);
 
   const mood = useMemo(() => {
     if (isWoman) {
@@ -410,6 +441,7 @@ function SeaHome() {
         kind: "compose",
         presets: presetBodies,
         canFree,
+        draft: composeDraft,
         sending: send.isPending,
         onSend: (body, askPhoto) => send.mutate({ body, askPhoto }),
       };
@@ -489,6 +521,7 @@ function SeaHome() {
     note,
     presetBodies,
     canFree,
+    composeDraft,
     send.isPending,
     accept.isPending,
     reply.isPending,
@@ -586,11 +619,28 @@ function SeaHome() {
       </div>
 
       {isWoman && (
-        <button className="fl-fab" onClick={() => setNote({ kind: "compose" })}>
+        <button
+          className="fl-fab"
+          disabled={sendLocked}
+          onClick={() => {
+            if (sendLocked) {
+              toast("대화가 열려 있는 동안에는 새 플로티를 띄울 수 없어요");
+              return;
+            }
+            setComposeDraft(undefined);
+            setNote({ kind: "compose" });
+          }}
+        >
           <span style={{ width: 20, display: "inline-flex", marginBottom: -3 }}>
             <BottleGlyph state="drift" className="w-full h-auto" />
           </span>
-          플로티 띄우기 <span className="sub">· {canFree ? "무료 1개" : "티켓 필요"}</span>
+          {sendLocked ? (
+            <>대화 중 <span className="sub">· 채팅이 끝나면 띄울 수 있어요</span></>
+          ) : (
+            <>
+              플로티 띄우기 <span className="sub">· {canFree ? "무료 1개" : "티켓 필요"}</span>
+            </>
+          )}
         </button>
       )}
 

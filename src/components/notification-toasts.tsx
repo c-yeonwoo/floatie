@@ -47,12 +47,17 @@ function showNotificationToast(
   onDismiss: () => void,
 ) {
   const target = notificationTarget(n);
+  const rewrite = n.kind === "mission_no_response" && n.payload?.can_rewrite;
   const actionLabel =
-    n.kind === "mission_no_response"
-      ? "다시 보내기"
-      : n.kind === "matched"
-        ? "대화"
-        : "열기";
+    n.kind === "mission_redeployed"
+      ? "바다 보기"
+      : rewrite
+        ? "다시 쓰기"
+        : n.kind === "mission_no_response"
+          ? "다시 보내기"
+          : n.kind === "matched"
+            ? "대화"
+            : "열기";
 
   if (!target) {
     toast(n.title, { description: n.body, duration: 6000, onDismiss });
@@ -61,15 +66,26 @@ function showNotificationToast(
 
   toast(n.title, {
     description: n.body,
-    duration: n.kind === "mission_no_response" ? 12_000 : 8000,
+    duration:
+      n.kind === "mission_no_response" || n.kind === "mission_redeployed" ? 12_000 : 8000,
     action: {
       label: actionLabel,
       onClick: () => {
         onDismiss();
+        if (rewrite && n.payload?.mission_body) {
+          try {
+            sessionStorage.setItem("floatie_compose_draft", n.payload.mission_body);
+          } catch {
+            /* ignore */
+          }
+        }
         if (target.to === "/thread/$threadId") {
           navigate({ to: target.to, params: target.params });
         } else {
-          navigate({ to: "/home", search: target.search ?? {} });
+          navigate({
+            to: "/home",
+            search: rewrite ? { compose: true } : (target.search ?? {}),
+          });
         }
       },
     },

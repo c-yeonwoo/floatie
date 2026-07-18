@@ -7,7 +7,7 @@
 ## 1. 환경
 
 - [ ] 원격 DB 마이그레이션 최신 (`supabase db push` / Dashboard)  
-  - 포함: interview love_view · analytics_events · push hook  
+  - 포함: interview love_view · analytics · push · **concurrency_redeploy**
 - [ ] Edge: `generate-profile` · `dispatch-push` 배포  
 - [ ] **OTP:** 베타는 `app_config.dev_otp_enabled = true` 허용 가능.  
   - QA 계정만 쓰는지 문서화. 외부 초대 시 SMS 연동 또는 안내 문구 필수.  
@@ -17,13 +17,20 @@
 
 ## 2. E2E (여 / 남 2계정)
 
+**자동화 (RPC):** `node scripts/e2e-beta.mjs`  
+2026-07-18 결과: 핵심 루프 PASS · `ANTHROPIC_API_KEY` 미설정만 FAIL · sender_card 닉 누수 패치됨.
+
+**수동 (Sea UI — 아직 자동화 밖):**
+
 1. 여: 온보딩 → 플로티 띄우기 → 표류 카피 확인  
-2. 남: 발견 모달 = **닉 없음 · 나이대·지역** → 패스 / 열기  
-3. 남: 수락 → 병 **타이머 뱃지** → 답장  
+2. 남: 발견 모달 = **닉 없음 · 나이대·지역** → **패스** → 여 알림「다른 사람에게…」· 새 남에게 재배달  
+3. 남B: 수락 → 병 **타이머 뱃지** → 답장  
 4. 여: 답장 glow → 마음에 들어요 → unlock 카드  
-5. 티켓 매칭 → 채팅 1통 → `analytics_events`에 send/reply/unlock/match/msg_first  
-6. 신고·차단·탈퇴 각 1회  
-7. 레거시 URL `/send` `/outbox` `/delivery/1` → `/home` 리다이렉트
+5. 티켓 매칭 → 채팅 1통 → 여 FAB **대화 중 잠금** (병렬 채팅은 다른 병 unlock 후 가능)  
+6. 남: 수행 중·채팅 중이면 다른 플로티 안 옴  
+7. 신고·차단·탈퇴 각 1회  
+8. 레거시 URL `/send` `/outbox` `/delivery/1` → `/home`  
+9. `/me/edit` → AI 다시 정리 (키 설정 후)
 
 ---
 

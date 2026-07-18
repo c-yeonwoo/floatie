@@ -7,15 +7,19 @@ export type InAppNotification = {
     | "mission_accepted"
     | "mission_replied"
     | "mission_no_response"
+    | "mission_redeployed"
     | "profile_opened"
     | "matched";
   title: string;
   body: string;
   payload: {
     delivery_id?: number;
+    mission_id?: number;
     mission_body?: string;
     can_resend?: boolean;
+    can_rewrite?: boolean;
     thread_id?: number;
+    prev_delivery_id?: number;
   };
   read_at: string | null;
   created_at: string;
@@ -99,6 +103,7 @@ export function notificationTarget(
     n.kind === "mission_accepted" ||
     n.kind === "mission_replied" ||
     n.kind === "mission_no_response" ||
+    n.kind === "mission_redeployed" ||
     n.kind === "matched"
   ) {
     return id ? { to: "/home", search: { d: id } } : { to: "/home" };

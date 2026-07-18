@@ -17,6 +17,8 @@ export type NoteContent =
       kind: "compose";
       presets: string[];
       canFree: boolean;
+      /** Prefill from rewrite / resend prompt */
+      draft?: string;
       sending?: boolean;
       onSend: (body: string, askPhoto: boolean) => void;
     }
@@ -91,9 +93,12 @@ function ReportLink({ onReport }: { onReport?: () => void }) {
 }
 
 function ComposeBody({ c }: { c: Extract<NoteContent, { kind: "compose" }> }) {
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(c.draft?.slice(0, 60) ?? "");
   const [askPhoto, setAskPhoto] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (c.draft) setBody(c.draft.slice(0, 60));
+  }, [c.draft]);
   useEffect(() => {
     const t = setTimeout(() => taRef.current?.focus(), 320);
     return () => clearTimeout(t);
@@ -102,8 +107,10 @@ function ComposeBody({ c }: { c: Extract<NoteContent, { kind: "compose" }> }) {
   return (
     <>
       <div className="fl-note-inner">
-        <h3>어떤 질문을 띄워 볼까요?</h3>
-        <p className="sub">쪽지에 적어 병에 담아 보낼게요.</p>
+        <h3>{c.draft ? "질문을 다듬어 볼까요?" : "어떤 질문을 띄워 볼까요?"}</h3>
+        <p className="sub">
+          {c.draft ? "같은 말로 안 열렸다면, 조금만 바꿔 다시 띄워보세요." : "쪽지에 적어 병에 담아 보낼게요."}
+        </p>
         <textarea
           ref={taRef}
           maxLength={60}

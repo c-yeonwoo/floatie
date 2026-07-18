@@ -142,7 +142,7 @@ function LoginPage() {
           <div className="mb-7 text-center">
             <h1 className="font-serif text-4xl tracking-tight text-foreground">플로티</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              가벼운 질문 하나로 시작해요. 서로 좋으면, 그때 열려요.
+              가벼운 질문 하나로 시작해요. 마음이 오면, 그때 열려요.
             </p>
           </div>
 

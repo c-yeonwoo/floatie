@@ -1,6 +1,6 @@
 # ADR 0002 — 매칭: 활성 우선 랜덤 + 단계 확대
 
-- Status: Accepted (v2)
+- Status: Accepted (v2) — 슬롯 제외는 [`0010`](./0010-concurrency-and-redeploy.md)
 - Date: 2026-07-14
 - Supersedes: v1 약한 fit 서술
 

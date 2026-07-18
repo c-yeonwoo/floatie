@@ -23,13 +23,15 @@
 
 ---
 
-## Next — Beta learn (1–3주)
+## Next — Concurrency + Chat-first (우선)
 
-1. **퍼널 병목 리포트** — send→reply→unlock→match→msg1  
-2. **FCM_SERVER_KEY** 넣고 도착/답장 푸시 실통  
-3. **프리셋 DB 큐레이션** (코드 폴백 8개 → 목표 40→80, 질 우선)  
-4. **남 리텐션** A/B — 빈바다 카피 · 알림 허용률  
-5. **여 발신 가설** 유지 여부 결정 데이터 수집
+상세: [`IMPLEMENTATION_TODO.md`](./IMPLEMENTATION_TODO.md) Epic A/B
+
+1. **동시성** — 남: 수행중·유효채팅 중 수신/매칭 제외(1슬롯) · 여: 플로티 수만큼 병렬 채팅 · 활성채팅 중 신규 플로티 잠금  
+2. **패스 자동재배달** — hop≤5 · 여 알림 · 48h 미수락 시 회수+재작성  
+3. **풀 제외 보강** + expire **서버 cron**  
+4. **Chat-first 홈** 디자인→구현 (채팅 시작 시 Sea 축소)  
+5. (병행) 퍼널 리포트 · FCM 실통 · 프리셋 큐레이션
 
 ---
 
