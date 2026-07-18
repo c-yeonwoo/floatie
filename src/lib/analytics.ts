@@ -12,7 +12,9 @@ export type FunnelEvent =
   | "pass_post"
   | "forfeit"
   | "notif_enable_tap"
-  | "empty_sea_view";
+  | "empty_sea_view"
+  | "empty_sea_nudge_view"
+  | "empty_sea_nudge_tap";
 
 /** Fire-and-forget product funnel event (RLS: insert own rows). */
 export function track(name: FunnelEvent, props?: Record<string, unknown>): void {

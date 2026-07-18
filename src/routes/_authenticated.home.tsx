@@ -49,7 +49,7 @@ import {
 } from "@/lib/sea";
 import { pageTitle } from "@/lib/brand";
 import { track } from "@/lib/analytics";
-import { registerPush } from "@/lib/push";
+import { getProfileNudge } from "@/lib/profile-nudge";
 
 type HomeSearch = { d?: number; me?: boolean; compose?: boolean };
 
@@ -93,6 +93,7 @@ type MeProfile = {
   ai_intro: string | null;
   ai_ideal_line: string | null;
   ai_tags: string[] | null;
+  intro_answers: unknown;
 };
 
 type NoteState =
@@ -144,7 +145,7 @@ function SeaHome() {
       const { data } = await (supabase as any)
         .from("profiles")
         .select(
-          "id, gender, display_name, ticket_balance, photos, birth_year, region, height_cm, job_chip, smoke, drink, tattoo, ai_intro, ai_ideal_line, ai_tags",
+          "id, gender, display_name, ticket_balance, photos, birth_year, region, height_cm, job_chip, smoke, drink, tattoo, ai_intro, ai_ideal_line, ai_tags, intro_answers",
         )
         .eq("id", uid)
         .maybeSingle();
@@ -384,6 +385,8 @@ function SeaHome() {
     return "잔잔한 바다 — 곧 누군가의 질문이 떠오를지 몰라요";
   }, [bottles, isWoman, tick]);
 
+  const nudge = useMemo(() => (me ? getProfileNudge(me) : null), [me]);
+
   useEffect(() => {
     if (bottles.length !== 0 || !me) return;
     const key = `fl_empty_${me.id}`;
@@ -391,6 +394,14 @@ function SeaHome() {
     sessionStorage.setItem(key, "1");
     track("empty_sea_view", { gender: me.gender });
   }, [bottles.length, me]);
+
+  useEffect(() => {
+    if (bottles.length !== 0 || !me || !nudge) return;
+    const key = `fl_empty_nudge_${me.id}_${nudge.kind}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    track("empty_sea_nudge_view", { gender: me.gender, kind: nudge.kind });
+  }, [bottles.length, me, nudge]);
 
   async function tapBottle(d: MissionDelivery, s: FloatieState) {
     if (s === "opened" || s === "match") {
@@ -549,24 +560,15 @@ function SeaHome() {
   const empty =
     bottles.length === 0
       ? isWoman
-        ? { b: "바다가 고요해요", s: "플로티를 하나 띄워 볼까요?" }
+        ? {
+            b: "바다가 고요해요",
+            s: nudge?.body ?? "플로티를 하나 띄워 볼까요?",
+          }
         : {
             b: "잔잔한 바다예요",
-            s: "곧 누군가의 플로티가 떠내려올 예정이에요. 도착하면 알려 드릴까요?",
+            s: nudge?.body ?? "곧 누군가의 플로티가 떠내려올 예정이에요",
           }
       : null;
-
-  const enableNotif = async () => {
-    track("notif_enable_tap");
-    const result = await registerPush().catch(() => "web" as const);
-    if (result === "granted") {
-      toast.success("알림을 켰어요", { description: "플로티가 도착하면 알려 드릴게요." });
-    } else if (result === "denied") {
-      toast.error("알림이 꺼져 있어요", { description: "기기 설정에서 알림을 허용해 주세요." });
-    } else {
-      toast("웹에서는 앱 알림으로 알려 드려요", { description: "상단 종 아이콘을 확인해 주세요." });
-    }
-  };
 
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
@@ -576,9 +578,16 @@ function SeaHome() {
         <div className="fl-empty">
           <b>{empty.b}</b>
           <span>{empty.s}</span>
-          {!isWoman && (
-            <button type="button" className="fl-empty-cta" onClick={enableNotif}>
-              도착하면 알림 받기
+          {nudge && (
+            <button
+              type="button"
+              className="fl-empty-cta"
+              onClick={() => {
+                track("empty_sea_nudge_tap", { gender: me?.gender, kind: nudge.kind });
+                navigate({ to: nudge.href });
+              }}
+            >
+              {nudge.cta}
             </button>
           )}
         </div>

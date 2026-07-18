@@ -2,10 +2,25 @@ import { supabase } from "@/integrations/supabase/client";
 
 let registered = false;
 
+export type PushPermission = "granted" | "denied" | "prompt" | "web";
+
+/** Read-only permission check (no system prompt). */
+export async function checkPushPermission(): Promise<PushPermission> {
+  if (typeof window === "undefined") return "web";
+  const { Capacitor } = await import("@capacitor/core");
+  if (!Capacitor.isNativePlatform()) return "web";
+  const { PushNotifications } = await import("@capacitor/push-notifications");
+  const receive = (await PushNotifications.checkPermissions()).receive;
+  if (receive === "granted") return "granted";
+  if (receive === "denied") return "denied";
+  return "prompt";
+}
+
 /**
  * Register for push on native (iOS/Android) and store the device token.
- * No-op on web. Safe to call multiple times (e.g. empty-sea CTA).
+ * No-op on web. Safe to call multiple times.
  * Send side: Edge `dispatch-push` + FCM_SERVER_KEY (optional).
+ * Default-on: called from `_authenticated` layout; toggle UI lives on `/me`.
  */
 export async function registerPush(): Promise<"granted" | "denied" | "web"> {
   if (typeof window === "undefined") return "web";

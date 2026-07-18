@@ -1,18 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { StorageImg } from "@/components/storage-img";
 import { fetchSafetyProfile, deleteAccount } from "@/lib/safety";
 import { pageTitle } from "@/lib/brand";
+import { checkPushPermission, registerPush, type PushPermission } from "@/lib/push";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/me/")({
   head: () => ({ meta: [{ title: pageTitle("나") }] }),
   component: MePage,
 });
 
+function notifLabel(perm: PushPermission | undefined): string {
+  if (!perm || perm === "web") return "웹";
+  if (perm === "granted") return "켜짐";
+  if (perm === "denied") return "꺼짐";
+  return "꺼짐";
+}
+
 function MePage() {
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["my-profile"],
     queryFn: async () => {
@@ -33,8 +43,15 @@ function MePage() {
     queryFn: fetchSafetyProfile,
   });
 
+  const { data: pushPerm, isLoading: pushLoading } = useQuery({
+    queryKey: ["push-permission"],
+    queryFn: () => checkPushPermission(),
+    staleTime: 30_000,
+  });
+
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [enablingPush, setEnablingPush] = useState(false);
 
   const onLogout = async () => {
     await supabase.auth.signOut();
@@ -52,9 +69,26 @@ function MePage() {
     }
   };
 
+  const onEnablePush = async () => {
+    setEnablingPush(true);
+    track("notif_enable_tap", { source: "me" });
+    try {
+      const result = await registerPush();
+      await qc.invalidateQueries({ queryKey: ["push-permission"] });
+      if (result === "granted") {
+        toast.success("알림을 켰어요", { description: "플로티가 도착하면 알려 드릴게요." });
+      } else if (result === "denied") {
+        toast.error("알림이 꺼져 있어요", { description: "기기 설정에서 알림을 허용해 주세요." });
+      } else {
+        toast("웹에서는 앱 알림으로 알려 드려요", { description: "상단 종 아이콘을 확인해 주세요." });
+      }
+    } finally {
+      setEnablingPush(false);
+    }
+  };
+
   const p = data?.profile;
   const photo = p?.photos?.[0] ?? p?.avatar_url;
-
   return (
     <main className="fl-me">
       <header className="fl-me-top">
@@ -84,6 +118,40 @@ function MePage() {
             <span>{safety?.identity_verified_at ? "완료" : "필요"}</span>
           </Link>
           <Link to="/me/blocked" className="fl-me-nav-item">차단 목록</Link>
+
+          <div className="fl-me-nav-item fl-me-notif" role="group" aria-label="알림">
+            <div className="fl-me-notif-text">
+              <span className="fl-me-notif-title">알림</span>
+              {pushLoading && <span className="fl-me-notif-desc">확인 중…</span>}
+              {!pushLoading && pushPerm === "web" && (
+                <span className="fl-me-notif-desc">
+                  앱에서 푸시를 받을 수 있어요 · 웹은 종 아이콘 인앱 알림
+                </span>
+              )}
+              {!pushLoading && pushPerm === "denied" && (
+                <span className="fl-me-notif-desc">기기 설정에서 알림을 허용해 주세요</span>
+              )}
+              {!pushLoading && pushPerm === "granted" && (
+                <span className="fl-me-notif-desc">플로티 도착·답장을 푸시로 받아요</span>
+              )}
+              {!pushLoading && pushPerm === "prompt" && (
+                <span className="fl-me-notif-desc">아직 허용하지 않았어요</span>
+              )}
+            </div>
+            {!pushLoading && pushPerm === "prompt" ? (
+              <button
+                type="button"
+                className="fl-me-notif-btn"
+                disabled={enablingPush}
+                onClick={onEnablePush}
+              >
+                {enablingPush ? "…" : "알림 켜기"}
+              </button>
+            ) : (
+              <span>{pushLoading ? "…" : notifLabel(pushPerm)}</span>
+            )}
+          </div>
+
           {safety?.is_admin && (
             <Link to="/admin/reports" className="fl-me-nav-item">관리자 · 신고 검토</Link>
           )}
