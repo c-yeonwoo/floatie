@@ -39,11 +39,16 @@ update app_config set value = 'false' where key = 'dev_otp_enabled';
 
 - 상호 전달·채팅 불가, 쿨다운과 별개로 영구  
 
-## 채팅 안전
+## 채팅 안전 · 동시성
 
 - unlock 후 티켓 매칭 스레드만  
 - 메시지 **무제한 · 7일** (PRD v0.4)  
 - 외부 연락은 양측 제안 시에만  
+- **남:** 동시에 한 명만 (수행 중·유효 채팅 중 추가 수신/매칭 불가)  
+- **여:** 띄운 플로티 수만큼 병렬 대화 가능 · **활성 채팅이 있으면 신규 플로티 잠금**  
+- 열기 전 패스 → 자동 재배달(≤5) · 48h 미수락 시 회수·재작성 유도  
+
+→ [`decisions/0010-concurrency-and-redeploy.md`](./decisions/0010-concurrency-and-redeploy.md)
 
 ## 푸시
 

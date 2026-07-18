@@ -63,18 +63,18 @@
 - [x] `_pick_male_receiver` 슬롯 제외 (수행/채팅/기수신)
 - [x] `deliver_mission` 여 `chat_active_no_new_floatie`
 - [x] `start_match` 남 `already_in_chat` · 여 병렬 OK
-- [ ] pg_cron / Edge cron: expire 서버 주기 (후속 — 클라는 withExpiry 유지)
+- [x] Edge `expire-stale` (cron 스케줄은 Dashboard — [`MVP_DEPLOY.md`](./MVP_DEPLOY.md))
 
 ### A2. 클라이언트 · 카피
 
 - [x] 재배달 토스트 · 회수 후 다시 쓰기 시트(프리필)
 - [x] 여: 채팅 중 FAB 잠금
-- [ ] 남: 수행중/채팅중 풀 제외 E2E 확인
+- [x] E2E: 패스 재배달 · chat lock · has_active_chat
 - [ ] analytics 이벤트 보강 (후속)
 
 ### A3. 테스트
 
-- [ ] SQL/RPC 단위 · `e2e-beta.mjs` 패스 체인 (후속)
+- [x] `e2e-beta.mjs` 패스 체인 · 채팅 중 발송 잠금
 
 ---
 
@@ -104,10 +104,10 @@
 
 ## Epic C — 문서 · 출시 정합 (병행)
 
-- [ ] `ROADMAP.md` Next에 Epic A/B 반영
-- [ ] `BETA_OPS.md` 시나리오: 패스재배달 · 채팅중 발송잠금 · 남 1슬롯
-- [ ] 스토어/TRUST: 남은 「한 번에 한 사람」· 여 「여러 플로티→여러 대화」 톤 정리
-- [ ] ADR 0002 supersede 노트 (풀 제외 확장)
+- [x] `ROADMAP.md` · [`MVP_DEPLOY.md`](./MVP_DEPLOY.md)
+- [x] `BETA_OPS.md` 시나리오
+- [x] 스토어/TRUST 동시성 톤
+- [x] ADR 0002 → 0010 링크
 
 ---
 

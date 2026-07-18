@@ -12,7 +12,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * the bundled assets directly results in a blank/broken WebView.
  *
  * The reliable fix is to point the native WebView at the live SSR endpoint:
- *   https://sumgyeol.lovable.app   (published production URL — stable)
+ *   https://floatie.pages.dev   (Cloudflare Pages — production)
  *
  * This makes the iOS/Android app a thin native shell around the live SSR
  * web app — Capacitor plugins (Camera, etc.) still work natively, but page
@@ -35,7 +35,7 @@ const config: CapacitorConfig = {
   webDir: "dist/client",
   bundledWebRuntime: false,
   server: {
-    url: "https://sumgyeol.lovable.app",
+    url: "https://floatie.pages.dev",
     cleartext: false,
     androidScheme: "https",
     iosScheme: "https",

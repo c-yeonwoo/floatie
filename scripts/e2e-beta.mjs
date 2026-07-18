@@ -158,26 +158,34 @@ async function main() {
 
   const femEmail = `e2e.f.${stamp}@floatie.test`;
   const maleEmail = `e2e.m.${stamp}@floatie.test`;
+  const male2Email = `e2e.m2.${stamp}@floatie.test`;
   let femId;
   let maleId;
+  let male2Id;
   let deliveryId;
   let threadId;
 
   try {
     const fem = await ensureUser(admin, femEmail, PASS);
     const male = await ensureUser(admin, maleEmail, PASS);
+    const male2 = await ensureUser(admin, male2Email, PASS);
     femId = fem.id;
     maleId = male.id;
-    ok("create users", `f=${femId.slice(0, 8)} m=${maleId.slice(0, 8)}`);
+    male2Id = male2.id;
+    ok("create users", `f=${femId.slice(0, 8)} m=${maleId.slice(0, 8)} m2=${male2Id.slice(0, 8)}`);
 
     await onboard(admin, femId, { gender: "female", name: "E2E여" });
     await onboard(admin, maleId, { gender: "male", name: "E2E남" });
-    // both recently active for matching pool
-    await admin.from("profiles").update({ last_active_at: new Date().toISOString() }).in("id", [femId, maleId]);
+    await onboard(admin, male2Id, { gender: "male", name: "E2E남2" });
+    await admin
+      .from("profiles")
+      .update({ last_active_at: new Date().toISOString() })
+      .in("id", [femId, maleId, male2Id]);
     ok("onboard + verify both");
 
     const femClient = await clientAs(url, anon, femEmail, PASS);
     const maleClient = await clientAs(url, anon, maleEmail, PASS);
+    const male2Client = await clientAs(url, anon, male2Email, PASS);
 
     // gender guard: male cannot send
     {
@@ -204,6 +212,79 @@ async function main() {
       }
     }
 
+    // --- pass → auto-redeploy (same mission, new delivery) ---
+    {
+      const { data: mission, error: mErr } = await femClient
+        .from("missions")
+        .insert({
+          sender_id: femId,
+          kind: "question",
+          body: "E2E: 패스 재배달 테스트",
+          chips: [],
+          photo_answer: false,
+        })
+        .select("id")
+        .single();
+      if (mErr) throw mErr;
+
+      const { data: forced, error: fErr } = await admin
+        .from("mission_deliveries")
+        .insert({
+          mission_id: mission.id,
+          sender_id: femId,
+          receiver_id: maleId,
+          status: "delivered",
+          expires_at: null,
+        })
+        .select("id")
+        .single();
+      if (fErr) throw fErr;
+
+      const { error: decErr } = await maleClient.rpc("decline_delivery", {
+        p_delivery_id: forced.id,
+      });
+      if (decErr) fail("decline_delivery redeploy", decErr.message);
+      else {
+        const { data: hops } = await admin
+          .from("mission_deliveries")
+          .select("id, status, receiver_id")
+          .eq("mission_id", mission.id)
+          .order("id", { ascending: true });
+        const { data: mis } = await admin
+          .from("missions")
+          .select("redeploy_count")
+          .eq("id", mission.id)
+          .single();
+        const active = (hops ?? []).filter((h) => h.status === "delivered");
+        const closed = (hops ?? []).find((h) => h.id === forced.id);
+        if (closed?.status === "closed" && active.length === 1 && (mis?.redeploy_count ?? 0) >= 1) {
+          ok(
+            "pass auto-redeploy",
+            `hops=${hops.length} redeploy=${mis.redeploy_count} next=${active[0].receiver_id?.slice(0, 8)}`,
+          );
+        } else {
+          fail("pass auto-redeploy", JSON.stringify({ hops, redeploy: mis?.redeploy_count }));
+        }
+
+        const { data: notif } = await admin
+          .from("in_app_notifications")
+          .select("kind")
+          .eq("user_id", femId)
+          .eq("kind", "mission_redeployed")
+          .order("id", { ascending: false })
+          .limit(1);
+        if (notif?.length) ok("mission_redeployed notify");
+        else fail("mission_redeployed notify", "missing");
+      }
+
+      // close active hop so male2/pool stay free for happy path
+      await admin
+        .from("mission_deliveries")
+        .update({ status: "closed", receiver_verdict: "pass" })
+        .eq("mission_id", mission.id)
+        .eq("status", "delivered");
+    }
+
     // female send → deliver (prefer our male via pool; if not, force receiver)
     {
       const { data: mission, error: mErr } = await femClient
@@ -221,9 +302,10 @@ async function main() {
 
       let dErr;
       let dId;
+      // pass-test mission already counted toward daily free send → ticket
       ({ data: dId, error: dErr } = await femClient.rpc("deliver_mission", {
         p_mission_id: mission.id,
-        p_use_ticket: false,
+        p_use_ticket: true,
         p_filter_kind: null,
         p_filter_value: null,
       }));
@@ -328,6 +410,41 @@ async function main() {
         threadId = data;
         ok("start_match", `thread=${threadId}`);
       }
+    }
+
+    // woman cannot float while chat active
+    if (threadId) {
+      const { data: m2, error: m2Err } = await femClient
+        .from("missions")
+        .insert({
+          sender_id: femId,
+          kind: "question",
+          body: "E2E: 채팅 중 발송 잠금",
+          chips: [],
+        })
+        .select("id")
+        .single();
+      if (m2Err) fail("chat lock setup mission", m2Err.message);
+      else {
+        const { error: dErr } = await femClient.rpc("deliver_mission", {
+          p_mission_id: m2.id,
+          p_use_ticket: true,
+          p_filter_kind: null,
+          p_filter_value: null,
+        });
+        if (dErr && /chat_active/i.test(dErr.message)) ok("chat_active_no_new_floatie", dErr.message.slice(0, 60));
+        else if (dErr) fail("chat_active_no_new_floatie", dErr.message.slice(0, 100));
+        else fail("chat_active_no_new_floatie", "deliver succeeded while chat open");
+        await admin.from("missions").delete().eq("id", m2.id);
+      }
+
+      {
+        const { data: hasChat, error: hErr } = await maleClient.rpc("has_active_chat");
+        if (hErr) fail("has_active_chat male", hErr.message);
+        else if (hasChat === true) ok("male has_active_chat after match");
+        else fail("male has_active_chat after match", String(hasChat));
+      }
+      void male2Client;
     }
 
     if (threadId) {
@@ -440,6 +557,22 @@ async function main() {
       if (res.ok && (body.skipped || body.sent != null)) ok("dispatch-push responds", JSON.stringify(body).slice(0, 100));
       else fail("dispatch-push responds", `${res.status} ${JSON.stringify(body).slice(0, 120)}`);
     }
+
+    // expire-stale edge (deploy may lag — INFO if 404)
+    {
+      const res = await fetch(`${url}/functions/v1/expire-stale`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${service}`,
+          apikey: service,
+          "Content-Type": "application/json",
+        },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body.expired != null) ok("expire-stale edge", `expired=${body.expired}`);
+      else if (res.status === 404) info("expire-stale edge", "not deployed yet");
+      else fail("expire-stale edge", `${res.status} ${JSON.stringify(body).slice(0, 120)}`);
+    }
   } catch (e) {
     fail("fatal", e?.message ?? String(e));
   } finally {
@@ -447,6 +580,7 @@ async function main() {
     try {
       if (femId) await admin.auth.admin.deleteUser(femId);
       if (maleId) await admin.auth.admin.deleteUser(maleId);
+      if (male2Id) await admin.auth.admin.deleteUser(male2Id);
       ok("cleanup users");
     } catch (e) {
       info("cleanup users", e?.message ?? String(e));
