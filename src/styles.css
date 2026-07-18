@@ -39,10 +39,10 @@
   --color-warm-deep: var(--warm-deep);
   --color-warm-ink: var(--warm-ink);
   --color-warm-foreground: var(--warm-foreground);
-  /* Body: Pretendard. Wordmark/titles: Dongle (round, soft KR). */
+  /* Body + titles: Pretendard. (Dongle wordmark retired — too loud on auth/splash.) */
   --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   --font-serif: var(--font-sans);
-  --font-display: 'Dongle', 'Apple SD Gothic Neo', var(--font-sans);
+  --font-display: var(--font-sans);
   /* Subtle depth — keep restrained, gallery aesthetic */
   /* Buoyant depth — sea-tinted, present (not the old hairline gallery look). */
   --shadow-xs: 0 1px 2px oklch(0.30 0.03 210 / 0.06), 0 2px 6px oklch(0.30 0.03 210 / 0.06);
@@ -165,12 +165,23 @@
   }
 
 
-  /* Wordmark + big titles — Dongle reads soft/round; size up a notch vs Pretendard. */
+  /* Section titles — same family as body; keep weight, drop the round “cute” display face. */
   .font-serif {
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     font-weight: 700;
-    letter-spacing: 0.02em;
-    line-height: 1.05;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  /* Auth / splash brand mark — quiet English, readable size. */
+  .fl-wordmark {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 2.125rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1.15;
+    color: var(--foreground);
   }
 
   /* Buoyant elevation — surfaces float on soft sea-tinted shadow, not hairlines. */
@@ -225,15 +236,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-display);
-  font-size: 2.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1;
   transition: opacity 280ms ease, visibility 0s linear 280ms;
+}
+#boot-splash .fl-wordmark {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--muted-foreground);
 }
 #boot-splash img {
   width: 88px;

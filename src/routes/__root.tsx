@@ -82,14 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/icon-192.png", type: "image/png", sizes: "192x192" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      // Display first — Dongle (soft round KR wordmark). Body font loads non-blocking in shell.
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "preconnect", href: "https://cdn.jsdelivr.net", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Dongle:wght@400;700&display=swap",
-      },
       { rel: "stylesheet", href: appCss },
     ],
   }),
@@ -123,7 +116,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <body>
         <div id="boot-splash" aria-hidden="true">
           <img src="/icon-192.png" alt="" width={88} height={88} />
-          <span>플로티</span>
+          <span className="fl-wordmark">Floatie</span>
         </div>
         {children}
         <Scripts />
@@ -138,7 +131,9 @@ function AuthSync() {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
+      // TOKEN_REFRESHED / INITIAL_SESSION must not remount routes (wipes sheet state on iOS).
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       queryClient.invalidateQueries();
     });

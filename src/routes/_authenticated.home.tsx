@@ -629,6 +629,7 @@ function SeaHome() {
 
       {isWoman && (
         <button
+          type="button"
           className="fl-fab"
           disabled={sendLocked}
           onClick={() => {

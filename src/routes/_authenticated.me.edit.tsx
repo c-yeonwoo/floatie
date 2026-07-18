@@ -490,7 +490,7 @@ function EditProfilePage() {
           maxLength={INTRO_MAX}
           value={intro}
           onChange={(e) => setIntro(e.target.value)}
-          placeholder={"## 평소의 결\n...\n\n## 요즘의 나\n..."}
+          placeholder={"## 평소의 나\n...\n\n## 요즘의 나\n..."}
         />
         <p className="fl-me-count">{intro.length}/{INTRO_MAX}</p>
 

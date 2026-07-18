@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-ro
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BRAND_KO, pageTitle } from "@/lib/brand";
+import { BRAND_EN, BRAND_KO, pageTitle } from "@/lib/brand";
 import { SeaBanner } from "@/components/sea-banner";
 
 export const Route = createFileRoute("/login")({
@@ -140,7 +140,7 @@ function LoginPage() {
       <div className="flex-1 min-h-0 overflow-y-auto px-6">
         <div className="mx-auto w-full max-w-sm pt-6 pb-8">
           <div className="mb-6 text-center">
-            <h1 className="font-serif text-6xl text-foreground">플로티</h1>
+            <h1 className="fl-wordmark">{BRAND_EN}</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
               가벼운 질문 하나로 시작해요. 마음이 오면, 그때 열려요.
             </p>
