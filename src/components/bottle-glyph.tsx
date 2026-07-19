@@ -26,7 +26,10 @@ export function BottleGlyph({ state = "drift", className }: BottleGlyphProps) {
           <path d="M18 92 L33 44 L48 92 Z" fill="#fbf3df" stroke="#ecd8ab" strokeWidth="1.5" />
           <line x1="27" y1="76" x2="39" y2="76" stroke="#cbb488" strokeWidth="2" />
           <line x1="25" y1="84" x2="41" y2="84" stroke="#cbb488" strokeWidth="2" />
-          <circle cx="33" cy="41" r="3.2" fill="#ff9d7e" />
+          <path
+            fill="#ff9d7e"
+            d="M33 46.2c-4.2-2.9-6.4-6.2-4.3-8.7 1.8-2.1 3.6-1.1 4.3.9.7-2 2.5-3 4.3-.9 2.1 2.5-.1 5.8-4.3 8.7z"
+          />
         </>
       ) : (
         <>

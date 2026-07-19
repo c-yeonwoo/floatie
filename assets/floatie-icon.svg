@@ -9,17 +9,27 @@
       <stop offset="0" stop-color="#f4fbf8"/>
       <stop offset="1" stop-color="#cdeae3"/>
     </linearGradient>
-    <radialGradient id="sun" cx="0.5" cy="0.4" r="0.6">
-      <stop offset="0" stop-color="#ffe4d0"/>
-      <stop offset="1" stop-color="#ffb69e"/>
+    <radialGradient id="blush" cx="0.35" cy="0.3" r="0.75">
+      <stop offset="0" stop-color="#ffe8dc"/>
+      <stop offset="0.55" stop-color="#ffc4aa"/>
+      <stop offset="1" stop-color="#ff9d7e"/>
     </radialGradient>
   </defs>
 
   <!-- full-bleed sea background -->
   <rect width="1024" height="1024" fill="url(#sea)"/>
 
-  <!-- sunset glow -->
-  <circle cx="742" cy="300" r="86" fill="url(#sun)" opacity="0.92"/>
+  <!-- soft peach heart — dating/light-social cue (was sunset ball) -->
+  <g transform="translate(742 308)" opacity="0.94">
+    <path
+      fill="url(#blush)"
+      d="M0 52
+         C-52 18 -78 -22 -52 -52
+         C-30 -74 -8 -62 0 -38
+         C8 -62 30 -74 52 -52
+         C78 -22 52 18 0 52 Z"
+    />
+  </g>
 
   <!-- soft wave band near the bottom -->
   <path d="M0 812 Q170 762 340 812 T680 812 T1024 812 V1024 H0 Z" fill="#ffffff" opacity="0.14"/>
