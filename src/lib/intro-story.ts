@@ -2,7 +2,26 @@
 
 export type IntroSection = { heading: string; body: string };
 
-const FALLBACK_HEADINGS = ["평소의 나", "요즘의 나", "함께할 때"];
+/** Interview-question tone (not stiff section labels). */
+const FALLBACK_HEADINGS = [
+  "요즘 빠져 있는 건 뭐예요?",
+  "쉬는 날은 보통 어떻게 보내요?",
+  "주변에서 자주 듣는 말은요?",
+];
+
+const LEGACY_HEADING_TO_QUESTION: Record<string, string> = {
+  "요즘의 나": "요즘 빠져 있는 건 뭐예요?",
+  "평소의 나": "요즘 빠져 있는 건 뭐예요?",
+  "쉬는 날": "쉬는 날은 보통 어떻게 보내요?",
+  "함께할 때": "주변에서 자주 듣는 말은요?",
+  "이런 사람": "주변에서 자주 듣는 말은요?",
+};
+
+/** Map stored AI headings → softer interview questions for display. */
+export function displayIntroHeading(heading: string): string {
+  const h = heading.trim();
+  return LEGACY_HEADING_TO_QUESTION[h] ?? h;
+}
 
 export function formatIntroSections(sections: IntroSection[]): string {
   return sections

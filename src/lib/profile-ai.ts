@@ -51,13 +51,13 @@ function templateDraft(answers: string[], ideal?: IdealInput): ProfileDraft {
   const sections: IntroSection[] = [];
   if (a0) {
     sections.push({
-      heading: "요즘의 나",
+      heading: "요즘 빠져 있는 건 뭐예요?",
       body: `요즘은 ${a0}에 마음이 가 있어요. 관심 가는 게 생기면 조금씩 깊게 파보는 편이에요.`,
     });
   }
   if (a1) {
     sections.push({
-      heading: "쉬는 날",
+      heading: "쉬는 날은 보통 어떻게 보내요?",
       body: `쉬는 날엔 ${a1}. 크게 떠들기보다 그런 리듬이 편해요.`,
     });
   }
@@ -67,7 +67,7 @@ function templateDraft(answers: string[], ideal?: IdealInput): ProfileDraft {
       a3 && `연애에선 ${a3} 쪽에 가까워요`,
     ].filter(Boolean);
     sections.push({
-      heading: "이런 사람",
+      heading: "주변에서 자주 듣는 말은요?",
       body: `${bits.join(". ")}. 서로 리듬이 맞을 때 더 편하게 다가가요.`,
     });
   }

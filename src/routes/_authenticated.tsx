@@ -51,7 +51,10 @@ function AuthenticatedLayout() {
   const location = useLocation();
   // The sea home + onboarding are full-bleed (they position their own chrome);
   // every other route scrolls inside the padded column.
-  const fullBleed = location.pathname === "/home" || location.pathname === "/onboarding";
+  const fullBleed =
+    location.pathname === "/home" ||
+    location.pathname === "/onboarding" ||
+    location.pathname.startsWith("/thread/");
 
   useEffect(() => {
     touchLastActive().catch(() => {});

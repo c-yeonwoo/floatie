@@ -95,6 +95,35 @@ export function parseHeightCm(raw: string): number | null {
   return n;
 }
 
+/** Under hero photo: region · age · job · height (lifestyle facts go in body). */
+export function profileHeroMeta(p: {
+  region?: string | null;
+  age?: string | null;
+  height_cm?: number | null;
+  job_chip?: string | null;
+}): string {
+  return [
+    p.region?.trim() || null,
+    p.age?.trim() || null,
+    p.job_chip || null,
+    p.height_cm ? `${p.height_cm}cm` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Smoke / drink / tattoo — shown in profile body, not on the hero. */
+export function profileLifestyleLine(p: {
+  smoke?: string | null;
+  drink?: string | null;
+  tattoo?: string | null;
+}): string {
+  return [smokeLabel(p.smoke), drinkLabel(p.drink), tattooLabel(p.tattoo)]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** @deprecated use profileHeroMeta + profileLifestyleLine */
 export function profileMetaLine(p: {
   height_cm?: number | null;
   job_chip?: string | null;
@@ -105,9 +134,6 @@ export function profileMetaLine(p: {
   return [
     p.height_cm ? `${p.height_cm}cm` : null,
     p.job_chip || null,
-    smokeLabel(p.smoke),
-    drinkLabel(p.drink),
-    tattooLabel(p.tattoo),
   ]
     .filter(Boolean)
     .join(" · ");

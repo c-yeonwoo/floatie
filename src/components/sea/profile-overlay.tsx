@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
 import { StorageImg } from "@/components/storage-img";
-import { parseIntroSections } from "@/lib/intro-story";
+import { displayIntroHeading, parseIntroSections } from "@/lib/intro-story";
+import { profileHeroMeta, profileLifestyleLine } from "@/lib/interview-chips";
 
 export type ProfileCardData = {
   name: string;
   age: string;
   region: string;
+  /** @deprecated hero uses region/age/job/height fields */
   meta?: string;
+  job?: string | null;
+  heightCm?: number | null;
+  smoke?: string | null;
+  drink?: string | null;
+  tattoo?: string | null;
   photos?: (string | null | undefined)[];
   photo?: string | null;
   intro: string;
@@ -75,6 +82,21 @@ export function ProfileOverlay({
   const chapters = shown ? parseIntroSections(shown.intro) : [];
   const hero = photos[0] ?? null;
   const restPhotos = photos.slice(1);
+  const heroMeta = shown
+    ? profileHeroMeta({
+        region: shown.region,
+        age: shown.age,
+        job_chip: shown.job,
+        height_cm: shown.heightCm,
+      })
+    : "";
+  const lifestyle = shown
+    ? profileLifestyleLine({
+        smoke: shown.smoke,
+        drink: shown.drink,
+        tattoo: shown.tattoo,
+      })
+    : "";
 
   return (
     <div className={"fl-ppage" + (on ? " on" : "")}>
@@ -89,36 +111,38 @@ export function ProfileOverlay({
             {hero ? <StorageImg src={hero} alt="" /> : null}
             <div className="grad" />
             <div className="nm">
-              <b>{shown.age ? `${shown.name} · ${shown.age}` : shown.name}</b>
-              {(shown.region || shown.meta) && (
-                <span>{[shown.region, shown.meta].filter(Boolean).join(" · ")}</span>
-              )}
+              <b>{shown.name}</b>
+              {heroMeta && <span>{heroMeta}</span>}
             </div>
           </div>
 
           <div className="fl-pp-body">
+            {lifestyle && (
+              <p className="fl-pp-lifestyle">{lifestyle}</p>
+            )}
+
             {chapters.length > 0 && (
               <>
                 <div className="fl-pp-sec-head">
                   <h5>이런 사람이에요</h5>
                   <AiTip />
                 </div>
-                {chapters.map((ch, i) => (
-                  <div key={i}>
-                    <div className="fl-pp-chapter">
-                      {ch.heading && ch.heading !== "이런 사람이에요" && (
-                        <h4>{ch.heading}</h4>
-                      )}
-                      <p>{ch.body}</p>
-                    </div>
-                    {restPhotos[i] && (
-                      <div className="fl-pp-bleed">
-                        <StorageImg src={restPhotos[i]} alt="" />
+                {chapters.map((ch, i) => {
+                  const heading = ch.heading ? displayIntroHeading(ch.heading) : "";
+                  return (
+                    <div key={i}>
+                      <div className="fl-pp-chapter">
+                        {heading && heading !== "이런 사람이에요" && <h4>{heading}</h4>}
+                        <p>{ch.body}</p>
                       </div>
-                    )}
-                  </div>
-                ))}
-                {/* leftover photos after chapters */}
+                      {restPhotos[i] && (
+                        <div className="fl-pp-bleed">
+                          <StorageImg src={restPhotos[i]} alt="" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 {restPhotos.slice(chapters.length).map((src, i) => (
                   <div key={`p-${i}`} className="fl-pp-bleed">
                     <StorageImg src={src} alt="" />

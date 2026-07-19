@@ -4,15 +4,20 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  ageBand,
   fetchMessages,
   fetchThread,
+  fetchUnlockedPeer,
   formatCountdown,
   mapMissionError,
   msUntil,
-  offerThreadContact,
+  // offerThreadContact, // MVP: contact share off — re-enable with UI below
   sendMessage,
+  type UnlockedPeer,
 } from "@/lib/mission";
 import { ReportDialog } from "@/components/report-dialog";
+import { StorageImg } from "@/components/storage-img";
+import { ProfileOverlay, type ProfileCardData } from "@/components/sea/profile-overlay";
 import { pageTitle } from "@/lib/brand";
 import { track } from "@/lib/analytics";
 
@@ -21,6 +26,24 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
   component: ThreadPage,
 });
 
+function peerToCard(p: UnlockedPeer): ProfileCardData {
+  return {
+    name: p.display_name ?? "상대",
+    age: p.birth_year ? ageBand(p.birth_year) ?? "" : "",
+    region: p.region ?? "",
+    job: p.job_chip,
+    heightCm: p.height_cm,
+    smoke: p.smoke,
+    drink: p.drink,
+    tattoo: p.tattoo,
+    photos: p.photos ?? undefined,
+    photo: p.photos?.[0] ?? p.avatar_url,
+    intro: p.ai_intro ?? p.bio ?? "",
+    idealLine: p.ai_ideal_line ?? "",
+    tags: p.ai_tags ?? [],
+  };
+}
+
 function ThreadPage() {
   const { threadId } = Route.useParams();
   const id = Number(threadId);
@@ -28,9 +51,12 @@ function ThreadPage() {
   const qc = useQueryClient();
   const [uid, setUid] = useState<string | null>(null);
   const [text, setText] = useState("");
-  const [contactDraft, setContactDraft] = useState("");
+  // MVP: contact-share UI commented out — keep draft state when re-enabling
+  // const [contactDraft, setContactDraft] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
+  const [peerProfile, setPeerProfile] = useState<ProfileCardData | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
@@ -63,14 +89,16 @@ function ThreadPage() {
     return null;
   }, [thread, uid]);
 
-  const myContact =
-    role === "sender" ? thread?.sender_contact : thread?.receiver_contact;
-  const peerContact =
-    role === "sender" ? thread?.receiver_contact : thread?.sender_contact;
-  const bothOffered = !!(thread?.sender_contact && thread?.receiver_contact);
+  const peerId = role === "sender" ? thread?.receiver_id : thread?.sender_id;
 
-  const peerId =
-    role === "sender" ? thread?.receiver_id : thread?.sender_id;
+  const { data: peer } = useQuery({
+    queryKey: ["thread-peer", peerId],
+    enabled: !!peerId,
+    queryFn: () => fetchUnlockedPeer(peerId!),
+  });
+
+  const peerPhoto = peer?.photos?.[0] ?? peer?.avatar_url ?? null;
+  const peerName = peer?.display_name ?? "상대";
 
   const send = useMutation({
     mutationFn: async () => {
@@ -89,6 +117,14 @@ function ThreadPage() {
     },
   });
 
+  /*
+  // --- MVP off: external contact share ---
+  const myContact =
+    role === "sender" ? thread?.sender_contact : thread?.receiver_contact;
+  const peerContact =
+    role === "sender" ? thread?.receiver_contact : thread?.sender_contact;
+  const bothOffered = !!(thread?.sender_contact && thread?.receiver_contact);
+
   const offer = useMutation({
     mutationFn: async () => {
       if (contactDraft.trim().length < 2) throw new Error("연락처를 입력해 주세요.");
@@ -101,58 +137,59 @@ function ThreadPage() {
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "실패했어요."),
   });
+  */
+
+  const openPeerProfile = () => {
+    if (!peer) return;
+    setPeerProfile(peerToCard(peer));
+  };
 
   return (
-    <main className="flex flex-col h-[calc(var(--app-vh)-var(--safe-top))]">
-      <header className="px-5 py-4 flex items-center gap-3">
-        <button type="button" onClick={() => navigate({ to: "/home" })} className="text-sm">
+    <main className="fl-thread">
+      <header className="fl-thread-top">
+        <button type="button" className="fl-thread-back" onClick={() => navigate({ to: "/home" })} aria-label="뒤로">
           ←
         </button>
-        <div className="min-w-0 flex-1">
-          <h1 className="font-serif text-lg">대화</h1>
-          <p className="text-[11px] text-muted-foreground tabular-nums">
-            {closed
-              ? "7일 대화가 끝났어요"
-              : `남은 시간 ${thread ? formatCountdown(thread.expires_at) : ""} · 메시지 무제한`}
-          </p>
-        </div>
+        <button type="button" className="fl-thread-peer" onClick={openPeerProfile} disabled={!peer}>
+          {peerPhoto ? (
+            <StorageImg src={peerPhoto} alt="" className="fl-thread-av" />
+          ) : (
+            <span className="fl-thread-av empty">{peerName.slice(0, 1)}</span>
+          )}
+          <span className="fl-thread-peer-text">
+            <span className="fl-thread-name">{peerName}</span>
+            <span className="fl-thread-timer">
+              {closed
+                ? "대화가 끝났어요"
+                : thread
+                  ? `남은 시간 ${formatCountdown(thread.expires_at)}`
+                  : "…"}
+            </span>
+          </span>
+        </button>
         {peerId && (
-          <button
-            type="button"
-            onClick={() => setReportOpen(true)}
-            className="text-xs text-muted-foreground"
-          >
+          <button type="button" onClick={() => setReportOpen(true)} className="fl-thread-report">
             신고
           </button>
         )}
       </header>
 
       {closed && (
-        <div className="px-5 py-2 bg-secondary text-xs text-muted-foreground text-center">
-          7일이 지났어요. 연락처를 나눴다면 밖에서 이어서, 아니라면 여기까지예요.
+        <div className="fl-thread-banner">
+          7일이 지났어요. 여기까지의 대화예요.
           <br />
           (추후 티켓으로 연장 가능 예정)
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+      <div ref={listRef} className="fl-thread-list">
         {messages.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center mt-10">
-            7일 안에 약속·연락처를 나눠 보세요. 메시지는 무제한이에요.
-          </p>
+          <p className="fl-thread-empty">남은 시간 안에 편하게 이야기해 보세요.</p>
         )}
         {messages.map((m: { id: number; sender_id: string; body: string }) => {
           const mine = m.sender_id === uid;
           return (
-            <div
-              key={m.id}
-              className={
-                "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[15px] " +
-                (mine
-                  ? "ml-auto bg-tide-mid text-white"
-                  : "mr-auto bg-secondary text-foreground")
-              }
-            >
+            <div key={m.id} className={"fl-thread-bubble" + (mine ? " mine" : "")}>
               {m.body}
             </div>
           );
@@ -160,6 +197,8 @@ function ThreadPage() {
         <div ref={bottomRef} />
       </div>
 
+      {/*
+      // --- MVP off: external contact share UI ---
       <section className="px-4 py-3 space-y-2">
         {bothOffered ? (
           <div className="rounded-xl bg-secondary px-3 py-2 text-sm">
@@ -180,25 +219,18 @@ function ThreadPage() {
                   onChange={(e) => setContactDraft(e.target.value)}
                   maxLength={80}
                   placeholder="카카오/인스타/번호"
-                  className="flex-1 rounded-full bg-secondary px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className="flex-1 rounded-full bg-secondary px-4 py-2 text-sm outline-none"
                 />
-                <button
-                  type="button"
-                  disabled={offer.isPending || contactDraft.trim().length < 2}
-                  onClick={() => offer.mutate()}
-                  className="rounded-full bg-tide-mid text-white px-4 py-2 text-sm font-medium disabled:opacity-40"
-                >
-                  제안
-                </button>
+                <button type="button" onClick={() => offer.mutate()}>제안</button>
               </div>
             )}
           </div>
         )}
       </section>
+      */}
 
       <form
-        className="px-4 py-3 flex gap-2"
-        style={{ paddingBottom: "calc(var(--safe-bottom) + 12px)" }}
+        className="fl-thread-composer"
         onSubmit={(e) => {
           e.preventDefault();
           if (!closed) send.mutate();
@@ -210,16 +242,13 @@ function ThreadPage() {
           maxLength={500}
           placeholder={closed ? "대화가 종료됐어요" : "메시지"}
           disabled={closed}
-          className="flex-1 rounded-full bg-secondary px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
         />
-        <button
-          type="submit"
-          disabled={closed || send.isPending || !text.trim()}
-          className="rounded-full bg-foreground text-background px-4 py-2.5 text-sm disabled:opacity-40"
-        >
+        <button type="submit" disabled={closed || send.isPending || !text.trim()}>
           전송
         </button>
       </form>
+
+      <ProfileOverlay data={peerProfile} onBack={() => setPeerProfile(null)} />
 
       {peerId && (
         <ReportDialog

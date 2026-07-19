@@ -29,7 +29,6 @@ import {
   type UnlockedPeer,
 } from "@/lib/mission";
 import { uploadReplyPhoto } from "@/lib/profile-ai";
-import { profileMetaLine } from "@/lib/interview-chips";
 import { SeaWaves } from "@/components/sea/waves";
 import { ParchmentNote, type NoteContent } from "@/components/sea/parchment-note";
 import { ConfirmModal, type ConfirmOpts } from "@/components/sea/confirm-modal";
@@ -37,9 +36,9 @@ import { ProfileOverlay, type ProfileCardData } from "@/components/sea/profile-o
 import { SubPageOverlay } from "@/components/sea/sub-page";
 import { AvatarMenu } from "@/components/sea/avatar-menu";
 import { BottleGlyph } from "@/components/bottle-glyph";
+import { DriftingBottles } from "@/components/sea/drifting-bottles";
 import { ReportDialog } from "@/components/report-dialog";
 import {
-  bottlePos,
   isGlow,
   manState,
   womanState,
@@ -108,7 +107,11 @@ function peerCard(p: UnlockedPeer, ageOf: (y: number | null) => string): Profile
     name: p.display_name ?? "상대",
     age: ageOf(p.birth_year),
     region: p.region ?? "",
-    meta: profileMetaLine(p),
+    job: p.job_chip,
+    heightCm: p.height_cm,
+    smoke: p.smoke,
+    drink: p.drink,
+    tattoo: p.tattoo,
     photos: p.photos ?? undefined,
     photo: p.photos?.[0] ?? p.avatar_url,
     intro: p.ai_intro ?? p.bio ?? "",
@@ -226,9 +229,7 @@ function SeaHome() {
     onSuccess: (_r, { d }) => {
       track("reply", { deliveryId: d.id });
       setNote(null);
-      toast.success("답장을 병에 담아 보냈어요", {
-        description: "답장했다는 건 관심이 있다는 신호예요. 상대가 마음에 들면 프로필이 열려요.",
-      });
+      toast.success("답장을 병에 담아 보냈어요");
       refresh();
     },
     onError: (e) => toast.error(mapMissionError(e, "답장을 보내지 못했어요.")),
@@ -248,7 +249,7 @@ function SeaHome() {
     onSuccess: (_res, { d, v }) => {
       if (v === "ok") {
         track("unlock", { deliveryId: d.id });
-        toast.success("마음을 전했어요", { description: "내 프로필이 상대에게 열렸어요." });
+        toast.success("프로필이 열렸어요", { description: "서로의 프로필을 볼 수 있어요." });
         refresh();
         openPeer(d);
       } else {
@@ -289,7 +290,7 @@ function SeaHome() {
       track("match", { deliveryId: d.id, threadId });
       setProfile(null);
       toast.success("매칭됐어요! 대화방이 열렸어요", {
-        description: "7일 안에 연락처를 나눠 보세요. 메시지는 무제한이에요.",
+        description: "남은 시간 안에 편하게 이야기해 보세요.",
       });
       void qc.invalidateQueries({ queryKey: ["has-active-chat"] });
       refresh();
@@ -305,7 +306,11 @@ function SeaHome() {
         name: me.display_name,
         age: ageOf(me.birth_year),
         region: me.region ?? "",
-        meta: profileMetaLine(me),
+        job: me.job_chip,
+        heightCm: me.height_cm,
+        smoke: me.smoke,
+        drink: me.drink,
+        tattoo: me.tattoo,
         photos: me.photos ?? undefined,
         photo: me.photos?.[0],
         intro: me.ai_intro ?? "",
@@ -486,10 +491,10 @@ function SeaHome() {
               busy: verdict.isPending,
               onClick: () =>
                 setConfirm({
-                  em: "💛",
-                  title: "마음을 전할까요?",
-                  body: "답장까지 온 관심에 응답하면, 내 프로필이 상대에게 열려요. 대화는 이후 티켓으로 시작할 수 있어요.",
-                  yes: "마음 전하기",
+                  em: "👀",
+                  title: "프로필을 서로 열어볼까요?",
+                  body: "답변이 마음에 들면 서로의 프로필을 확인할 수 있어요.",
+                  yes: "프로필 열기",
                   onOk: () => verdict.mutate({ d, v: "ok" }),
                 }),
             }
@@ -518,10 +523,7 @@ function SeaHome() {
       reply: d.reply_body,
       replyPhoto: d.reply_photo,
       from: note.from ?? undefined,
-      hint:
-        s === "replied"
-          ? "답장했다는 건 관심이 있다는 신호예요. 마음에 들면 프로필을 열어 주세요."
-          : undefined,
+      hint: undefined,
       action: act,
       secondary,
       // Own outbox with no reply yet: nothing to report. After a reply, report the peer.
@@ -593,25 +595,19 @@ function SeaHome() {
         </div>
       )}
 
-      <div className="fl-bottles">
-        {bottles.map(({ d, s }) => {
-          const pos = bottlePos(d.id);
+      <DriftingBottles
+        items={bottles.map(({ d, s }) => {
           const showTimer = !!(d.accepted_at && !d.reply_body && d.expires_at);
           const cd = showTimer ? formatCountdown(d.expires_at!) : null;
-          return (
-            <button
-              key={d.id}
-              className={"fl-bottle" + (isGlow(s) || showTimer ? " glow" : "")}
-              style={{ left: pos.left, top: pos.top, animationDelay: `${-(d.id % 5) * 0.8}s` }}
-              onClick={() => tapBottle(d, s)}
-              aria-label={cd ? `플로티 · 남은 ${cd}` : "플로티"}
-            >
-              <BottleGlyph state="drift" className="w-full h-auto" />
-              {cd && <span className="fl-bottle-timer">{cd}</span>}
-            </button>
-          );
+          return {
+            id: d.id,
+            glow: isGlow(s) || showTimer,
+            timer: cd,
+            onTap: () => tapBottle(d, s),
+            ariaLabel: cd ? `플로티 · 남은 ${cd}` : "플로티",
+          };
         })}
-      </div>
+      />
 
       <div className="fl-top">
         <button className="fl-icn" aria-label="알림" onClick={() => navigate({ to: "/notifications" })}>
