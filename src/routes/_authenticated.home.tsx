@@ -17,6 +17,7 @@ import {
   fetchUnlockedPeer,
   forfeitDelivery,
   formatCountdown,
+  fetchActiveThreadId,
   hasActiveChat,
   mapMissionError,
   recallDelivery,
@@ -49,6 +50,8 @@ import {
 import { pageTitle } from "@/lib/brand";
 import { track } from "@/lib/analytics";
 import { getProfileNudge } from "@/lib/profile-nudge";
+import { displayMissionText, displayPublicTags, displayReplyText } from "@/lib/display-copy";
+import { fetchUnreadNotifications } from "@/lib/notifications";
 
 type HomeSearch = { d?: number; me?: boolean; compose?: boolean };
 
@@ -116,7 +119,7 @@ function peerCard(p: UnlockedPeer, ageOf: (y: number | null) => string): Profile
     photo: p.photos?.[0] ?? p.avatar_url,
     intro: p.ai_intro ?? p.bio ?? "",
     idealLine: p.ai_ideal_line ?? "",
-    tags: p.ai_tags ?? [],
+    tags: displayPublicTags(p.ai_tags),
   };
 }
 
@@ -179,6 +182,19 @@ function SeaHome() {
     refetchInterval: 60_000,
   });
   const sendLocked = isWoman && chatActive;
+
+  const { data: activeThreadId = null } = useQuery({
+    queryKey: ["active-thread-id", uid],
+    enabled: !!uid && sendLocked,
+    queryFn: fetchActiveThreadId,
+  });
+
+  const { data: unreadNotifs = [] } = useQuery({
+    queryKey: ["in-app-notifications"],
+    queryFn: fetchUnreadNotifications,
+    refetchInterval: 30_000,
+  });
+  const unreadCount = unreadNotifs.length;
 
   const { data: presetRows = [] } = useQuery({ queryKey: ["presets"], queryFn: fetchPresets });
   const presetBodies = useMemo(() => {
@@ -315,7 +331,7 @@ function SeaHome() {
         photo: me.photos?.[0],
         intro: me.ai_intro ?? "",
         idealLine: me.ai_ideal_line ?? "",
-        tags: me.ai_tags ?? [],
+        tags: displayPublicTags(me.ai_tags),
       },
       delivery: null,
     });
@@ -358,8 +374,13 @@ function SeaHome() {
   useEffect(() => {
     if (!openCompose || !isWoman) return;
     if (sendLocked) {
-      toast("대화 중에는 새 플로티를 띄울 수 없어요");
-      navigate({ to: "/home", search: {}, replace: true });
+      void fetchActiveThreadId().then((tid) => {
+        if (tid) navigate({ to: "/thread/$threadId", params: { threadId: String(tid) }, replace: true });
+        else {
+          toast("대화 중에는 새 플로티를 띄울 수 없어요");
+          navigate({ to: "/home", search: {}, replace: true });
+        }
+      });
       return;
     }
     let draft: string | undefined;
@@ -464,7 +485,7 @@ function SeaHome() {
     if (note.kind === "read")
       return {
         kind: "read",
-        question: note.d.mission?.body ?? "플로티",
+        question: displayMissionText(note.d.mission?.body),
         busy: accept.isPending,
         onAccept: () => accept.mutate(note.d),
         onReport: () => openReport(note.d),
@@ -518,9 +539,9 @@ function SeaHome() {
         : undefined;
     return {
       kind: "floatie",
-      question: d.mission?.body ?? "플로티",
+      question: displayMissionText(d.mission?.body),
       subtitle: SUBTITLE[s],
-      reply: d.reply_body,
+      reply: displayReplyText(d.reply_body),
       replyPhoto: d.reply_photo,
       from: note.from ?? undefined,
       hint: undefined,
@@ -610,11 +631,18 @@ function SeaHome() {
       />
 
       <div className="fl-top">
-        <button className="fl-icn" aria-label="알림" onClick={() => navigate({ to: "/notifications" })}>
+        <button
+          className="fl-icn"
+          aria-label={unreadCount > 0 ? `알림 ${unreadCount}개` : "알림"}
+          onClick={() => navigate({ to: "/notifications" })}
+        >
           <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.7 21a2 2 0 01-3.4 0" />
           </svg>
+          {unreadCount > 0 && (
+            <span className="fl-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
+          )}
         </button>
         <AvatarMenu avatar={me?.photos?.[0]} initial={(me?.display_name ?? "나").slice(0, 1)} items={menuItems} />
       </div>
@@ -626,11 +654,18 @@ function SeaHome() {
       {isWoman && (
         <button
           type="button"
-          className="fl-fab"
-          disabled={sendLocked}
+          className={"fl-fab" + (sendLocked ? " locked-link" : "")}
           onClick={() => {
             if (sendLocked) {
-              toast("대화가 열려 있는 동안에는 새 플로티를 띄울 수 없어요");
+              const go = (tid: number | null) => {
+                if (tid) {
+                  navigate({ to: "/thread/$threadId", params: { threadId: String(tid) } });
+                } else {
+                  toast("대화가 열려 있는 동안에는 새 플로티를 띄울 수 없어요");
+                }
+              };
+              if (activeThreadId) go(activeThreadId);
+              else void fetchActiveThreadId().then(go);
               return;
             }
             setComposeDraft(undefined);
@@ -641,7 +676,7 @@ function SeaHome() {
             <BottleGlyph state="drift" className="w-full h-auto" />
           </span>
           {sendLocked ? (
-            <>대화 중 <span className="sub">· 채팅이 끝나면 띄울 수 있어요</span></>
+            <>대화 중 <span className="sub">· 탭하면 채팅으로</span></>
           ) : (
             <>
               플로티 띄우기 <span className="sub">· {canFree ? "무료 1개" : "티켓 필요"}</span>
@@ -697,7 +732,7 @@ function SeaHome() {
               }}
             >
               <div className="bq">
-                <div className="qq">{d.mission?.body ?? "플로티"}</div>
+                <div className="qq">{displayMissionText(d.mission?.body)}</div>
                 <div className="sub2">{SUBTITLE[s]}</div>
               </div>
               <span className={"fl-hst " + lab.c}>{lab.t}</span>
@@ -709,9 +744,9 @@ function SeaHome() {
 
       <SubPageOverlay open={page === "shop"} title="티켓 상점" onBack={() => setPage(null)}>
         {[
-          { n: 1, price: "₩4,900", sub: "매칭 1회 · 가격 미정(안)" },
-          { n: 3, price: "₩12,900", sub: "장당 약 4,300원 · 미정" },
-          { n: 6, price: "₩23,900", sub: "장당 약 4,000원 · 미정" },
+          { n: 1, price: "₩4,900", sub: "매칭 1회" },
+          { n: 3, price: "₩12,900", sub: "장당 ₩4,300" },
+          { n: 6, price: "₩23,900", sub: "장당 약 ₩4,000" },
         ].map((t) => (
           <div key={t.n} className="fl-tk">
             <div className="big">{t.n}</div>
@@ -722,7 +757,9 @@ function SeaHome() {
             <button
               className="buy"
               onClick={() =>
-                toast("티켓 구매", { description: "베타에선 결제가 없어요. 오픈 때 IAP로 연결돼요." })
+                toast("곧 결제할 수 있어요", {
+                  description: `${t.price} · 지금은 베타라 결제가 잠시 꺼져 있어요.`,
+                })
               }
             >
               {t.price}
@@ -732,7 +769,7 @@ function SeaHome() {
         <p className="fl-page-note">
           지금 보유 티켓 {me?.ticket_balance ?? 0}장 · 베타 기본 10장.
           <br />
-          매칭 1회 = 티켓 1장. 무료 발송은 하루 1회.
+          매칭 1회 = 티켓 1장 (₩4,900). 무료 발송은 하루 1회.
         </p>
       </SubPageOverlay>
     </div>

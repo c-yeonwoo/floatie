@@ -5,7 +5,7 @@ import { fetchUnreadNotifications } from "@/lib/notifications";
 // Bell that opens the notification center, with a peach unread badge.
 export function NotifBell() {
   const { data = [] } = useQuery({
-    queryKey: ["unread-notifications"],
+    queryKey: ["in-app-notifications"],
     queryFn: fetchUnreadNotifications,
     refetchInterval: 30000,
   });

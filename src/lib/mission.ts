@@ -74,6 +74,30 @@ export async function hasActiveChat(): Promise<boolean> {
   return !!data;
 }
 
+/** Newest open match thread for the caller, if any. */
+export async function fetchActiveThreadId(): Promise<number | null> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) return null;
+  const now = new Date().toISOString();
+  const { data: deliveries } = await db
+    .from("mission_deliveries")
+    .select("id")
+    .or(`sender_id.eq.${uid},receiver_id.eq.${uid}`);
+  const ids = (deliveries ?? []).map((d: { id: number }) => d.id);
+  if (!ids.length) return null;
+  const { data: thread } = await db
+    .from("mission_threads")
+    .select("id")
+    .in("delivery_id", ids)
+    .is("closed_at", null)
+    .gt("expires_at", now)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return thread?.id ?? null;
+}
+
 export async function fetchMyMissionProfile(): Promise<MyMissionProfile | null> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
@@ -273,6 +297,8 @@ export function mapMissionError(err: unknown, fallback: string): string {
     return "이미 진행 중인 대화가 있어요. 끝난 뒤에 매칭할 수 있어요.";
   if (msg.includes("no eligible recipient"))
     return "지금 받을 수 있는 사람이 없어요. 잠시 뒤 다시 시도해 주세요.";
+  if (msg.includes("photos required"))
+    return "프로필 사진 3장이 필요해요. 사진을 올린 뒤 다시 시도해 주세요.";
   if (msg.includes("ticket required") || msg.includes("daily send cap"))
     return "오늘 무료 발송을 썼어요. 티켓이 필요해요.";
   if (msg.includes("already opened") || msg.includes("cannot decline"))

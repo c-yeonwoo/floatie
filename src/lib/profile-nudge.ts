@@ -1,4 +1,5 @@
 import { parseIntroAnswers } from "@/lib/profile-ai";
+import { hasRequiredPhotos } from "@/lib/profile-photos";
 
 export type ProfileNudgeInput = {
   photos?: string[] | null;
@@ -22,12 +23,11 @@ export type ProfileNudge = {
 export function getProfileNudge(p: ProfileNudgeInput | null | undefined): ProfileNudge | null {
   if (!p) return null;
 
-  const photos = (p.photos ?? []).filter(Boolean);
-  if (photos.length === 0) {
+  if (!hasRequiredPhotos(p.photos)) {
     return {
       kind: "photos",
-      body: "사진이 아직 없어요. 얼굴을 올리면 마음이 더 잘 닿아요.",
-      cta: "사진 보완하기",
+      body: "프로필 사진 3장이 필요해요. 얼굴을 올리면 마음이 더 잘 닿아요.",
+      cta: "사진 올리기",
       href: "/me/edit",
     };
   }

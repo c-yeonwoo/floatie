@@ -358,7 +358,7 @@ function EditProfilePage() {
           </p>
         </div>
 
-        <p className="fl-field-label">프로필 사진</p>
+        <p className="fl-field-label">프로필 사진 · 3장 필수</p>
         <div className="fl-photos3">
           {[0, 1, 2].map((k) => {
             const s = slots[k];

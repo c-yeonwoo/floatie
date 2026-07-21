@@ -16,7 +16,8 @@ import {
   type UnlockedPeer,
 } from "@/lib/mission";
 import { ReportDialog } from "@/components/report-dialog";
-import { StorageImg } from "@/components/storage-img";
+import { AvatarImg } from "@/components/avatar-img";
+import { displayPublicTags } from "@/lib/display-copy";
 import { ProfileOverlay, type ProfileCardData } from "@/components/sea/profile-overlay";
 import { pageTitle } from "@/lib/brand";
 import { track } from "@/lib/analytics";
@@ -40,7 +41,7 @@ function peerToCard(p: UnlockedPeer): ProfileCardData {
     photo: p.photos?.[0] ?? p.avatar_url,
     intro: p.ai_intro ?? p.bio ?? "",
     idealLine: p.ai_ideal_line ?? "",
-    tags: p.ai_tags ?? [],
+    tags: displayPublicTags(p.ai_tags),
   };
 }
 
@@ -151,11 +152,7 @@ function ThreadPage() {
           ←
         </button>
         <button type="button" className="fl-thread-peer" onClick={openPeerProfile} disabled={!peer}>
-          {peerPhoto ? (
-            <StorageImg src={peerPhoto} alt="" className="fl-thread-av" />
-          ) : (
-            <span className="fl-thread-av empty">{peerName.slice(0, 1)}</span>
-          )}
+          <AvatarImg src={peerPhoto} name={peerName} className="fl-thread-av" />
           <span className="fl-thread-peer-text">
             <span className="fl-thread-name">{peerName}</span>
             <span className="fl-thread-timer">

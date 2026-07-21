@@ -73,7 +73,39 @@ async function clientAs(url, anon, email, password) {
   return c;
 }
 
+async function makePhotoJpeg(i) {
+  // Tiny valid JPEG via sharp (devDependency of the app).
+  const { createRequire } = await import("node:module");
+  const require = createRequire(import.meta.url);
+  const sharp = require("sharp");
+  const hues = ["#cfe6e0", "#f3e0d4", "#dde4f0"];
+  const accents = ["#399a90", "#d4896a", "#6a86b5"];
+  const svg = `<svg width="640" height="640" xmlns="http://www.w3.org/2000/svg">
+    <rect width="640" height="640" fill="${hues[i % 3]}"/>
+    <circle cx="320" cy="250" r="110" fill="${accents[i % 3]}" opacity="0.85"/>
+    <ellipse cx="320" cy="520" rx="170" ry="140" fill="${accents[i % 3]}" opacity="0.7"/>
+  </svg>`;
+  return sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toBuffer();
+}
+
+async function uploadProfilePhotos(admin, userId) {
+  const paths = [];
+  const stamp = Date.now();
+  for (let i = 0; i < 3; i++) {
+    const buf = await makePhotoJpeg(i);
+    const path = `${userId}/photo-${i}-${stamp}.jpg`;
+    const { error } = await admin.storage.from("answers").upload(path, buf, {
+      upsert: true,
+      contentType: "image/jpeg",
+    });
+    if (error) throw new Error(`photo upload: ${error.message}`);
+    paths.push(path);
+  }
+  return paths;
+}
+
 async function onboard(admin, userId, { gender, name }) {
+  const photoPaths = await uploadProfilePhotos(admin, userId);
   const { error } = await admin.from("profiles").update({
     display_name: name,
     gender,
@@ -84,8 +116,8 @@ async function onboard(admin, userId, { gender, name }) {
     smoke: "안 함",
     drink: "가끔",
     tattoo: "없어요",
-    photos: ["e2e/placeholder.jpg"],
-    avatar_url: "e2e/placeholder.jpg",
+    photos: photoPaths,
+    avatar_url: photoPaths[0],
     onboarded: true,
     identity_verified_at: new Date().toISOString(),
     ticket_balance: 10,

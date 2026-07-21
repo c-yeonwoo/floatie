@@ -1,25 +1,35 @@
 import { cn } from "@/lib/utils";
 import { BottleGlyph } from "./bottle-glyph";
 
-// Full-bleed sea header — a bottle drifting on a pastel-aqua sunset sea, with
-// wave layers that flow continuously left-to-right. Sets a warm, unserious
-// first impression. Fixed illustration colors so it reads the same in both themes.
+// Full-bleed sea header — bottle on pastel aqua, peach heart sun (matches app icon).
 export function SeaBanner({ className }: { className?: string }) {
   return (
     <div
       className={cn("relative w-full overflow-hidden", className)}
       style={{ background: "linear-gradient(180deg,#dceef0 0%,#93cfc7 55%,#54b7ae 100%)" }}
     >
-      {/* sunset glow */}
-      <div
-        className="pointer-events-none absolute right-[16%] top-[20%] size-11 rounded-full"
-        style={{ background: "radial-gradient(circle,#ffe3cf,#ffb69e 72%)", filter: "blur(2px)", opacity: 0.9 }}
-      />
-      {/* drifting bottle — nudged down so it sits into the waves */}
+      {/* peach heart — brand mark aligned with app icon */}
+      <svg
+        className="pointer-events-none absolute right-[14%] top-[18%] size-12"
+        viewBox="0 0 48 48"
+        aria-hidden="true"
+        style={{ filter: "drop-shadow(0 2px 8px rgba(255,140,100,.35))", opacity: 0.95 }}
+      >
+        <defs>
+          <radialGradient id="fl-banner-heart" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#ffe3cf" />
+            <stop offset="55%" stopColor="#ffb69e" />
+            <stop offset="100%" stopColor="#ff9d7e" />
+          </radialGradient>
+        </defs>
+        <path
+          fill="url(#fl-banner-heart)"
+          d="M24 40c-7.2-5-11-10.6-7.4-14.9 3.1-3.6 6.2-1.9 7.4 1.5 1.2-3.4 4.3-5.1 7.4-1.5C35 29.4 31.2 35 24 40z"
+        />
+      </svg>
       <div className="relative flex h-full items-center justify-center translate-y-[12%]">
         <BottleGlyph className="w-[4.5rem] animate-floatie-bob sm:w-20" />
       </div>
-      {/* continuously flowing waves (two parallax layers), raised to meet the bottle */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 overflow-hidden">
         <svg
           className="absolute bottom-0 left-0 h-full w-[200%] animate-wave-flow"

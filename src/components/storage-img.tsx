@@ -21,13 +21,18 @@ export function StorageImg({ src, fallback, className, alt = "", ...rest }: Prop
   const path = extractAnswersPath(src);
   const enabled = !!path;
 
-  const { data: signed } = useQuery({
+  const { data: signed, isError, isPending } = useQuery({
     queryKey: ["signed-answers-url", path],
-    queryFn: () => signAnswersUrl(path as string),
+    queryFn: async () => {
+      const url = await signAnswersUrl(path as string);
+      if (!url) throw new Error("signed url unavailable");
+      return url;
+    },
     enabled,
     staleTime: SIGNED_URL_STALE_MS,
     gcTime: SIGNED_URL_STALE_MS,
     refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   // If the src is an unparseable value (blob:, data:, or already a non-storage URL),
@@ -39,8 +44,8 @@ export function StorageImg({ src, fallback, className, alt = "", ...rest }: Prop
     return <>{fallback ?? null}</>;
   }
 
-  if (!signed) {
-    // Loading / unauthorized — render a placeholder of the same shape.
+  if (isError) return <>{fallback ?? null}</>;
+  if (isPending || !signed) {
     return <span className={className} aria-hidden="true" />;
   }
 

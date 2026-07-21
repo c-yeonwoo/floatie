@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { touchLastActive } from "@/lib/mission";
+import { hasRequiredPhotos } from "@/lib/profile-photos";
 import { registerPush } from "@/lib/push";
 import { NotificationToasts } from "@/components/notification-toasts";
 
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: prof } = await (supabase as any)
       .from("profiles")
-      .select("onboarded, status, identity_verified_at")
+      .select("onboarded, status, identity_verified_at, photos")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -42,6 +43,23 @@ export const Route = createFileRoute("/_authenticated")({
       !prof?.identity_verified_at
     ) {
       throw redirect({ to: "/verify" });
+    }
+
+    // Photos are required — incomplete/placeholder profiles must finish /me/edit.
+    // Keep active chat / safety surfaces reachable so a soft gate can't trap a thread.
+    const skipPhotos =
+      path === "/me/edit" ||
+      path === "/onboarding" ||
+      path === "/verify" ||
+      path === "/banned" ||
+      path === "/login" ||
+      path === "/notifications" ||
+      path.startsWith("/thread/") ||
+      path.startsWith("/me/blocked");
+    if (!skipPhotos && prof?.onboarded && prof?.status === "active") {
+      if (!hasRequiredPhotos(prof.photos)) {
+        throw redirect({ to: "/me/edit" });
+      }
     }
   },
   component: AuthenticatedLayout,

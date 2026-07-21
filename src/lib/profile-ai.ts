@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { stripExifAndCompress } from "@/lib/image-utils";
 import type { IntroAnswersV2 } from "@/lib/interview-chips";
 import { formatIntroSections, type IntroSection } from "@/lib/intro-story";
+import { displayPublicTags } from "@/lib/display-copy";
 
 /** S1–S3 free-text questions (S4 is a chip — see interview-chips). */
 export const PROFILE_QUESTIONS: { q: string; ph: string }[] = [
@@ -87,7 +88,7 @@ function templateDraft(answers: string[], ideal?: IdealInput): ProfileDraft {
     else if (pace) idealLine = `${pace} 리듬이랑 잘 맞을 것 같아요.`;
   }
 
-  return { intro, idealLine, tags: found.slice(0, 6) };
+  return { intro, idealLine, tags: displayPublicTags(found).slice(0, 6) };
 }
 
 /** Generate intro + ideal line + tags. Falls back to local template. */
@@ -118,7 +119,9 @@ export async function generateProfileDraft(
         return {
           intro,
           idealLine: typeof data.ideal_line === "string" ? data.ideal_line : "",
-          tags: data.tags.filter((t: unknown) => typeof t === "string").slice(0, 6),
+          tags: displayPublicTags(
+            data.tags.filter((t: unknown) => typeof t === "string") as string[],
+          ).slice(0, 6),
         };
       }
     }

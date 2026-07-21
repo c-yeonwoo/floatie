@@ -9,34 +9,45 @@ import {
   type InAppNotification,
 } from "@/lib/notifications";
 
+/** Session-scoped: backlog is primed silently; only post-prime arrivals toast. */
 const SHOWN = new Set<number>();
 
 export function NotificationToasts() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const mounted = useRef(false);
+  const primed = useRef(false);
+  const toasting = useRef(false);
 
-  const { data: unread = [] } = useQuery({
+  const { data: unread = [], isFetched } = useQuery({
     queryKey: ["in-app-notifications"],
     queryFn: fetchUnreadNotifications,
     refetchInterval: 30_000,
   });
 
   useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
+    if (!isFetched) return;
+
+    if (!primed.current) {
+      for (const n of unread) SHOWN.add(n.id);
+      primed.current = true;
       return;
     }
-    for (const n of unread) {
-      if (SHOWN.has(n.id)) continue;
-      SHOWN.add(n.id);
-      showNotificationToast(n, navigate, () => {
-        markNotificationRead(n.id)
-          .then(() => qc.invalidateQueries({ queryKey: ["in-app-notifications"] }))
-          .catch(() => {});
-      });
-    }
-  }, [unread, navigate, qc]);
+
+    if (toasting.current) return;
+    const next = unread.find((n) => !SHOWN.has(n.id));
+    if (!next) return;
+
+    SHOWN.add(next.id);
+    toasting.current = true;
+    showNotificationToast(next, navigate, () => {
+      toasting.current = false;
+      markNotificationRead(next.id)
+        .then(() => {
+          void qc.invalidateQueries({ queryKey: ["in-app-notifications"] });
+        })
+        .catch(() => {});
+    });
+  }, [unread, isFetched, navigate, qc]);
 
   return null;
 }
@@ -44,7 +55,7 @@ export function NotificationToasts() {
 function showNotificationToast(
   n: InAppNotification,
   navigate: ReturnType<typeof useNavigate>,
-  onDismiss: () => void,
+  onDone: () => void,
 ) {
   const target = notificationTarget(n);
   const rewrite = n.kind === "mission_no_response" && n.payload?.can_rewrite;
@@ -59,19 +70,22 @@ function showNotificationToast(
             ? "대화"
             : "열기";
 
+  const finish = () => onDone();
+
   if (!target) {
-    toast(n.title, { description: n.body, duration: 6000, onDismiss });
+    toast(n.title, { description: n.body, duration: 4500, onDismiss: finish, onAutoClose: finish });
     return;
   }
 
   toast(n.title, {
     description: n.body,
-    duration:
-      n.kind === "mission_no_response" || n.kind === "mission_redeployed" ? 12_000 : 8000,
+    duration: n.kind === "mission_no_response" || n.kind === "mission_redeployed" ? 7000 : 4500,
+    onDismiss: finish,
+    onAutoClose: finish,
     action: {
       label: actionLabel,
       onClick: () => {
-        onDismiss();
+        finish();
         if (rewrite && n.payload?.mission_body) {
           try {
             sessionStorage.setItem("floatie_compose_draft", n.payload.mission_body);

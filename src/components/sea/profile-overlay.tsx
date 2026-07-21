@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { StorageImg } from "@/components/storage-img";
 import { displayIntroHeading, parseIntroSections } from "@/lib/intro-story";
 import { profileHeroMeta, profileLifestyleLine } from "@/lib/interview-chips";
+import { displayPublicTags } from "@/lib/display-copy";
 
 export type ProfileCardData = {
   name: string;
@@ -98,8 +99,10 @@ export function ProfileOverlay({
       })
     : "";
 
+  if (!shown && !on) return null;
+
   return (
-    <div className={"fl-ppage" + (on ? " on" : "")}>
+    <div className={"fl-ppage" + (on ? " on" : "")} aria-hidden={!on} inert={!on || undefined}>
       <header className="fl-pp-top">
         <button type="button" className="fl-pp-back" onClick={onBack} aria-label="뒤로">
           ←
@@ -108,7 +111,15 @@ export function ProfileOverlay({
       {shown && (
         <>
           <div className="fl-pp-hero">
-            {hero ? <StorageImg src={hero} alt="" /> : null}
+            {hero ? (
+              <StorageImg
+                src={hero}
+                alt=""
+                fallback={<div className="fl-pp-hero-missing" aria-hidden="true" />}
+              />
+            ) : (
+              <div className="fl-pp-hero-missing" aria-hidden="true" />
+            )}
             <div className="grad" />
             <div className="nm">
               <b>{shown.name}</b>
@@ -151,11 +162,11 @@ export function ProfileOverlay({
               </>
             )}
 
-            {shown.tags.length > 0 && (
-              <div className="fl-pp-card">
+            {displayPublicTags(shown.tags).length > 0 && (
+              <div className="fl-pp-sec">
                 <h5>관심사</h5>
                 <div className="fl-pp-tags">
-                  {shown.tags.map((t) => (
+                  {displayPublicTags(shown.tags).map((t) => (
                     <span key={t} className="fl-pp-tag">{t}</span>
                   ))}
                 </div>
@@ -163,7 +174,7 @@ export function ProfileOverlay({
             )}
 
             {shown.idealLine?.trim() && (
-              <div className="fl-pp-card fl-pp-ideal">
+              <div className="fl-pp-sec fl-pp-ideal-sec">
                 <h5>이런 사람에게 끌려요</h5>
                 <p>{shown.idealLine}</p>
               </div>

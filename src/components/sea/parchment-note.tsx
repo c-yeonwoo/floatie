@@ -77,13 +77,20 @@ export function ParchmentNote({ content, onClose }: { content: NoteContent | nul
 
   const tall = shown?.kind === "compose" || shown?.kind === "reply";
 
+  if (!shown && !up) return null;
+
   return (
     <>
       <div
         className={"fl-scrim note-scrim" + (content ? " on" : "") + (scrimArmed ? " armed" : "")}
         onClick={scrimArmed ? onClose : undefined}
+        aria-hidden={!content}
       />
-      <div className={"fl-note" + (up ? " up" : "") + (tall ? " tall" : "")}>
+      <div
+        className={"fl-note" + (up ? " up" : "") + (tall ? " tall" : "")}
+        aria-hidden={!up}
+        inert={!up || undefined}
+      >
         <div className="fl-grip" />
         {shown?.kind === "compose" && <ComposeBody c={shown} />}
         {shown?.kind === "floatie" && <FloatieBody c={shown} onClose={onClose} />}
